@@ -752,12 +752,22 @@ class _DashboardTabState extends State<DashboardTab> {
                       ],
                     ),
                   ),
-                  Text(
-                    '${patient['systolic']}/${patient['diastolic']} mmHg',
-                    style: TextStyle(
-                      fontSize: ResponsiveSize.fontMedium,
-                      color: riskColor,
-                      fontWeight: FontWeight.w600,
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveSize.paddingSmall,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: riskColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      riskLabel,
+                      style: TextStyle(
+                        fontSize: ResponsiveSize.fontSmall,
+                        color: riskColor,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],

@@ -219,10 +219,13 @@ class BerandaTab extends StatelessWidget {
     Color color,
   ) {
     return Container(
-      padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+      padding: EdgeInsets.symmetric(
+        horizontal: ResponsiveSize.paddingMedium,
+        vertical: ResponsiveSize.paddingSmall,
+      ),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.surface, width: 1),
         boxShadow: [
           BoxShadow(
@@ -232,32 +235,40 @@ class BerandaTab extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
           Container(
             padding: EdgeInsets.all(ResponsiveSize.paddingSmall),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color, size: ResponsiveSize.iconMedium),
+            child: Icon(icon, color: color, size: ResponsiveSize.iconSmall),
           ),
-          SizedBox(height: ResponsiveSize.spacingMedium),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: ResponsiveSize.fontXXLarge,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: ResponsiveSize.fontMedium,
-              color: AppColors.textSecondary,
+          SizedBox(width: ResponsiveSize.paddingSmall),
+          Expanded(
+            child: Row(
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: ResponsiveSize.fontLarge,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                SizedBox(width: ResponsiveSize.paddingSmall * 0.5),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: ResponsiveSize.fontSmall,
+                      color: AppColors.textSecondary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
