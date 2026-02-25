@@ -3,6 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../constants/app_colors.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../screens/patient/laporan_saya_screen.dart';
+import '../../../screens/patient/metrics/metric_detail_screen.dart';
+import '../../../models/health_metric.dart';
 import 'dart:math' as math;
 
 // Bar Chart Widget
@@ -51,347 +53,7 @@ class MiniBarChart extends StatelessWidget {
   }
 }
 
-enum MetricType { bloodPressure, cholesterol, bloodSugar, uricAcid }
 
-enum MetricStatus { normal, warning, critical }
-
-class HealthMetric {
-  final MetricType type;
-  final String name;
-  final String nameId;
-  final String unit;
-  final String displayValue;
-  final DateTime lastUpdated;
-  final MetricStatus status;
-  final IconData icon;
-  final Color primaryColor;
-
-  const HealthMetric({
-    required this.type,
-    required this.name,
-    required this.nameId,
-    required this.unit,
-    required this.displayValue,
-    required this.lastUpdated,
-    required this.status,
-    required this.icon,
-    required this.primaryColor,
-  });
-}
-
-class ReferenceRange {
-  final double min;
-  final double? max;
-  final String description;
-
-  const ReferenceRange({
-    required this.min,
-    this.max,
-    required this.description,
-  });
-}
-
-class AgeBasedRange {
-  final int minAge;
-  final int? maxAge;
-  final ReferenceRange range;
-
-  const AgeBasedRange({required this.minAge, this.maxAge, required this.range});
-}
-
-class HealthMetricData {
-  // Status colors using AppColors
-  static Color get greenAccent => AppColors.success;
-  static Color get orangeAccent => AppColors.warning;
-  static Color get redAccent => AppColors.error;
-
-  static List<AgeBasedRange> getBloodPressureRanges() {
-    return [
-      AgeBasedRange(
-        minAge: 18,
-        maxAge: 39,
-        range: ReferenceRange(
-          min: 90,
-          max: 120,
-          description: 'Normal untuk usia 18-39 tahun',
-        ),
-      ),
-      AgeBasedRange(
-        minAge: 40,
-        maxAge: 59,
-        range: ReferenceRange(
-          min: 90,
-          max: 125,
-          description: 'Normal untuk usia 40-59 tahun',
-        ),
-      ),
-      AgeBasedRange(
-        minAge: 60,
-        range: ReferenceRange(
-          min: 90,
-          max: 130,
-          description: 'Normal untuk usia 60+ tahun',
-        ),
-      ),
-    ];
-  }
-
-  static List<AgeBasedRange> getCholesterolRanges() {
-    return [
-      AgeBasedRange(
-        minAge: 20,
-        maxAge: 39,
-        range: ReferenceRange(
-          min: 0,
-          max: 200,
-          description: 'Normal untuk usia 20-39 tahun',
-        ),
-      ),
-      AgeBasedRange(
-        minAge: 40,
-        maxAge: 59,
-        range: ReferenceRange(
-          min: 0,
-          max: 220,
-          description: 'Normal untuk usia 40-59 tahun',
-        ),
-      ),
-      AgeBasedRange(
-        minAge: 60,
-        range: ReferenceRange(
-          min: 0,
-          max: 240,
-          description: 'Normal untuk usia 60+ tahun',
-        ),
-      ),
-    ];
-  }
-
-  static List<AgeBasedRange> getBloodSugarRanges() {
-    return [
-      AgeBasedRange(
-        minAge: 18,
-        maxAge: 59,
-        range: ReferenceRange(
-          min: 70,
-          max: 100,
-          description: 'Normal puasa untuk usia 18-59 tahun',
-        ),
-      ),
-      AgeBasedRange(
-        minAge: 60,
-        range: ReferenceRange(
-          min: 80,
-          max: 110,
-          description: 'Normal puasa untuk usia 60+ tahun',
-        ),
-      ),
-    ];
-  }
-
-  static List<AgeBasedRange> getUricAcidRanges(String gender) {
-    if (gender.toLowerCase() == 'pria') {
-      return [
-        AgeBasedRange(
-          minAge: 18,
-          maxAge: 59,
-          range: ReferenceRange(
-            min: 3.5,
-            max: 7.2,
-            description: 'Normal untuk pria usia 18-59 tahun',
-          ),
-        ),
-        AgeBasedRange(
-          minAge: 60,
-          range: ReferenceRange(
-            min: 3.5,
-            max: 8.0,
-            description: 'Normal untuk pria usia 60+ tahun',
-          ),
-        ),
-      ];
-    } else {
-      return [
-        AgeBasedRange(
-          minAge: 18,
-          maxAge: 59,
-          range: ReferenceRange(
-            min: 2.6,
-            max: 6.0,
-            description: 'Normal untuk wanita usia 18-59 tahun',
-          ),
-        ),
-        AgeBasedRange(
-          minAge: 60,
-          range: ReferenceRange(
-            min: 2.6,
-            max: 7.0,
-            description: 'Normal untuk wanita usia 60+ tahun',
-          ),
-        ),
-      ];
-    }
-  }
-
-  static ReferenceRange? getRangeForAge(List<AgeBasedRange> ranges, int age) {
-    for (final range in ranges) {
-      if (age >= range.minAge) {
-        if (range.maxAge == null || age <= range.maxAge!) {
-          return range.range;
-        }
-      }
-    }
-    return ranges.isNotEmpty ? ranges.first.range : null;
-  }
-
-  static MetricStatus getBloodPressureStatus(
-    int systolic,
-    int diastolic,
-    int age,
-  ) {
-    final range = getRangeForAge(getBloodPressureRanges(), age);
-    if (range == null) return MetricStatus.normal;
-
-    if (systolic > range.max! || diastolic > 80) {
-      if (systolic > 140 || diastolic > 90) return MetricStatus.critical;
-      return MetricStatus.warning;
-    }
-    return MetricStatus.normal;
-  }
-
-  static MetricStatus getCholesterolStatus(double value, int age) {
-    final range = getRangeForAge(getCholesterolRanges(), age);
-    if (range == null) return MetricStatus.normal;
-
-    if (value > range.max!) {
-      if (value > 240) return MetricStatus.critical;
-      return MetricStatus.warning;
-    }
-    return MetricStatus.normal;
-  }
-
-  static MetricStatus getBloodSugarStatus(double value, int age) {
-    final range = getRangeForAge(getBloodSugarRanges(), age);
-    if (range == null) return MetricStatus.normal;
-
-    if (value > range.max!) {
-      if (value > 126) return MetricStatus.critical;
-      return MetricStatus.warning;
-    } else if (value < range.min) {
-      return MetricStatus.warning;
-    }
-    return MetricStatus.normal;
-  }
-
-  static MetricStatus getUricAcidStatus(double value, int age, String gender) {
-    final range = getRangeForAge(getUricAcidRanges(gender), age);
-    if (range == null) return MetricStatus.normal;
-
-    if (value > range.max!) {
-      if (value > (gender.toLowerCase() == 'pria' ? 8.0 : 7.0)) {
-        return MetricStatus.critical;
-      }
-      return MetricStatus.warning;
-    } else if (value < range.min) {
-      return MetricStatus.warning;
-    }
-    return MetricStatus.normal;
-  }
-
-  static Color getStatusColor(MetricStatus status) {
-    switch (status) {
-      case MetricStatus.normal:
-        return greenAccent;
-      case MetricStatus.warning:
-        return orangeAccent;
-      case MetricStatus.critical:
-        return redAccent;
-    }
-  }
-
-  static String getStatusLabel(MetricStatus status) {
-    switch (status) {
-      case MetricStatus.normal:
-        return 'Normal';
-      case MetricStatus.warning:
-        return 'Waspada';
-      case MetricStatus.critical:
-        return 'Perhatian';
-    }
-  }
-
-  static IconData getStatusIcon(MetricStatus status) {
-    switch (status) {
-      case MetricStatus.normal:
-        return Icons.check_circle;
-      case MetricStatus.warning:
-        return Icons.warning;
-      case MetricStatus.critical:
-        return Icons.error;
-    }
-  }
-
-  static List<HealthMetric> getMockMetrics({
-    required int age,
-    required String gender,
-  }) {
-    final now = DateTime.now();
-
-    // Mock values
-    final bpSystolic = 122;
-    final bpDiastolic = 78;
-    final cholesterol = 195.0;
-    final bloodSugar = 95.0;
-    final uricAcid = gender.toLowerCase() == 'pria' ? 5.8 : 4.5;
-
-    return [
-      HealthMetric(
-        type: MetricType.bloodPressure,
-        name: 'Blood Pressure',
-        nameId: 'Tekanan Darah',
-        unit: 'mmHg',
-        displayValue: '$bpSystolic/$bpDiastolic',
-        lastUpdated: now.subtract(const Duration(hours: 2)),
-        status: getBloodPressureStatus(bpSystolic, bpDiastolic, age),
-        icon: Icons.favorite,
-        primaryColor: const Color(0xFFE53935),
-      ),
-      HealthMetric(
-        type: MetricType.cholesterol,
-        name: 'Cholesterol',
-        nameId: 'Kolesterol',
-        unit: 'mg/dL',
-        displayValue: cholesterol.toStringAsFixed(0),
-        lastUpdated: now.subtract(const Duration(days: 1)),
-        status: getCholesterolStatus(cholesterol, age),
-        icon: Icons.water_drop,
-        primaryColor: const Color(0xFFFB8C00),
-      ),
-      HealthMetric(
-        type: MetricType.bloodSugar,
-        name: 'Blood Sugar',
-        nameId: 'Gula Darah',
-        unit: 'mg/dL',
-        displayValue: bloodSugar.toStringAsFixed(0),
-        lastUpdated: now.subtract(const Duration(hours: 4)),
-        status: getBloodSugarStatus(bloodSugar, age),
-        icon: Icons.bloodtype,
-        primaryColor: const Color(0xFF43A047),
-      ),
-      HealthMetric(
-        type: MetricType.uricAcid,
-        name: 'Uric Acid',
-        nameId: 'Asam Urat',
-        unit: 'mg/dL',
-        displayValue: uricAcid.toStringAsFixed(1),
-        lastUpdated: now.subtract(const Duration(days: 2)),
-        status: getUricAcidStatus(uricAcid, age, gender),
-        icon: Icons.science,
-        primaryColor: const Color(0xFF5E35B1),
-      ),
-    ];
-  }
-}
 
 class HomeTab extends StatelessWidget {
   HomeTab({super.key});
@@ -624,111 +286,132 @@ class HomeTab extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        _showMetricDetailSnackBar(context, metric);
+        Navigator.of(context).push(
+          PageRouteBuilder(
+            transitionDuration: const Duration(milliseconds: 500),
+            reverseTransitionDuration: const Duration(milliseconds: 400),
+            pageBuilder: (context, animation, secondaryAnimation) {
+              return MetricDetailScreen(metric: metric);
+            },
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return child;
+            },
+          ),
+        );
       },
-      child: Container(
-        decoration: BoxDecoration(
+      child: Hero(
+        tag: 'metric_${metric.type.name}',
+        createRectTween: (begin, end) {
+          return MaterialRectArcTween(begin: begin, end: end);
+        },
+        child: Material(
           color: AppColors.card,
           borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Stack(
-            children: [
-              // Content - Layout for square card
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    // Spacer for chipped corner icon
-                    const SizedBox(height: 8),
-
-                    // Metric Name
-                    Text(
-                      metric.nameId,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-
-                    const SizedBox(height: 6),
-
-                    // Value + Unit (colored)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Stack(
+                children: [
+                  // Content - Layout for square card
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.max,
                       children: [
+                        // Spacer for chipped corner icon
+                        const SizedBox(height: 8),
+
+                        // Metric Name
                         Text(
-                          metric.displayValue,
+                          metric.nameId,
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: metric.primaryColor,
-                            height: 1,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
                           ),
                         ),
-                        const SizedBox(width: 3),
-                        Text(
-                          metric.unit,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: metric.primaryColor.withValues(alpha: 0.8),
-                            fontWeight: FontWeight.w500,
+
+                        const SizedBox(height: 6),
+
+                        // Value + Unit (colored)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              metric.displayValue,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: metric.primaryColor,
+                                height: 1,
+                              ),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              metric.unit,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: metric.primaryColor.withValues(alpha: 0.8),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const Spacer(),
+
+                        // Mini Bar Chart - centered
+                        Center(
+                          child: MiniBarChart(
+                            primaryColor: metric.primaryColor,
+                            barCount: 9,
                           ),
                         ),
+
+                        const SizedBox(height: 4),
                       ],
                     ),
+                  ),
 
-                    const Spacer(),
-
-                    // Mini Bar Chart - centered
-                    Center(
-                      child: MiniBarChart(
-                        primaryColor: metric.primaryColor,
-                        barCount: 9,
+                  // Chipped corner icon in top-right
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      width: chipSize,
+                      height: chipSize,
+                      decoration: BoxDecoration(
+                        color: metric.primaryColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(20),
+                          topRight: Radius.circular(24),
+                        ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          metric.icon,
+                          color: metric.primaryColor,
+                          size: iconSize.toDouble(),
+                        ),
                       ),
                     ),
-
-                    const SizedBox(height: 4),
-                  ],
-                ),
-              ),
-
-              // Chipped corner icon in top-right
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  width: chipSize,
-                  height: chipSize,
-                  decoration: BoxDecoration(
-                    color: metric.primaryColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(20),
-                      topRight: Radius.circular(24),
-                    ),
                   ),
-                  child: Center(
-                    child: Icon(
-                      metric.icon,
-                      color: metric.primaryColor,
-                      size: iconSize.toDouble(),
-                    ),
-                  ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -846,14 +529,4 @@ class HomeTab extends StatelessWidget {
     }
   }
 
-  void _showMetricDetailSnackBar(BuildContext context, HealthMetric metric) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Detail untuk ${metric.nameId} akan ditampilkan di sini'),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
 }
