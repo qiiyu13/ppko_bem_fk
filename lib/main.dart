@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:device_preview/device_preview.dart';
 import 'constants/app_theme.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    DevicePreview(
+      enabled: true, // Turn this off before going to production!
+      builder: (context) => const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -16,6 +22,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: const SplashScreen(),
+      builder: DevicePreview.appBuilder,
     );
   }
 }
