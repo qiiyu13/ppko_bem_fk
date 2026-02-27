@@ -9,15 +9,29 @@ class AdminPatientDetailScreen extends StatelessWidget {
 
   static const Color attentionOrange = Color(0xFFFF9800);
 
-  // Mock extended patient data
   Map<String, dynamic> get _extendedData {
     return {
       'age': 68,
       'gender': 'Laki-laki',
       'glucose': 110,
       'weight': 62,
+      'height': 165,
+      'uricAcid': 5.8,
+      'cholesterol': 185,
       ...patient,
     };
+  }
+
+  double get _bmi {
+    final heightInMeters = (_extendedData['height'] as int) / 100;
+    return _extendedData['weight'] / (heightInMeters * heightInMeters);
+  }
+
+  String get _bmiCategory {
+    if (_bmi < 18.5) return 'Kurus';
+    if (_bmi < 25) return 'Normal';
+    if (_bmi < 30) return 'Gemuk';
+    return 'Obesitas';
   }
 
   // Mock BP history
