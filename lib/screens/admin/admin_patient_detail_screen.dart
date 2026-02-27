@@ -198,41 +198,81 @@ class AdminPatientDetailScreen extends StatelessWidget {
   }
 
   Widget _buildVitalStatsRow(Map<String, dynamic> data) {
-    return Row(
+    return Column(
       children: [
-        // Tensi Card
-        Expanded(
-          child: _buildVitalCard(
-            label: 'TENSI',
-            value: '${data['systolic']}/${data['diastolic']}',
-            status: 'Tinggi',
-            borderColor: attentionOrange,
-            statusColor: attentionOrange,
-          ),
+        // Row 1: Tensi, Gula, Berat
+        Row(
+          children: [
+            Expanded(
+              child: _buildVitalCard(
+                label: 'TENSI',
+                value: '${data['systolic']}/${data['diastolic']}',
+                status: 'Tinggi',
+                borderColor: attentionOrange,
+                statusColor: attentionOrange,
+              ),
+            ),
+            SizedBox(width: ResponsiveSize.paddingSmall),
+            Expanded(
+              child: _buildVitalCard(
+                label: 'GULA',
+                value: '${data['glucose']}',
+                status: 'Normal',
+                borderColor: AppColors.success,
+                statusColor: AppColors.success,
+                unit: '',
+              ),
+            ),
+            SizedBox(width: ResponsiveSize.paddingSmall),
+            Expanded(
+              child: _buildVitalCard(
+                label: 'BERAT',
+                value: '${data['weight']}',
+                status: 'Stabil',
+                borderColor: AppColors.primary,
+                statusColor: AppColors.primary,
+                unit: 'kg',
+              ),
+            ),
+          ],
         ),
-        SizedBox(width: ResponsiveSize.paddingSmall),
-        // Gula Card
-        Expanded(
-          child: _buildVitalCard(
-            label: 'GULA',
-            value: '${data['glucose']}',
-            status: 'Normal',
-            borderColor: AppColors.success,
-            statusColor: AppColors.success,
-            unit: '',
-          ),
-        ),
-        SizedBox(width: ResponsiveSize.paddingSmall),
-        // Berat Card
-        Expanded(
-          child: _buildVitalCard(
-            label: 'BERAT',
-            value: '${data['weight']}',
-            status: 'Stabil',
-            borderColor: AppColors.primary,
-            statusColor: AppColors.primary,
-            unit: 'kg',
-          ),
+        SizedBox(height: ResponsiveSize.paddingSmall),
+        // Row 2: Tinggi, BMI, Asam Urat
+        Row(
+          children: [
+            Expanded(
+              child: _buildVitalCard(
+                label: 'TINGGI',
+                value: '${data['height']}',
+                status: '-',
+                borderColor: AppColors.primary,
+                statusColor: AppColors.primary,
+                unit: 'cm',
+              ),
+            ),
+            SizedBox(width: ResponsiveSize.paddingSmall),
+            Expanded(
+              child: _buildVitalCard(
+                label: 'BMI',
+                value: _bmi.toStringAsFixed(1),
+                status: _bmiCategory,
+                borderColor: _bmi < 25 ? AppColors.success : attentionOrange,
+                statusColor: _bmi < 25 ? AppColors.success : attentionOrange,
+                unit: '',
+              ),
+            ),
+            SizedBox(width: ResponsiveSize.paddingSmall),
+            Expanded(
+              child: _buildVitalCard(
+                label: 'ASAM URAT',
+                value: '${data['uricAcid']}',
+                status: 'Normal',
+                borderColor: AppColors.success,
+                statusColor: AppColors.success,
+                unit: '',
+              ),
+            ),
+          ],
         ),
       ],
     );
