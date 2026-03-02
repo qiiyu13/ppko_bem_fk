@@ -421,7 +421,6 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
     with SingleTickerProviderStateMixin {
   late AnimationController _preFlightController;
   late Animation<double> _contentFadeAnimation;
-  late Animation<Color?> _backgroundColorAnimation;
   bool _isNavigating = false;
 
   @override
@@ -435,17 +434,6 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
     _contentFadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(parent: _preFlightController, curve: Curves.easeOut),
     );
-
-    _backgroundColorAnimation =
-        ColorTween(
-          begin: AppColors.card,
-          end: widget.metric.primaryColor,
-        ).animate(
-          CurvedAnimation(
-            parent: _preFlightController,
-            curve: Curves.easeInOut,
-          ),
-        );
   }
 
   @override
@@ -458,12 +446,13 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
     if (_isNavigating) return;
     _isNavigating = true;
 
-    // Step 1: Fade content and change color (200ms)
+    // Step 1: Fade content out (200ms)
     await _preFlightController.forward();
 
     if (!mounted) return;
 
-    // Step 2: Navigate with Hero animation
+    // Step 2: Navigate with Hero animation (white card expands)
+    // Don't await - we want to reset immediately after starting navigation
     Navigator.of(context).push(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 700),
@@ -481,10 +470,10 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
       ),
     );
 
-    // Reset after navigation completes
-    await Future.delayed(const Duration(milliseconds: 100));
+    // Step 3: Reset content fade immediately so it's ready when we return
+    await Future.delayed(const Duration(milliseconds: 50));
     if (mounted) {
-      _preFlightController.reverse();
+      await _preFlightController.reverse();
       _isNavigating = false;
     }
   }
@@ -505,7 +494,7 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
               opacity: 0.3,
               child: Container(
                 decoration: BoxDecoration(
-                  color: widget.metric.primaryColor,
+                  color: AppColors.card,
                   borderRadius: BorderRadius.circular(24),
                 ),
               ),
@@ -519,23 +508,19 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
                 fromHeroContext,
                 toHeroContext,
               ) {
-                return AnimatedBuilder(
-                  animation: animation,
-                  builder: (context, child) {
-                    return Material(
-                      color: widget.metric.primaryColor,
-                      elevation: 0,
-                      borderRadius: BorderRadius.circular(24),
-                      child: Container(color: widget.metric.primaryColor),
-                    );
-                  },
+                return Material(
+                  color: AppColors.card,
+                  elevation: 0,
+                  borderRadius: BorderRadius.circular(24),
+                  clipBehavior: Clip.antiAlias,
+                  child: Container(color: AppColors.card),
                 );
               },
           child: GestureDetector(
             onTap: _onCardTap,
             child: Container(
               decoration: BoxDecoration(
-                color: _backgroundColorAnimation.value,
+                color: AppColors.card,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(

@@ -19,8 +19,10 @@ class MetricDetailScreen extends StatefulWidget {
 
 class _MetricDetailScreenState extends State<MetricDetailScreen>
     with TickerProviderStateMixin {
+  late AnimationController _colorController;
   late AnimationController _headerController;
   late AnimationController _chartController;
+  late Animation<Color?> _backgroundColorAnimation;
   late Animation<double> _headerFadeAnimation;
   late Animation<double> _chartFadeAnimation;
   late Animation<Offset> _chartSlideAnimation;
@@ -32,7 +34,20 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     super.initState();
     _readings = HealthMetricData.getMockHistoryForType(widget.metric.type);
 
-    // Header fades in first (200ms)
+    // Background color: white -> metric color (300ms)
+    _colorController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _backgroundColorAnimation =
+        ColorTween(
+          begin: AppColors.card,
+          end: widget.metric.primaryColor,
+        ).animate(
+          CurvedAnimation(parent: _colorController, curve: Curves.easeInOut),
+        );
+
+    // Header fades in (200ms)
     _headerController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
@@ -42,7 +57,7 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
       curve: Curves.easeOutCubic,
     );
 
-    // Chart slides up after header (300ms)
+    // Chart slides up (300ms)
     _chartController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -58,10 +73,10 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
 
     // Use transition animation to drive content appearance
     if (widget.transitionAnimation != null) {
-      // Listen to Hero transition and trigger at 100% completion
       widget.transitionAnimation!.addListener(_onTransitionUpdate);
     } else {
-      // Fallback: animate immediately if no transition animation
+      // Fallback: animate immediately
+      _colorController.forward();
       _headerController.forward();
       Future.delayed(const Duration(milliseconds: 150), () {
         if (mounted) _chartController.forward();
@@ -73,10 +88,13 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     if (!mounted) return;
 
     final value = widget.transitionAnimation!.value;
-    // Start header animation at 100% of Hero completion
-    if (value >= 1.0 && _headerController.status == AnimationStatus.dismissed) {
-      _headerController.forward().then((_) {
-        if (mounted) _chartController.forward();
+    if (value >= 1.0 && _colorController.status == AnimationStatus.dismissed) {
+      // Hero complete: start color -> header -> chart sequence
+      _colorController.forward().then((_) {
+        if (!mounted) return;
+        _headerController.forward().then((_) {
+          if (mounted) _chartController.forward();
+        });
       });
       widget.transitionAnimation!.removeListener(_onTransitionUpdate);
     }
@@ -85,6 +103,7 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
   @override
   void dispose() {
     widget.transitionAnimation?.removeListener(_onTransitionUpdate);
+    _colorController.dispose();
     _headerController.dispose();
     _chartController.dispose();
     super.dispose();
@@ -94,9 +113,10 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     if (_isClosing) return;
     setState(() => _isClosing = true);
 
-    // Fade out chart first, then header
+    // Exit sequence: chart out -> header out -> color to white -> pop
     await _chartController.reverse();
     await _headerController.reverse();
+    await _colorController.reverse();
     if (mounted) {
       Navigator.of(context).pop();
     }
@@ -104,228 +124,226 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Hero(
-      tag: 'metric_${widget.metric.type.name}',
-      child: Material(
-        color: widget.metric.primaryColor,
-        child: Scaffold(
-          backgroundColor: widget.metric.primaryColor,
-          body: SafeArea(
-            child: Column(
-              children: [
-                // Header with back button and metric info (part of hero)
-                _buildHeader(),
+    return AnimatedBuilder(
+      animation: _backgroundColorAnimation,
+      builder: (context, child) {
+        return Hero(
+          tag: 'metric_${widget.metric.type.name}',
+          child: Material(
+            color: _backgroundColorAnimation.value,
+            child: Scaffold(
+              backgroundColor: _backgroundColorAnimation.value,
+              body: SafeArea(
+                child: Column(
+                  children: [
+                    // Header with back button and metric info (fades in)
+                    FadeTransition(
+                      opacity: _headerFadeAnimation,
+                      child: _buildHeader(),
+                    ),
 
-                // Header content fades in first
-                FadeTransition(
-                  opacity: _headerFadeAnimation,
-                  child: _buildHeaderContent(),
-                ),
-
-                // Chart section slides up after header
-                Expanded(
-                  child: AnimatedBuilder(
-                    animation: _chartController,
-                    builder: (context, child) {
-                      final slideOffset =
-                          (1 - _chartSlideAnimation.value.dy) * 30;
-                      return Visibility(
-                        visible: _chartFadeAnimation.value > 0.01,
-                        child: Opacity(
-                          opacity: _chartFadeAnimation.value,
-                          child: Transform.translate(
-                            offset: Offset(0, slideOffset),
-                            child: child,
+                    // Chart section slides up after header
+                    Expanded(
+                      child: AnimatedBuilder(
+                        animation: _chartController,
+                        builder: (context, child) {
+                          final slideOffset =
+                              (1 - _chartSlideAnimation.value.dy) * 30;
+                          return Visibility(
+                            visible: _chartFadeAnimation.value > 0.01,
+                            child: Opacity(
+                              opacity: _chartFadeAnimation.value,
+                              child: Transform.translate(
+                                offset: Offset(0, slideOffset),
+                                child: child,
+                              ),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(32),
+                              topRight: Radius.circular(32),
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              // Drag handle
+                              Container(
+                                margin: const EdgeInsets.only(top: 12),
+                                width: 40,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              // Chart title
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.show_chart,
+                                      color: widget.metric.primaryColor,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Riwayat Pengukuran',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Chart with proper constraints
+                              Expanded(
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return SizedBox(
+                                      width: constraints.maxWidth,
+                                      height: constraints.maxHeight,
+                                      child: MetricChart(
+                                        type: widget.metric.type,
+                                        readings: _readings,
+                                        primaryColor:
+                                            widget.metric.primaryColor,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      );
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(32),
-                          topRight: Radius.circular(32),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          // Drag handle
-                          Container(
-                            margin: const EdgeInsets.only(top: 12),
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          // Chart title
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.show_chart,
-                                  color: widget.metric.primaryColor,
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Riwayat Pengukuran',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Chart with proper constraints
-                          Expanded(
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                return SizedBox(
-                                  width: constraints.maxWidth,
-                                  height: constraints.maxHeight,
-                                  child: MetricChart(
-                                    type: widget.metric.type,
-                                    readings: _readings,
-                                    primaryColor: widget.metric.primaryColor,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
   Widget _buildHeader() {
     return Container(
-      color: widget.metric.primaryColor,
       padding: const EdgeInsets.all(20),
-      child: _buildHeaderContent(),
-    );
-  }
-
-  Widget _buildHeaderContent() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            // Back button
-            GestureDetector(
-              onTap: _closeScreen,
-              child: Container(
-                padding: const EdgeInsets.all(8),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              // Back button
+              GestureDetector(
+                onTap: _closeScreen,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 24),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.metric.nameId,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.metric.name,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Status icon
+              Container(
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(Icons.close, color: Colors.white, size: 24),
+                child: Icon(widget.metric.icon, color: Colors.white, size: 28),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.metric.nameId,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.metric.name,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Status icon
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(widget.metric.icon, color: Colors.white, size: 28),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        // Value display
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              widget.metric.displayValue,
-              style: const TextStyle(
-                fontSize: 48,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              widget.metric.unit,
-              style: TextStyle(
-                fontSize: 20,
-                color: Colors.white.withValues(alpha: 0.8),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Status badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(20),
+            ],
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+          const SizedBox(height: 24),
+          // Value display
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                HealthMetricData.getStatusIcon(widget.metric.status),
-                color: Colors.white,
-                size: 16,
+              Text(
+                widget.metric.displayValue,
+                style: const TextStyle(
+                  fontSize: 48,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(width: 8),
               Text(
-                HealthMetricData.getStatusLabel(widget.metric.status),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                widget.metric.unit,
+                style: TextStyle(
+                  fontSize: 20,
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 12),
+          // Status badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  HealthMetricData.getStatusIcon(widget.metric.status),
+                  color: Colors.white,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  HealthMetricData.getStatusLabel(widget.metric.status),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
