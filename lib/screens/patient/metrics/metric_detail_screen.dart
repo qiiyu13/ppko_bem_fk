@@ -5,10 +5,12 @@ import '../../../widgets/metric_chart.dart';
 
 class MetricDetailScreen extends StatefulWidget {
   final HealthMetric metric;
+  final Animation<double>? transitionAnimation;
 
   const MetricDetailScreen({
     super.key,
     required this.metric,
+    this.transitionAnimation,
   });
 
   @override
@@ -26,26 +28,38 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
   void initState() {
     super.initState();
     _readings = HealthMetricData.getMockHistoryForType(widget.metric.type);
-    
+
     _contentController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 350),
     );
     _fadeAnimation = CurvedAnimation(
       parent: _contentController,
-      curve: Curves.easeOut,
+      curve: Curves.easeOutCubic,
     );
 
-    // Delay content fade-in until hero animation completes
-    Future.delayed(const Duration(milliseconds: 350), () {
-      if (mounted) {
-        _contentController.forward();
-      }
-    });
+    // Use transition animation to drive content appearance
+    if (widget.transitionAnimation != null) {
+      // Listen to Hero transition and trigger content at 60%
+      widget.transitionAnimation!.addListener(_onTransitionUpdate);
+    }
+  }
+
+  void _onTransitionUpdate() {
+    if (!mounted) return;
+
+    final value = widget.transitionAnimation!.value;
+    // Start content animation at 60% of Hero completion
+    if (value >= 0.6 &&
+        _contentController.status == AnimationStatus.dismissed) {
+      _contentController.forward();
+      widget.transitionAnimation!.removeListener(_onTransitionUpdate);
+    }
   }
 
   @override
   void dispose() {
+    widget.transitionAnimation?.removeListener(_onTransitionUpdate);
     _contentController.dispose();
     super.dispose();
   }
@@ -159,11 +173,7 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 24),
                 ),
               ),
               const SizedBox(width: 16),
@@ -197,11 +207,7 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                   color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(
-                  widget.metric.icon,
-                  color: Colors.white,
-                  size: 28,
-                ),
+                child: Icon(widget.metric.icon, color: Colors.white, size: 28),
               ),
             ],
           ),
