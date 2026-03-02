@@ -21,6 +21,7 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _contentController;
   late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
   bool _isClosing = false;
   late List<MetricReading> _readings;
 
@@ -37,6 +38,13 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
       parent: _contentController,
       curve: Curves.easeOutCubic,
     );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _contentController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     // Use transition animation to drive content appearance
     if (widget.transitionAnimation != null) {
@@ -89,10 +97,22 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                 // Header with back button and metric info (part of hero)
                 _buildHeader(),
 
-                // Content that fades in
+                // Content that fades and slides in
                 Expanded(
-                  child: FadeTransition(
-                    opacity: _fadeAnimation,
+                  child: AnimatedBuilder(
+                    animation: _contentController,
+                    builder: (context, child) {
+                      return Opacity(
+                        opacity: _fadeAnimation.value,
+                        child: Transform.translate(
+                          offset: Offset(
+                            0,
+                            20 * (1 - _slideAnimation.value.dy * 20),
+                          ),
+                          child: child,
+                        ),
+                      );
+                    },
                     child: Container(
                       decoration: BoxDecoration(
                         color: AppColors.background,
