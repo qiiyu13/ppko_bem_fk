@@ -282,165 +282,10 @@ class HomeTab extends StatelessWidget {
         : (screenWidth < 400 ? 20.0 : 22.0);
     final chipSize = iconSize + 12.0;
 
-    // Build the card content widget
-    final cardContent = Container(
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(
-          children: [
-            // Content - Layout for square card
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  // Spacer for chipped corner icon
-                  const SizedBox(height: 8),
-
-                  // Metric Name
-                  Text(
-                    metric.nameId,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  // Value + Unit (colored)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        metric.displayValue,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: metric.primaryColor,
-                          height: 1,
-                        ),
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        metric.unit,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: metric.primaryColor.withValues(alpha: 0.8),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const Spacer(),
-
-                  // Mini Bar Chart - centered
-                  Center(
-                    child: MiniBarChart(
-                      primaryColor: metric.primaryColor,
-                      barCount: 9,
-                    ),
-                  ),
-
-                  const SizedBox(height: 4),
-                ],
-              ),
-            ),
-
-            // Chipped corner icon in top-right
-            Positioned(
-              top: 0,
-              right: 0,
-              child: Container(
-                width: chipSize,
-                height: chipSize,
-                decoration: BoxDecoration(
-                  color: metric.primaryColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(20),
-                    topRight: Radius.circular(24),
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    metric.icon,
-                    color: metric.primaryColor,
-                    size: iconSize.toDouble(),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    return Hero(
-      tag: 'metric_${metric.type.name}',
-      transitionOnUserGestures: false,
-      createRectTween: (begin, end) {
-        return RectTween(begin: begin, end: end);
-      },
-      placeholderBuilder: (context, heroSize, child) {
-        return Opacity(opacity: 0.3, child: cardContent);
-      },
-      flightShuttleBuilder:
-          (
-            flightContext,
-            animation,
-            flightDirection,
-            fromHeroContext,
-            toHeroContext,
-          ) {
-            return AnimatedBuilder(
-              animation: animation,
-              builder: (context, child) {
-                return Material(
-                  color: AppColors.card,
-                  elevation: 24 * animation.value,
-                  borderRadius: BorderRadius.circular(24),
-                  child: cardContent,
-                );
-              },
-            );
-          },
-      child: GestureDetector(
-        onTap: () {
-          Navigator.of(context).push(
-            PageRouteBuilder(
-              transitionDuration: const Duration(milliseconds: 700),
-              reverseTransitionDuration: const Duration(milliseconds: 500),
-              opaque: true,
-              pageBuilder: (context, animation, secondaryAnimation) {
-                return MetricDetailScreen(
-                  metric: metric,
-                  transitionAnimation: animation,
-                );
-              },
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                    return child;
-                  },
-            ),
-          );
-        },
-        child: cardContent,
-      ),
+    return _MetricCardWrapper(
+      metric: metric,
+      iconSize: iconSize,
+      chipSize: chipSize,
     );
   }
 
@@ -553,5 +398,248 @@ class HomeTab extends StatelessWidget {
     } else {
       return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
     }
+  }
+}
+
+// Separate widget for animated metric card with pre-flight animation
+class _MetricCardWrapper extends StatefulWidget {
+  final HealthMetric metric;
+  final double iconSize;
+  final double chipSize;
+
+  const _MetricCardWrapper({
+    required this.metric,
+    required this.iconSize,
+    required this.chipSize,
+  });
+
+  @override
+  State<_MetricCardWrapper> createState() => _MetricCardWrapperState();
+}
+
+class _MetricCardWrapperState extends State<_MetricCardWrapper>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _preFlightController;
+  late Animation<double> _contentFadeAnimation;
+  late Animation<Color?> _backgroundColorAnimation;
+  bool _isNavigating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _preFlightController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+
+    _contentFadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _preFlightController, curve: Curves.easeOut),
+    );
+
+    _backgroundColorAnimation =
+        ColorTween(
+          begin: AppColors.card,
+          end: widget.metric.primaryColor,
+        ).animate(
+          CurvedAnimation(
+            parent: _preFlightController,
+            curve: Curves.easeInOut,
+          ),
+        );
+  }
+
+  @override
+  void dispose() {
+    _preFlightController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _onCardTap() async {
+    if (_isNavigating) return;
+    _isNavigating = true;
+
+    // Step 1: Fade content and change color (200ms)
+    await _preFlightController.forward();
+
+    if (!mounted) return;
+
+    // Step 2: Navigate with Hero animation
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 700),
+        reverseTransitionDuration: const Duration(milliseconds: 500),
+        opaque: true,
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return MetricDetailScreen(
+            metric: widget.metric,
+            transitionAnimation: animation,
+          );
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return child;
+        },
+      ),
+    );
+
+    // Reset after navigation completes
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (mounted) {
+      _preFlightController.reverse();
+      _isNavigating = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _preFlightController,
+      builder: (context, child) {
+        return Hero(
+          tag: 'metric_${widget.metric.type.name}',
+          transitionOnUserGestures: false,
+          createRectTween: (begin, end) {
+            return RectTween(begin: begin, end: end);
+          },
+          placeholderBuilder: (context, heroSize, child) {
+            return Opacity(
+              opacity: 0.3,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: widget.metric.primaryColor,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+            );
+          },
+          flightShuttleBuilder:
+              (
+                flightContext,
+                animation,
+                flightDirection,
+                fromHeroContext,
+                toHeroContext,
+              ) {
+                return AnimatedBuilder(
+                  animation: animation,
+                  builder: (context, child) {
+                    return Material(
+                      color: widget.metric.primaryColor,
+                      elevation: 0,
+                      borderRadius: BorderRadius.circular(24),
+                      child: Container(color: widget.metric.primaryColor),
+                    );
+                  },
+                );
+              },
+          child: GestureDetector(
+            onTap: _onCardTap,
+            child: Container(
+              decoration: BoxDecoration(
+                color: _backgroundColorAnimation.value,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Stack(
+                  children: [
+                    // Content - Layout for square card
+                    Opacity(
+                      opacity: _contentFadeAnimation.value,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            const SizedBox(height: 8),
+                            Text(
+                              widget.metric.nameId,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  widget.metric.displayValue,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: widget.metric.primaryColor,
+                                    height: 1,
+                                  ),
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  widget.metric.unit,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: widget.metric.primaryColor
+                                        .withValues(alpha: 0.8),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Spacer(),
+                            Center(
+                              child: MiniBarChart(
+                                primaryColor: widget.metric.primaryColor,
+                                barCount: 9,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Chipped corner icon
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Opacity(
+                        opacity: _contentFadeAnimation.value,
+                        child: Container(
+                          width: widget.chipSize,
+                          height: widget.chipSize,
+                          decoration: BoxDecoration(
+                            color: widget.metric.primaryColor.withValues(
+                              alpha: 0.12,
+                            ),
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(20),
+                              topRight: Radius.circular(24),
+                            ),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              widget.metric.icon,
+                              color: widget.metric.primaryColor,
+                              size: widget.iconSize,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }

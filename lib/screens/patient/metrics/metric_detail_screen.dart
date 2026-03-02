@@ -18,10 +18,12 @@ class MetricDetailScreen extends StatefulWidget {
 }
 
 class _MetricDetailScreenState extends State<MetricDetailScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _contentController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+    with TickerProviderStateMixin {
+  late AnimationController _headerController;
+  late AnimationController _chartController;
+  late Animation<double> _headerFadeAnimation;
+  late Animation<double> _chartFadeAnimation;
+  late Animation<Offset> _chartSlideAnimation;
   bool _isClosing = false;
   late List<MetricReading> _readings;
 
@@ -30,26 +32,40 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     super.initState();
     _readings = HealthMetricData.getMockHistoryForType(widget.metric.type);
 
-    _contentController = AnimationController(
+    // Header fades in first (200ms)
+    _headerController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 350),
+      duration: const Duration(milliseconds: 200),
     );
-    _fadeAnimation = CurvedAnimation(
-      parent: _contentController,
+    _headerFadeAnimation = CurvedAnimation(
+      parent: _headerController,
       curve: Curves.easeOutCubic,
     );
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _contentController,
-            curve: Curves.easeOutCubic,
-          ),
+
+    // Chart slides up after header (300ms)
+    _chartController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _chartFadeAnimation = CurvedAnimation(
+      parent: _chartController,
+      curve: Curves.easeOutCubic,
+    );
+    _chartSlideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
+          CurvedAnimation(parent: _chartController, curve: Curves.easeOutCubic),
         );
 
     // Use transition animation to drive content appearance
     if (widget.transitionAnimation != null) {
-      // Listen to Hero transition and trigger content at 60%
+      // Listen to Hero transition and trigger at 100% completion
       widget.transitionAnimation!.addListener(_onTransitionUpdate);
+    } else {
+      // Fallback: animate immediately if no transition animation
+      _headerController.forward();
+      Future.delayed(const Duration(milliseconds: 150), () {
+        if (mounted) _chartController.forward();
+      });
     }
   }
 
@@ -57,10 +73,11 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     if (!mounted) return;
 
     final value = widget.transitionAnimation!.value;
-    // Start content animation at 60% of Hero completion
-    if (value >= 0.6 &&
-        _contentController.status == AnimationStatus.dismissed) {
-      _contentController.forward();
+    // Start header animation at 100% of Hero completion
+    if (value >= 1.0 && _headerController.status == AnimationStatus.dismissed) {
+      _headerController.forward().then((_) {
+        if (mounted) _chartController.forward();
+      });
       widget.transitionAnimation!.removeListener(_onTransitionUpdate);
     }
   }
@@ -68,7 +85,8 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
   @override
   void dispose() {
     widget.transitionAnimation?.removeListener(_onTransitionUpdate);
-    _contentController.dispose();
+    _headerController.dispose();
+    _chartController.dispose();
     super.dispose();
   }
 
@@ -76,8 +94,9 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     if (_isClosing) return;
     setState(() => _isClosing = true);
 
-    // Fade out content first
-    await _contentController.reverse();
+    // Fade out chart first, then header
+    await _chartController.reverse();
+    await _headerController.reverse();
     if (mounted) {
       Navigator.of(context).pop();
     }
@@ -97,16 +116,23 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                 // Header with back button and metric info (part of hero)
                 _buildHeader(),
 
-                // Content that fades and slides in
+                // Header content fades in first
+                FadeTransition(
+                  opacity: _headerFadeAnimation,
+                  child: _buildHeaderContent(),
+                ),
+
+                // Chart section slides up after header
                 Expanded(
                   child: AnimatedBuilder(
-                    animation: _contentController,
+                    animation: _chartController,
                     builder: (context, child) {
-                      final slideOffset = (1 - _slideAnimation.value.dy) * 20;
+                      final slideOffset =
+                          (1 - _chartSlideAnimation.value.dy) * 30;
                       return Visibility(
-                        visible: _fadeAnimation.value > 0.01,
+                        visible: _chartFadeAnimation.value > 0.01,
                         child: Opacity(
-                          opacity: _fadeAnimation.value,
+                          opacity: _chartFadeAnimation.value,
                           child: Transform.translate(
                             offset: Offset(0, slideOffset),
                             child: child,
@@ -189,113 +215,117 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     return Container(
       color: widget.metric.primaryColor,
       padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              // Back button
-              GestureDetector(
-                onTap: _closeScreen,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.close, color: Colors.white, size: 24),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.metric.nameId,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.metric.name,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.8),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Status icon
-              Container(
-                padding: const EdgeInsets.all(12),
+      child: _buildHeaderContent(),
+    );
+  }
+
+  Widget _buildHeaderContent() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            // Back button
+            GestureDetector(
+              onTap: _closeScreen,
+              child: Container(
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(widget.metric.icon, color: Colors.white, size: 28),
+                child: const Icon(Icons.close, color: Colors.white, size: 24),
               ),
-            ],
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.metric.nameId,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.metric.name,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Status icon
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(widget.metric.icon, color: Colors.white, size: 28),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        // Value display
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              widget.metric.displayValue,
+              style: const TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              widget.metric.unit,
+              style: TextStyle(
+                fontSize: 20,
+                color: Colors.white.withValues(alpha: 0.8),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Status badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(20),
           ),
-          const SizedBox(height: 24),
-          // Value display
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                widget.metric.displayValue,
-                style: const TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+              Icon(
+                HealthMetricData.getStatusIcon(widget.metric.status),
+                color: Colors.white,
+                size: 16,
               ),
               const SizedBox(width: 8),
               Text(
-                widget.metric.unit,
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontWeight: FontWeight.w500,
+                HealthMetricData.getStatusLabel(widget.metric.status),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          // Status badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  HealthMetricData.getStatusIcon(widget.metric.status),
-                  color: Colors.white,
-                  size: 16,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  HealthMetricData.getStatusLabel(widget.metric.status),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
