@@ -102,14 +102,15 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                   child: AnimatedBuilder(
                     animation: _contentController,
                     builder: (context, child) {
-                      return Opacity(
-                        opacity: _fadeAnimation.value,
-                        child: Transform.translate(
-                          offset: Offset(
-                            0,
-                            20 * (1 - _slideAnimation.value.dy * 20),
+                      final slideOffset = (1 - _slideAnimation.value.dy) * 20;
+                      return Visibility(
+                        visible: _fadeAnimation.value > 0.01,
+                        child: Opacity(
+                          opacity: _fadeAnimation.value,
+                          child: Transform.translate(
+                            offset: Offset(0, slideOffset),
+                            child: child,
                           ),
-                          child: child,
                         ),
                       );
                     },
@@ -155,12 +156,20 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                               ],
                             ),
                           ),
-                          // Chart
+                          // Chart with proper constraints
                           Expanded(
-                            child: MetricChart(
-                              type: widget.metric.type,
-                              readings: _readings,
-                              primaryColor: widget.metric.primaryColor,
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                return SizedBox(
+                                  width: constraints.maxWidth,
+                                  height: constraints.maxHeight,
+                                  child: MetricChart(
+                                    type: widget.metric.type,
+                                    readings: _readings,
+                                    primaryColor: widget.metric.primaryColor,
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ],

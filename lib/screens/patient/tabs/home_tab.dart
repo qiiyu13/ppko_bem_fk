@@ -53,8 +53,6 @@ class MiniBarChart extends StatelessWidget {
   }
 }
 
-
-
 class HomeTab extends StatelessWidget {
   HomeTab({super.key});
 
@@ -284,136 +282,164 @@ class HomeTab extends StatelessWidget {
         : (screenWidth < 400 ? 20.0 : 22.0);
     final chipSize = iconSize + 12.0;
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 500),
-            reverseTransitionDuration: const Duration(milliseconds: 400),
-            pageBuilder: (context, animation, secondaryAnimation) {
-              return MetricDetailScreen(metric: metric);
-            },
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return child;
-            },
+    // Build the card content widget
+    final cardContent = Container(
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-        );
-      },
-      child: Hero(
-        tag: 'metric_${metric.type.name}',
-        createRectTween: (begin, end) {
-          return MaterialRectArcTween(begin: begin, end: end);
-        },
-        child: Material(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Stack(
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            // Content - Layout for square card
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.max,
                 children: [
-                  // Content - Layout for square card
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        // Spacer for chipped corner icon
-                        const SizedBox(height: 8),
+                  // Spacer for chipped corner icon
+                  const SizedBox(height: 8),
 
-                        // Metric Name
-                        Text(
-                          metric.nameId,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-
-                        const SizedBox(height: 6),
-
-                        // Value + Unit (colored)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(
-                              metric.displayValue,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: metric.primaryColor,
-                                height: 1,
-                              ),
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              metric.unit,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: metric.primaryColor.withValues(alpha: 0.8),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const Spacer(),
-
-                        // Mini Bar Chart - centered
-                        Center(
-                          child: MiniBarChart(
-                            primaryColor: metric.primaryColor,
-                            barCount: 9,
-                          ),
-                        ),
-
-                        const SizedBox(height: 4),
-                      ],
+                  // Metric Name
+                  Text(
+                    metric.nameId,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
                     ),
                   ),
 
-                  // Chipped corner icon in top-right
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Container(
-                      width: chipSize,
-                      height: chipSize,
-                      decoration: BoxDecoration(
-                        color: metric.primaryColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(20),
-                          topRight: Radius.circular(24),
-                        ),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          metric.icon,
+                  const SizedBox(height: 6),
+
+                  // Value + Unit (colored)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        metric.displayValue,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                           color: metric.primaryColor,
-                          size: iconSize.toDouble(),
+                          height: 1,
                         ),
                       ),
+                      const SizedBox(width: 3),
+                      Text(
+                        metric.unit,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: metric.primaryColor.withValues(alpha: 0.8),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const Spacer(),
+
+                  // Mini Bar Chart - centered
+                  Center(
+                    child: MiniBarChart(
+                      primaryColor: metric.primaryColor,
+                      barCount: 9,
                     ),
                   ),
+
+                  const SizedBox(height: 4),
                 ],
               ),
             ),
-          ),
+
+            // Chipped corner icon in top-right
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Container(
+                width: chipSize,
+                height: chipSize,
+                decoration: BoxDecoration(
+                  color: metric.primaryColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    metric.icon,
+                    color: metric.primaryColor,
+                    size: iconSize.toDouble(),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+
+    return Hero(
+      tag: 'metric_${metric.type.name}',
+      transitionOnUserGestures: false,
+      createRectTween: (begin, end) {
+        return RectTween(begin: begin, end: end);
+      },
+      placeholderBuilder: (context, heroSize, child) {
+        return Opacity(opacity: 0.3, child: cardContent);
+      },
+      flightShuttleBuilder:
+          (
+            flightContext,
+            animation,
+            flightDirection,
+            fromHeroContext,
+            toHeroContext,
+          ) {
+            return AnimatedBuilder(
+              animation: animation,
+              builder: (context, child) {
+                return Material(
+                  color: AppColors.card,
+                  elevation: 24 * animation.value,
+                  borderRadius: BorderRadius.circular(24),
+                  child: cardContent,
+                );
+              },
+            );
+          },
+      child: GestureDetector(
+        onTap: () {
+          Navigator.of(context).push(
+            PageRouteBuilder(
+              transitionDuration: const Duration(milliseconds: 700),
+              reverseTransitionDuration: const Duration(milliseconds: 500),
+              opaque: true,
+              pageBuilder: (context, animation, secondaryAnimation) {
+                return MetricDetailScreen(
+                  metric: metric,
+                  transitionAnimation: animation,
+                );
+              },
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                    return child;
+                  },
+            ),
+          );
+        },
+        child: cardContent,
       ),
     );
   }
@@ -528,5 +554,4 @@ class HomeTab extends StatelessWidget {
       return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
     }
   }
-
 }

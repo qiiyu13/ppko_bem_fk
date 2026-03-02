@@ -155,11 +155,14 @@ class _PatientMainScreenState extends State<PatientMainScreen>
                     CustomBottomNav.barHeight + bottomPadding;
                 return Transform.translate(
                   offset: Offset(0, totalSlideDistance * _animation.value),
-                  child: SafeArea(
-                    top: false,
-                    child: CustomBottomNav(
-                      currentIndex: _currentIndex,
-                      onTap: _onTabChanged,
+                  child: Material(
+                    elevation: 8,
+                    child: SafeArea(
+                      top: false,
+                      child: CustomBottomNav(
+                        currentIndex: _currentIndex,
+                        onTap: _onTabChanged,
+                      ),
                     ),
                   ),
                 );
