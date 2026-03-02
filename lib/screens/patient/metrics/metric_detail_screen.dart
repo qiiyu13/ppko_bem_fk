@@ -113,10 +113,18 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     if (_isClosing) return;
     setState(() => _isClosing = true);
 
-    // Exit sequence: chart out -> header out -> color to white -> pop
+    // Exit sequence with proper timing: chart out (300ms) -> header out (200ms) -> color to white (300ms) -> pop
+    // Total: ~800ms before pop, giving smooth transition back to grid
     await _chartController.reverse();
+    await Future.delayed(
+      const Duration(milliseconds: 50),
+    ); // Small gap for smoothness
     await _headerController.reverse();
+    await Future.delayed(
+      const Duration(milliseconds: 50),
+    ); // Small gap for smoothness
     await _colorController.reverse();
+
     if (mounted) {
       Navigator.of(context).pop();
     }
