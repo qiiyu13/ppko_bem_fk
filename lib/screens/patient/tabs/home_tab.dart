@@ -204,7 +204,7 @@ class HomeTab extends StatelessWidget {
                       ),
                     ),
 
-                  if (showAppointmentBanner) const SizedBox(height: 16),
+                  if (showAppointmentBanner) SizedBox(height: ResponsiveSize.spacingMedium),
 
                   // Metrics Grid Section
                   Container(
@@ -231,7 +231,7 @@ class HomeTab extends StatelessWidget {
                           }).toList(),
                         ),
 
-                        const SizedBox(height: 12),
+                        SizedBox(height: ResponsiveSize.spacingMedium),
 
                         // Action Button
                         _buildActionButton(
