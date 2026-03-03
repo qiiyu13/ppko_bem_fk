@@ -231,7 +231,7 @@ class HomeTab extends StatelessWidget {
                           }).toList(),
                         ),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
 
                         // Action Button
                         _buildActionButton(
