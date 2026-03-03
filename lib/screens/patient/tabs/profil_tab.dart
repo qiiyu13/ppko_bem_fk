@@ -112,8 +112,6 @@ class ProfilTab extends StatelessWidget {
                       ),
                       _buildInfoItem('Nomor Telepon', '081234567890'),
 
-                      const Spacer(),
-
                       SizedBox(height: ResponsiveSize.spacingMedium),
 
                       // Edit Button - Dark teal (like MASUK button)
@@ -148,8 +146,6 @@ class ProfilTab extends StatelessWidget {
                           ),
                         ),
                       ),
-                      // Bottom spacer for nav bar clearance
-                      const SizedBox(height: 100),
                     ],
                   ),
                 ),

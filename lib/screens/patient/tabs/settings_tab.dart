@@ -70,8 +70,6 @@ class SettingsTab extends StatelessWidget {
                         onTap: () {},
                       ),
 
-                      const Spacer(),
-
                       SizedBox(height: ResponsiveSize.spacingMedium),
 
                       // Logout Button - Dark teal
@@ -165,8 +163,6 @@ class SettingsTab extends StatelessWidget {
                           ),
                         ),
                       ),
-                      // Bottom spacer for nav bar clearance
-                      const SizedBox(height: 100),
                     ],
                   ),
                 ),
