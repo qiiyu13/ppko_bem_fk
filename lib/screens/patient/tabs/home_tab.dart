@@ -428,7 +428,7 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
     super.initState();
     _preFlightController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 100),
+      duration: const Duration(milliseconds: 300),
     );
 
     _contentFadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
@@ -472,9 +472,9 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
 
     if (!mounted) return;
 
-    // Step 3: Wait for card to fully return, then fade content back in (100ms)
-    // Delay: chart+header(200) + color(100) + hero(500) + wait(200) = ~1000ms
-    await Future.delayed(const Duration(milliseconds: 200));
+    // Step 3: Wait for card to fully return, then fade content back in (300ms)
+    // Wait allows Hero shrink (500ms parallel with fade+color 300ms) + settlement time
+    await Future.delayed(const Duration(milliseconds: 400));
     if (mounted) {
       await _preFlightController.reverse();
       _isNavigating = false;

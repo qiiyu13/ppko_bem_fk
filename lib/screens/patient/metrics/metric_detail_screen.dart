@@ -57,10 +57,10 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
       curve: Curves.easeOutCubic,
     );
 
-    // Chart slides up (200ms)
+    // Chart slides up (300ms)
     _chartController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 300),
     );
     _chartFadeAnimation = CurvedAnimation(
       parent: _chartController,
@@ -113,13 +113,13 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     if (_isClosing) return;
     setState(() => _isClosing = true);
 
-    // Exit sequence: chart+header out together (200ms) -> color to white (100ms) -> pop
-    // Total: ~800ms before pop
+    // Exit sequence: chart + header + color all together (300ms) -> wait (400ms) -> pop
+    // Total: ~700ms before pop
     await Future.wait([
       _chartController.reverse(),
       _headerController.reverse(),
+      _colorController.reverse(),
     ]);
-    await _colorController.reverse();
 
     if (mounted) {
       Navigator.of(context).pop();
