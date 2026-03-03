@@ -34,10 +34,10 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     super.initState();
     _readings = HealthMetricData.getMockHistoryForType(widget.metric.type);
 
-    // Background color: white -> metric color (100ms)
+    // Background color: white -> metric color (300ms)
     _colorController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 100),
+      duration: const Duration(milliseconds: 300),
     );
     _backgroundColorAnimation =
         ColorTween(
@@ -47,10 +47,10 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
           CurvedAnimation(parent: _colorController, curve: Curves.easeInOut),
         );
 
-    // Header fades in (100ms)
+    // Header fades in (300ms)
     _headerController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 100),
+      duration: const Duration(milliseconds: 300),
     );
     _headerFadeAnimation = CurvedAnimation(
       parent: _headerController,
@@ -75,12 +75,10 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     if (widget.transitionAnimation != null) {
       widget.transitionAnimation!.addListener(_onTransitionUpdate);
     } else {
-      // Fallback: animate immediately
+      // Fallback: animate immediately (all parallel)
       _colorController.forward();
       _headerController.forward();
-      Future.delayed(const Duration(milliseconds: 50), () {
-        if (mounted) _chartController.forward();
-      });
+      _chartController.forward();
     }
   }
 
@@ -89,13 +87,10 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
 
     final value = widget.transitionAnimation!.value;
     if (value >= 1.0 && _colorController.status == AnimationStatus.dismissed) {
-      // Hero complete: start color -> header -> chart sequence
-      _colorController.forward().then((_) {
-        if (!mounted) return;
-        _headerController.forward().then((_) {
-          if (mounted) _chartController.forward();
-        });
-      });
+      // Hero complete: start color + header + chart all together (300ms parallel)
+      _colorController.forward();
+      _headerController.forward();
+      _chartController.forward();
       widget.transitionAnimation!.removeListener(_onTransitionUpdate);
     }
   }
