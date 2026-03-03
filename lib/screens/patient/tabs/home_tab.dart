@@ -204,8 +204,6 @@ class HomeTab extends StatelessWidget {
                       ),
                     ),
 
-                  if (showAppointmentBanner) const SizedBox(height: 16),
-
                   // Metrics Grid Section
                   Container(
                     margin: EdgeInsets.symmetric(
@@ -230,8 +228,6 @@ class HomeTab extends StatelessWidget {
                             );
                           }).toList(),
                         ),
-
-                        const SizedBox(height: 8),
 
                         // Action Button
                         _buildActionButton(
