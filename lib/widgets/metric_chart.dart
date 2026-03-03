@@ -119,7 +119,7 @@ class _MetricChartState extends State<MetricChart> {
       minY: minY,
       maxY: maxY,
       lineBarsData: [
-        // Reference zones (background)
+        // Reference zones (background) - clipped to chart bounds
         ..._buildReferenceZones(minY, maxY),
         // Main data line
         LineChartBarData(
@@ -200,64 +200,97 @@ class _MetricChartState extends State<MetricChart> {
     }).toList();
   }
 
-  List<LineChartBarData> _buildReferenceZones(double minY, double maxY) {
+  List<LineChartBarData> _buildReferenceZones(double chartMinY, double chartMaxY) {
     final zones = <LineChartBarData>[];
+
+    // Helper to clip zone to chart bounds
+    LineChartBarData? _createClippedZone(double zoneMin, double zoneMax, Color color) {
+      // Clip zone to chart bounds
+      final clippedMin = zoneMin.clamp(chartMinY, chartMaxY);
+      final clippedMax = zoneMax.clamp(chartMinY, chartMaxY);
+      
+      // Skip if zone is completely outside chart bounds
+      if (clippedMin >= clippedMax) return null;
+      
+      return _createZoneLine(clippedMax, clippedMin, color);
+    }
 
     switch (widget.type) {
       case MetricType.bloodPressure:
-        // Normal zone: 90-120 (systolic)
-        zones.add(
-          _createZoneLine(120, 90, AppColors.success.withValues(alpha: 0.15)),
+        // Normal zone: 90-120 (systolic) - clipped to chart bounds
+        final normalZone = _createClippedZone(
+          90, 120, AppColors.success.withValues(alpha: 0.15),
         );
-        // Warning zone: 120-140
-        zones.add(
-          _createZoneLine(140, 120, AppColors.warning.withValues(alpha: 0.15)),
+        if (normalZone != null) zones.add(normalZone);
+        
+        // Warning zone: 120-140 - clipped to chart bounds
+        final warningZone = _createClippedZone(
+          120, 140, AppColors.warning.withValues(alpha: 0.15),
         );
-        // Critical zone: 140+
-        zones.add(
-          _createZoneLine(maxY, 140, AppColors.error.withValues(alpha: 0.15)),
+        if (warningZone != null) zones.add(warningZone);
+        
+        // Critical zone: 140+ - clipped to chart bounds
+        final criticalZone = _createClippedZone(
+          140, chartMaxY, AppColors.error.withValues(alpha: 0.15),
         );
+        if (criticalZone != null) zones.add(criticalZone);
         break;
       case MetricType.cholesterol:
-        // Normal: <200
-        zones.add(
-          _createZoneLine(200, minY, AppColors.success.withValues(alpha: 0.15)),
+        // Normal: <200 - clipped to chart bounds
+        final normalZone = _createClippedZone(
+          chartMinY, 200, AppColors.success.withValues(alpha: 0.15),
         );
-        // Warning: 200-240
-        zones.add(
-          _createZoneLine(240, 200, AppColors.warning.withValues(alpha: 0.15)),
+        if (normalZone != null) zones.add(normalZone);
+        
+        // Warning: 200-240 - clipped to chart bounds
+        final warningZone = _createClippedZone(
+          200, 240, AppColors.warning.withValues(alpha: 0.15),
         );
-        // Critical: >240
-        zones.add(
-          _createZoneLine(maxY, 240, AppColors.error.withValues(alpha: 0.15)),
+        if (warningZone != null) zones.add(warningZone);
+        
+        // Critical: >240 - clipped to chart bounds
+        final criticalZone = _createClippedZone(
+          240, chartMaxY, AppColors.error.withValues(alpha: 0.15),
         );
+        if (criticalZone != null) zones.add(criticalZone);
         break;
       case MetricType.bloodSugar:
-        // Low: <70
-        zones.add(
-          _createZoneLine(70, minY, AppColors.error.withValues(alpha: 0.15)),
+        // Low: <70 - clipped to chart bounds
+        final lowZone = _createClippedZone(
+          chartMinY, 70, AppColors.error.withValues(alpha: 0.15),
         );
-        // Normal: 70-100
-        zones.add(
-          _createZoneLine(100, 70, AppColors.success.withValues(alpha: 0.15)),
+        if (lowZone != null) zones.add(lowZone);
+        
+        // Normal: 70-100 - clipped to chart bounds
+        final normalZone = _createClippedZone(
+          70, 100, AppColors.success.withValues(alpha: 0.15),
         );
-        // Warning: 100-126
-        zones.add(
-          _createZoneLine(126, 100, AppColors.warning.withValues(alpha: 0.15)),
+        if (normalZone != null) zones.add(normalZone);
+        
+        // Warning: 100-126 - clipped to chart bounds
+        final warningZone = _createClippedZone(
+          100, 126, AppColors.warning.withValues(alpha: 0.15),
         );
-        // Critical: >126
-        zones.add(
-          _createZoneLine(maxY, 126, AppColors.error.withValues(alpha: 0.15)),
+        if (warningZone != null) zones.add(warningZone);
+        
+        // Critical: >126 - clipped to chart bounds
+        final criticalZone = _createClippedZone(
+          126, chartMaxY, AppColors.error.withValues(alpha: 0.15),
         );
+        if (criticalZone != null) zones.add(criticalZone);
         break;
       case MetricType.uricAcid:
-        // Male: 3.5-7.2 (using wider range for chart)
-        zones.add(
-          _createZoneLine(7.2, 3.5, AppColors.success.withValues(alpha: 0.15)),
+        // Male: 3.5-7.2 - clipped to chart bounds
+        final normalZone = _createClippedZone(
+          3.5, 7.2, AppColors.success.withValues(alpha: 0.15),
         );
-        zones.add(
-          _createZoneLine(maxY, 7.2, AppColors.warning.withValues(alpha: 0.15)),
+        if (normalZone != null) zones.add(normalZone);
+        
+        // Above normal: >7.2 - clipped to chart bounds
+        final warningZone = _createClippedZone(
+          7.2, chartMaxY, AppColors.warning.withValues(alpha: 0.15),
         );
+        if (warningZone != null) zones.add(warningZone);
         break;
     }
 
