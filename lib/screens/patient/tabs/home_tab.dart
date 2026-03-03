@@ -231,20 +231,24 @@ class HomeTab extends StatelessWidget {
                           }).toList(),
                         ),
 
-                        // Action Button
-                        _buildActionButton(
-                          icon: Icons.description_outlined,
-                          title: 'Lihat Laporan Lengkap',
-                          subtitle: 'Riwayat dan detail pemeriksaan',
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const LaporanSayaScreen(),
-                              ),
-                            );
-                          },
-                          screenWidth: screenWidth,
+                        // Action Button with negative margin to compensate for grid spacing
+                        Transform.translate(
+                          offset: const Offset(0, -8),
+                          child: _buildActionButton(
+                            icon: Icons.description_outlined,
+                            title: 'Lihat Laporan Lengkap',
+                            subtitle: 'Riwayat dan detail pemeriksaan',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const LaporanSayaScreen(),
+                                ),
+                              );
+                            },
+                            screenWidth: screenWidth,
+                          ),
                         ),
 
                         // Bottom spacer for nav bar clearance
