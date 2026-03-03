@@ -154,7 +154,6 @@ class HomeTab extends StatelessWidget {
                         horizontal: math.max(ResponsiveSize.paddingMedium, 16),
                       ),
                       child: Container(
-                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: AppColors.textOnPrimary,
                           borderRadius: BorderRadius.circular(16),
