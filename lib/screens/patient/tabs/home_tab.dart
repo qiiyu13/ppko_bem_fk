@@ -232,9 +232,7 @@ class HomeTab extends StatelessWidget {
                           }).toList(),
                         ),
 
-                        SizedBox(
-                          height: math.max(ResponsiveSize.spacingXLarge, 16.0),
-                        ),
+                        const SizedBox(height: 16),
 
                         // Action Button
                         _buildActionButton(
