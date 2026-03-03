@@ -159,6 +159,7 @@ class _PatientMainScreenState extends State<PatientMainScreen>
                     elevation: 8,
                     child: SafeArea(
                       top: false,
+                      bottom: false,
                       child: CustomBottomNav(
                         currentIndex: _currentIndex,
                         onTap: _onTabChanged,
