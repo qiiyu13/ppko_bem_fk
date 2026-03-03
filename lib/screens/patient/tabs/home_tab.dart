@@ -428,7 +428,7 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
     super.initState();
     _preFlightController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 100),
     );
 
     _contentFadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
@@ -446,7 +446,7 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
     if (_isNavigating) return;
     _isNavigating = true;
 
-    // Step 1: Fade content out (400ms - slower, smoother)
+    // Step 1: Fade content out (100ms - quick)
     await _preFlightController.forward();
 
     if (!mounted) return;
@@ -455,7 +455,7 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
     // Wait for the result (when user closes detail screen)
     await Navigator.of(context).push(
       PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 700),
+        transitionDuration: const Duration(milliseconds: 500),
         reverseTransitionDuration: const Duration(milliseconds: 500),
         opaque: true,
         pageBuilder: (context, animation, secondaryAnimation) {
@@ -472,10 +472,9 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
 
     if (!mounted) return;
 
-    // Step 3: Wait for card to fully return, then fade content back in (400ms)
-    // Delay accounts for: chart(300) + header(200) + color(300) + hero(500) = ~1300ms
-    // We wait 1200ms to ensure smooth completion
-    await Future.delayed(const Duration(milliseconds: 1200));
+    // Step 3: Wait for card to fully return, then fade content back in (100ms)
+    // Delay: chart+header(200) + color(100) + hero(500) + wait(200) = ~1000ms
+    await Future.delayed(const Duration(milliseconds: 200));
     if (mounted) {
       await _preFlightController.reverse();
       _isNavigating = false;

@@ -34,10 +34,10 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     super.initState();
     _readings = HealthMetricData.getMockHistoryForType(widget.metric.type);
 
-    // Background color: white -> metric color (300ms)
+    // Background color: white -> metric color (100ms)
     _colorController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 100),
     );
     _backgroundColorAnimation =
         ColorTween(
@@ -47,20 +47,20 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
           CurvedAnimation(parent: _colorController, curve: Curves.easeInOut),
         );
 
-    // Header fades in (200ms)
+    // Header fades in (100ms)
     _headerController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 100),
     );
     _headerFadeAnimation = CurvedAnimation(
       parent: _headerController,
       curve: Curves.easeOutCubic,
     );
 
-    // Chart slides up (300ms)
+    // Chart slides up (200ms)
     _chartController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 200),
     );
     _chartFadeAnimation = CurvedAnimation(
       parent: _chartController,
@@ -78,7 +78,7 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
       // Fallback: animate immediately
       _colorController.forward();
       _headerController.forward();
-      Future.delayed(const Duration(milliseconds: 150), () {
+      Future.delayed(const Duration(milliseconds: 50), () {
         if (mounted) _chartController.forward();
       });
     }
@@ -113,16 +113,12 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     if (_isClosing) return;
     setState(() => _isClosing = true);
 
-    // Exit sequence with proper timing: chart out (300ms) -> header out (200ms) -> color to white (300ms) -> pop
-    // Total: ~800ms before pop, giving smooth transition back to grid
-    await _chartController.reverse();
-    await Future.delayed(
-      const Duration(milliseconds: 50),
-    ); // Small gap for smoothness
-    await _headerController.reverse();
-    await Future.delayed(
-      const Duration(milliseconds: 50),
-    ); // Small gap for smoothness
+    // Exit sequence: chart+header out together (200ms) -> color to white (100ms) -> pop
+    // Total: ~800ms before pop
+    await Future.wait([
+      _chartController.reverse(),
+      _headerController.reverse(),
+    ]);
     await _colorController.reverse();
 
     if (mounted) {
