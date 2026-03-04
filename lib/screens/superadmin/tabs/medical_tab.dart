@@ -8,9 +8,6 @@ import '../screens/tambah_pasien_screen.dart';
 class MedicalTab extends StatelessWidget {
   const MedicalTab({super.key});
 
-  static const Color blueAccent = Color(0xFF2196F3);
-  static const Color greenAccent = Color(0xFF4CAF50);
-
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveSize();
@@ -72,7 +69,7 @@ class MedicalTab extends StatelessWidget {
                 title: 'Tambah Pasien Baru',
                 subtitle:
                     'Daftarkan pasien baru dan langsung tambahkan data screening',
-                color: blueAccent,
+                color: AppColors.primary,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -90,7 +87,7 @@ class MedicalTab extends StatelessWidget {
                 icon: Icons.calendar_today_outlined,
                 title: 'Kelola Jadwal',
                 subtitle: 'Atur jadwal pemeriksaan dan screening massal',
-                color: greenAccent,
+                color: AppColors.primary,
                 onTap: () {
                   Navigator.push(
                     context,

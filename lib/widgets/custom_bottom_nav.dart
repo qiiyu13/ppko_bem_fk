@@ -91,10 +91,10 @@ class CustomBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // Calculate clamped notch width: 12% of screen, min 40px, max 70px
-    final double notchWidth = (screenWidth * 0.12).clamp(40.0, 70.0);
-    // Deeper curve: 130% of notch width for more pronounced bowl
-    final double notchDepth = notchWidth * 1.3;
+    // Calculate clamped notch width: 16% of screen, min 50px, max 80px
+    final double notchWidth = (screenWidth * 0.16).clamp(50.0, 80.0);
+    // Shallow curve: 135% of notch width for gentle U-shape
+    final double notchDepth = notchWidth * 1.35;
     // Spacer matches the notch width
     final double notchSpacerWidth = notchWidth * 2;
 
@@ -119,7 +119,13 @@ class CustomBottomNav extends StatelessWidget {
             ),
             child: Container(
               height: barHeight,
-              color: AppColors.background,
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
@@ -234,8 +240,6 @@ class CenterActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final double iconSize = size * 0.55;
     final bool isSendMode = animationValue > 0.5;
-    // Gradually fade out glow: full at heart mode (0), none at send mode (1)
-    final double shadowAlpha = (1 - animationValue) * 0.6;
 
     return GestureDetector(
       onTap: onTap,
@@ -247,10 +251,10 @@ class CenterActionButton extends StatelessWidget {
           color: AppColors.primary,
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: shadowAlpha),
-              blurRadius: 20,
-              spreadRadius: 4,
-              offset: const Offset(0, 6),
+              color: AppColors.primary.withAlpha(80),
+              blurRadius: 16,
+              spreadRadius: 2,
+              offset: const Offset(0, 4),
             ),
           ],
         ),

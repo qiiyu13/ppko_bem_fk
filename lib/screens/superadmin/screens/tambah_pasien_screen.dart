@@ -10,7 +10,6 @@ class TambahPasienScreen extends StatefulWidget {
 }
 
 class _TambahPasienScreenState extends State<TambahPasienScreen> {
-  static const Color blueAccent = Color(0xFF2196F3);
   static const Color pinkAccent = Color(0xFFE91E63);
 
   int _currentStep = 1;
@@ -121,7 +120,7 @@ class _TambahPasienScreenState extends State<TambahPasienScreen> {
             hint: 'Nama sesuai KTP',
             controller: _nameController,
             suffixIcon: IconButton(
-              icon: Icon(Icons.mic, color: blueAccent),
+              icon: Icon(Icons.mic, color: AppColors.primary),
               onPressed: () {
                 // TODO: Voice input
               },
@@ -156,7 +155,11 @@ class _TambahPasienScreenState extends State<TambahPasienScreen> {
           Row(
             children: [
               Expanded(
-                child: _buildGenderCard('Laki-laki', Icons.male, blueAccent),
+                child: _buildGenderCard(
+                  'Laki-laki',
+                  Icons.male,
+                  AppColors.primary,
+                ),
               ),
               SizedBox(width: ResponsiveSize.paddingMedium),
               Expanded(
@@ -176,7 +179,7 @@ class _TambahPasienScreenState extends State<TambahPasienScreen> {
                 });
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: blueAccent,
+                backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.textOnPrimary,
                 padding: EdgeInsets.symmetric(
                   vertical: ResponsiveSize.paddingMedium,
@@ -441,7 +444,7 @@ class _TambahPasienScreenState extends State<TambahPasienScreen> {
           child: Container(
             height: 4,
             decoration: BoxDecoration(
-              color: _currentStep >= 1 ? blueAccent : AppColors.surface,
+              color: _currentStep >= 1 ? AppColors.primary : AppColors.surface,
               borderRadius: BorderRadius.circular(2),
             ),
           ),

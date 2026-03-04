@@ -112,10 +112,18 @@ class _PatientMainScreenState extends State<PatientMainScreen>
     final screenSize = MediaQuery.of(context).size;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    // Notch center position (center of screen, at top edge of nav bar)
+    // Calculate notch dimensions (matching CustomBottomNav logic)
+    final double notchWidth = (screenSize.width * 0.16).clamp(50.0, 80.0);
+    final double notchDepth = notchWidth * 1.35;
+
+    // Notch center position - button sits higher, only ~35% in the notch
+    // Creates the floating effect seen in the reference design
+    final navbarTop =
+        screenSize.height - bottomPadding - CustomBottomNav.barHeight;
     final notchCenter = Offset(
       screenSize.width / 2,
-      screenSize.height - bottomPadding - CustomBottomNav.barHeight,
+      navbarTop +
+          (notchDepth * 0.65), // Higher position, less embedded in notch
     );
 
     return Scaffold(
@@ -157,6 +165,7 @@ class _PatientMainScreenState extends State<PatientMainScreen>
                   offset: Offset(0, totalSlideDistance * _animation.value),
                   child: Material(
                     elevation: 8,
+                    borderRadius: BorderRadius.circular(24),
                     child: SafeArea(
                       top: false,
                       bottom: false,
