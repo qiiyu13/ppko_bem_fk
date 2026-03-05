@@ -1,175 +1,165 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
-import '../../../utils/responsive_size.dart';
 import '../../../screens/welcome_screen.dart';
-import 'dart:ui';
 
 class SettingsTab extends StatelessWidget {
   const SettingsTab({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveSize();
-    responsive.init(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = screenWidth * 0.04;
+    final spacing = screenWidth * 0.03;
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
-        surfaceTintColor: Colors.transparent,
+        centerTitle: true,
         title: const Text(
-          'Setelan',
+          'Pengaturan',
           style: TextStyle(
             color: AppColors.primary,
             fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
         ),
-        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Padding(
-                padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                child: IntrinsicHeight(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: ResponsiveSize.spacingXLarge),
+      body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: EdgeInsets.all(padding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: spacing),
 
-                      // Settings Items - White cards
-                      _buildSettingsItem(
-                        icon: Icons.notifications_outlined,
-                        title: 'Notifikasi',
-                        subtitle: 'Atur notifikasi pengingat',
-                        onTap: () {},
-                      ),
+              // Settings Items - White cards
+              _buildSettingsItem(
+                icon: Icons.notifications_outlined,
+                title: 'Notifikasi',
+                subtitle: 'Atur notifikasi pengingat',
+                onTap: () {},
+                padding: padding,
+                spacing: spacing,
+              ),
 
-                      _buildSettingsItem(
-                        icon: Icons.language_outlined,
-                        title: 'Bahasa',
-                        subtitle: 'Bahasa Indonesia',
-                        onTap: () {},
-                      ),
+              _buildSettingsItem(
+                icon: Icons.language_outlined,
+                title: 'Bahasa',
+                subtitle: 'Bahasa Indonesia',
+                onTap: () {},
+                padding: padding,
+                spacing: spacing,
+              ),
 
-                      _buildSettingsItem(
-                        icon: Icons.help_outline,
-                        title: 'Bantuan',
-                        subtitle: 'Pusat bantuan dan FAQ',
-                        onTap: () {},
-                      ),
+              _buildSettingsItem(
+                icon: Icons.help_outline,
+                title: 'Bantuan',
+                subtitle: 'Pusat bantuan dan FAQ',
+                onTap: () {},
+                padding: padding,
+                spacing: spacing,
+              ),
 
-                      _buildSettingsItem(
-                        icon: Icons.info_outline,
-                        title: 'Tentang Aplikasi',
-                        subtitle: 'Versi 1.0.0',
-                        onTap: () {},
-                      ),
+              _buildSettingsItem(
+                icon: Icons.info_outline,
+                title: 'Tentang Aplikasi',
+                subtitle: 'Versi 1.0.0',
+                onTap: () {},
+                padding: padding,
+                spacing: spacing,
+              ),
 
-                      SizedBox(height: ResponsiveSize.spacingMedium),
+              SizedBox(height: spacing),
 
-                      // Logout Button - Dark teal
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                backgroundColor: AppColors.background,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    ResponsiveSize.cardBorderRadius,
-                                  ),
-                                ),
-                                title: Text(
-                                  'Keluar',
-                                  style: TextStyle(
-                                    fontSize: ResponsiveSize.fontXLarge,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                content: Text(
-                                  'Apakah Anda yakin ingin keluar?',
-                                  style: TextStyle(
-                                    fontSize: ResponsiveSize.fontMedium,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: Text(
-                                      'Batal',
-                                      style: TextStyle(
-                                        fontSize: ResponsiveSize.fontMedium,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      Navigator.of(context).pushAndRemoveUntil(
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const WelcomeScreen(),
-                                        ),
-                                        (route) => false,
-                                      );
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
-                                    ),
-                                    child: Text(
-                                      'Keluar',
-                                      style: TextStyle(
-                                        fontSize: ResponsiveSize.fontMedium,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                          icon: Icon(
-                            Icons.logout,
-                            size: ResponsiveSize.iconSmall,
-                            color: AppColors.background,
-                          ),
-                          label: Text(
-                            'Keluar',
-                            style: TextStyle(
-                              fontSize: ResponsiveSize.fontMedium,
-                              color: AppColors.background,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.background,
-                            padding: EdgeInsets.symmetric(
-                              vertical: ResponsiveSize.paddingSmall * 1.2,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                ResponsiveSize.buttonBorderRadius,
-                              ),
-                            ),
-                            elevation: 0,
+              // Logout Button - Dark teal
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: AppColors.background,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        title: Text(
+                          'Keluar',
+                          style: TextStyle(
+                            fontSize: 20,
+                            color: AppColors.textPrimary,
                           ),
                         ),
+                        content: Text(
+                          'Apakah Anda yakin ingin keluar?',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(
+                              'Batal',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                  builder: (context) => const WelcomeScreen(),
+                                ),
+                                (route) => false,
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                            ),
+                            child: Text(
+                              'Keluar',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    );
+                  },
+                  icon: Icon(
+                    Icons.logout,
+                    size: 20,
+                    color: AppColors.background,
+                  ),
+                  label: Text(
+                    'Keluar',
+                    style: TextStyle(fontSize: 16, color: AppColors.background),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.background,
+                    padding: EdgeInsets.symmetric(vertical: padding * 0.75),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -179,12 +169,14 @@ class SettingsTab extends StatelessWidget {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    required double padding,
+    required double spacing,
   }) {
     return Container(
-      margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
+      margin: EdgeInsets.only(bottom: spacing),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(ResponsiveSize.buttonBorderRadius),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.surface, width: 1),
         boxShadow: [
           BoxShadow(
@@ -196,37 +188,28 @@ class SettingsTab extends StatelessWidget {
       ),
       child: ListTile(
         leading: Container(
-          padding: EdgeInsets.all(ResponsiveSize.paddingSmall * 0.6),
+          padding: EdgeInsets.all(padding * 0.5),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(
-              ResponsiveSize.buttonBorderRadius * 0.5,
-            ),
+            borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            color: AppColors.primary,
-            size: ResponsiveSize.iconSmall * 0.9,
-          ),
+          child: Icon(icon, color: AppColors.primary, size: 20),
         ),
         title: Text(
           title,
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            fontSize: ResponsiveSize.fontMedium,
+            fontSize: 14,
             color: AppColors.textPrimary,
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(
-            fontSize: ResponsiveSize.fontSmall,
-            color: AppColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
         trailing: Icon(
           Icons.arrow_forward_ios,
-          size: ResponsiveSize.iconSmall * 0.5,
+          size: 14,
           color: AppColors.textSecondary,
         ),
         onTap: onTap,

@@ -5,6 +5,9 @@ import '../../../utils/responsive_size.dart';
 import '../../../screens/patient/laporan_saya_screen.dart';
 import '../../../screens/patient/metrics/metric_detail_screen.dart';
 import '../../../models/health_metric.dart';
+import '../../../models/family_profile.dart';
+import '../../../services/profile_service.dart';
+import '../../../widgets/profile_selector.dart';
 import 'dart:math' as math;
 
 // Bar Chart Widget
@@ -115,35 +118,50 @@ class HomeTab extends StatelessWidget {
                 children: [
                   SizedBox(height: MediaQuery.of(context).padding.top + 16),
 
-                  // Greeting Section
+                  // Greeting Section with Profile Selector
                   Container(
-                    margin: EdgeInsets.symmetric(
-                      horizontal: math.max(ResponsiveSize.paddingMedium, 16),
+                  margin: EdgeInsets.symmetric(
+                  horizontal: math.max(ResponsiveSize.paddingMedium, 16),
+                  ),
+                  child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                  Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                  Text(
+                    _getGreeting(),
+                      textAlign: TextAlign.left,
+                        style: TextStyle(
+                          fontSize: math.min(ResponsiveSize.fontMedium, 16),
+                          color: AppColors.textSecondary,
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _getGreeting(),
-                          textAlign: TextAlign.left,
-                          style: TextStyle(
-                            fontSize: math.min(ResponsiveSize.fontMedium, 16),
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '$userName!',
-                          textAlign: TextAlign.left,
-                          style: TextStyle(
-                            fontSize: math.min(ResponsiveSize.fontXXLarge, 28),
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
+                    const SizedBox(height: 4),
+                  StreamBuilder<FamilyProfile?>(
+                    stream: ProfileService.instance.activeProfileStream,
+                    initialData: ProfileService.instance.activeProfile,
+                      builder: (context, snapshot) {
+                          final profile = snapshot.data;
+                            final displayName = profile?.name.split(' ').first ?? userName;
+                              return Text(
+                                  '$displayName!',
+                              textAlign: TextAlign.left,
+                              style: TextStyle(
+                                fontSize: math.min(ResponsiveSize.fontXXLarge, 28),
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
-                  ),
+                    const ProfileSelector(),
+                  ],
+                ),
+              ),
 
                   const SizedBox(height: 16),
 
@@ -204,7 +222,8 @@ class HomeTab extends StatelessWidget {
                       ),
                     ),
 
-                  if (showAppointmentBanner) SizedBox(height: ResponsiveSize.spacingMedium),
+                  if (showAppointmentBanner)
+                    SizedBox(height: ResponsiveSize.spacingMedium),
 
                   // Metrics Grid Section
                   Container(
@@ -215,23 +234,39 @@ class HomeTab extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // 2x2 Metrics Grid - Fixed 2 columns with square cards
-                        GridView.count(
-                          crossAxisCount: 2,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 1.0, // Perfect square 1:1
-                          children: metrics.map((metric) {
-                            return _buildMetricCard(
-                              context: context,
-                              metric: metric,
-                              screenWidth: screenWidth,
+                        // Calculate exact height: 2 rows of cards + 1 spacing
+                        // Card width = (availableWidth - crossAxisSpacing) / 2
+                        // Since aspect ratio is 1:1, card height = card width
+                        // Grid height = (cardHeight * 2) + mainAxisSpacing
+                        LayoutBuilder(
+                          builder: (context, gridConstraints) {
+                            final gridWidth = gridConstraints.maxWidth;
+                            final cardWidth = (gridWidth - 16) / 2;
+                            final cardHeight = cardWidth; // 1:1 aspect ratio
+                            final gridHeight = (cardHeight * 2) + 16;
+                            
+                            return Container(
+                              height: gridHeight,
+                              child: GridView.count(
+                                crossAxisCount: 2,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: 1.0, // Perfect square 1:1
+                                children: metrics.map((metric) {
+                                  return _buildMetricCard(
+                                    context: context,
+                                    metric: metric,
+                                    screenWidth: screenWidth,
+                                  );
+                                }).toList(),
+                              ),
                             );
-                          }).toList(),
+                          },
                         ),
 
-                        SizedBox(height: ResponsiveSize.spacingMedium),
+                        const SizedBox(height: 10),
 
                         // Action Button
                         _buildActionButton(
@@ -242,8 +277,7 @@ class HomeTab extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    const LaporanSayaScreen(),
+                                builder: (context) => const LaporanSayaScreen(),
                               ),
                             );
                           },
@@ -311,13 +345,13 @@ class HomeTab extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.all(math.max(ResponsiveSize.paddingMedium, 14)),
         decoration: BoxDecoration(
-          color: AppColors.primary,
+          color: AppColors.card,
           borderRadius: BorderRadius.circular(
             math.max(ResponsiveSize.cardBorderRadius, 16),
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.25),
+              color: AppColors.primary.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -330,10 +364,10 @@ class HomeTab extends StatelessWidget {
                 math.max(ResponsiveSize.paddingSmall + 4, 10),
               ),
               decoration: BoxDecoration(
-                color: AppColors.textOnPrimary.withValues(alpha: 0.2),
+                color: AppColors.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(icon, color: AppColors.textOnPrimary, size: iconSize),
+              child: Icon(icon, color: AppColors.primary, size: iconSize),
             ),
             SizedBox(width: math.max(ResponsiveSize.paddingMedium, 12)),
             Expanded(
@@ -343,7 +377,7 @@ class HomeTab extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      color: AppColors.textOnPrimary,
+                      color: AppColors.textPrimary,
                       fontSize: fontTitle,
                       fontWeight: FontWeight.w600,
                     ),
@@ -355,7 +389,7 @@ class HomeTab extends StatelessWidget {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: AppColors.textOnPrimary.withValues(alpha: 0.9),
+                      color: AppColors.textSecondary,
                       fontSize: fontSubtitle,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -366,12 +400,12 @@ class HomeTab extends StatelessWidget {
             Container(
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.textOnPrimary.withValues(alpha: 0.2),
+                color: AppColors.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 Icons.arrow_forward_ios,
-                color: AppColors.background,
+                color: AppColors.primary,
                 size: arrowSize,
               ),
             ),

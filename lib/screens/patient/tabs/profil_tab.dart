@@ -1,199 +1,507 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
-import '../../../utils/responsive_size.dart';
-import 'dart:ui';
+import '../../../models/family_profile.dart';
+import '../../../services/profile_service.dart';
+import '../add_profile_screen.dart';
+import '../edit_profile_screen.dart';
 
 class ProfilTab extends StatelessWidget {
   const ProfilTab({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveSize();
-    responsive.init(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = screenWidth * 0.04;
+    final spacing = screenWidth * 0.03;
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        title: const Text(
-          'Profil',
-          style: TextStyle(
-            color: AppColors.primary,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Padding(
-                padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                child: IntrinsicHeight(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: ResponsiveSize.spacingXLarge),
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: StreamBuilder<List<FamilyProfile>>(
+          stream: ProfileService.instance.profilesStream,
+          initialData: ProfileService.instance.profiles,
+          builder: (context, snapshot) {
+            final profiles = snapshot.data ?? [];
 
-                      // Profile Card - White background
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                        decoration: BoxDecoration(
-                          color: AppColors.card,
-                          borderRadius: BorderRadius.circular(
-                            ResponsiveSize.cardBorderRadius,
-                          ),
-                          border: Border.all(
-                            color: AppColors.surface,
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Padding(
+                padding: EdgeInsets.all(padding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: spacing),
+
+                    // Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              width: ResponsiveSize.screenWidth * 0.2,
-                              height: ResponsiveSize.screenWidth * 0.2,
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.primary,
-                                  width: 3,
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.person,
-                                size: ResponsiveSize.iconLarge,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            SizedBox(height: ResponsiveSize.spacingMedium),
                             Text(
-                              'Pak Budi Santoso',
+                              'Anggota Keluarga',
                               style: TextStyle(
-                                fontSize: ResponsiveSize.fontXLarge,
+                                fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.textPrimary,
                               ),
                             ),
-                            SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
+                            const SizedBox(height: 4),
                             Text(
-                              'NIK: 3375011234567890',
+                              '${profiles.length} anggota terdaftar',
                               style: TextStyle(
-                                fontSize: ResponsiveSize.fontMedium,
+                                fontSize: 14,
                                 color: AppColors.textSecondary,
                               ),
                             ),
                           ],
                         ),
-                      ),
-
-                      SizedBox(height: ResponsiveSize.spacingXLarge),
-
-                      // Info Items - White cards with light gray accents
-                      _buildInfoItem('Umur', '65 Tahun'),
-                      _buildInfoItem('Golongan Darah', 'O+'),
-                      _buildInfoItem(
-                        'Alamat',
-                        'Desa Ngemplak, Kecamatan Simokerto',
-                      ),
-                      _buildInfoItem('Nomor Telepon', '081234567890'),
-
-                      SizedBox(height: ResponsiveSize.spacingMedium),
-
-                      // Edit Button - Dark teal (like MASUK button)
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {},
-                          icon: Icon(
-                            Icons.edit,
-                            size: ResponsiveSize.iconSmall,
-                            color: AppColors.textOnPrimary,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                          label: Text(
-                            'Edit Profil',
-                            style: TextStyle(
-                              fontSize: ResponsiveSize.fontMedium,
-                              color: AppColors.textOnPrimary,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.background,
-                            padding: EdgeInsets.symmetric(
-                              vertical: ResponsiveSize.paddingSmall * 1.2,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                ResponsiveSize.buttonBorderRadius,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.people,
+                                size: 16,
+                                color: AppColors.primary,
                               ),
-                            ),
-                            elevation: 0,
+                              const SizedBox(width: 4),
+                              Text(
+                                '${profiles.length}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                      ],
+                    ),
+
+                    SizedBox(height: spacing * 2),
+
+                    // Active Profile Card
+                    StreamBuilder<FamilyProfile?>(
+                      stream: ProfileService.instance.activeProfileStream,
+                      initialData: ProfileService.instance.activeProfile,
+                      builder: (context, snapshot) {
+                        final activeProfile = snapshot.data;
+                        if (activeProfile == null) return const SizedBox.shrink();
+
+                        return _buildActiveProfileCard(
+                          activeProfile,
+                          screenWidth,
+                          padding,
+                          spacing,
+                          context,
+                        );
+                      },
+                    ),
+
+                    SizedBox(height: spacing * 2),
+
+                    // Family Members List
+                    Text(
+                      'Semua Anggota',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
-                    ],
-                  ),
+                    ),
+
+                    SizedBox(height: spacing),
+
+                    // List of all profiles
+                    ...profiles.map((profile) => _buildProfileListItem(
+                      profile,
+                      screenWidth,
+                      padding,
+                      spacing,
+                      context,
+                    )),
+
+                    SizedBox(height: spacing * 2),
+
+                    // Add Family Member Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showAddProfileDialog(context),
+                        icon: Icon(
+                          Icons.person_add,
+                          size: 20,
+                          color: AppColors.textOnPrimary,
+                        ),
+                        label: Text(
+                          'Tambah Anggota Keluarga',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppColors.textOnPrimary,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.background,
+                          padding: EdgeInsets.symmetric(vertical: padding * 0.75),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: spacing),
+                  ],
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildInfoItem(String label, String value) {
+  Widget _buildActiveProfileCard(
+    FamilyProfile profile,
+    double screenWidth,
+    double padding,
+    double spacing,
+    BuildContext context,
+  ) {
     return Container(
-      margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
-      padding: EdgeInsets.all(ResponsiveSize.paddingSmall),
+      width: double.infinity,
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(ResponsiveSize.buttonBorderRadius),
-        border: Border.all(color: AppColors.surface, width: 1),
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'PROFIL AKTIF',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textOnPrimary,
+              ),
+            ),
+          ),
+          SizedBox(height: spacing),
+          Container(
+            width: screenWidth * 0.18,
+            height: screenWidth * 0.18,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 3),
+            ),
+            child: Icon(
+              Icons.person,
+              size: screenWidth * 0.07,
+              color: AppColors.textOnPrimary,
+            ),
+          ),
+          SizedBox(height: spacing),
+          Text(
+            profile.name,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textOnPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'NIK: ${profile.formattedNik}',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textOnPrimary.withValues(alpha: 0.8),
+            ),
+          ),
+          SizedBox(height: spacing),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildInfoChip('${profile.age} Tahun', Icons.cake),
+              const SizedBox(width: 8),
+              _buildInfoChip(profile.gender, profile.gender == 'Pria' ? Icons.male : Icons.female),
+              if (profile.bloodType != null) ...[
+                const SizedBox(width: 8),
+                _buildInfoChip(profile.bloodType!, Icons.water_drop),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(String label, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 14,
+            color: AppColors.textOnPrimary.withValues(alpha: 0.9),
+          ),
+          const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
-              fontSize: ResponsiveSize.fontMedium,
-              color: AppColors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textOnPrimary.withValues(alpha: 0.9),
             ),
           ),
-          Flexible(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: ResponsiveSize.fontMedium,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileListItem(
+    FamilyProfile profile,
+    double screenWidth,
+    double padding,
+    double spacing,
+    BuildContext context,
+  ) {
+    return StreamBuilder<FamilyProfile?>(
+      stream: ProfileService.instance.activeProfileStream,
+      initialData: ProfileService.instance.activeProfile,
+      builder: (context, snapshot) {
+        final activeProfile = snapshot.data;
+        final isActive = activeProfile?.id == profile.id;
+
+        return Container(
+          margin: EdgeInsets.only(bottom: spacing),
+          child: Material(
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: () => _showProfileOptions(context, profile, isActive),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: EdgeInsets.all(padding * 0.75),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: isActive
+                      ? Border.all(color: AppColors.primary, width: 2)
+                      : Border.all(color: AppColors.surface, width: 1),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? AppColors.primary.withValues(alpha: 0.1)
+                            : AppColors.surface,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.person,
+                        size: 24,
+                        color: isActive ? AppColors.primary : AppColors.textSecondary,
+                      ),
+                    ),
+                    SizedBox(width: padding * 0.75),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  profile.name,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (isActive) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'AKTIF',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textOnPrimary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            profile.formattedNik,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${profile.age} tahun • ${profile.gender}${profile.bloodType != null ? ' • ${profile.bloodType}' : ''}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.more_vert,
+                      color: AppColors.textSecondary,
+                    ),
+                  ],
+                ),
               ),
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.right,
             ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showProfileOptions(BuildContext context, FamilyProfile profile, bool isActive) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.switch_account, color: AppColors.primary),
+                title: Text(
+                  isActive ? 'Profil Aktif' : 'Pilih Profil Ini',
+                  style: TextStyle(color: isActive ? AppColors.primary : AppColors.textPrimary),
+                ),
+                trailing: isActive ? Icon(Icons.check, color: AppColors.primary) : null,
+                onTap: () async {
+                  if (!isActive) {
+                    await ProfileService.instance.setActiveProfile(profile.id);
+                  }
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.edit, color: AppColors.textSecondary),
+                title: const Text('Edit Profil'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showEditProfileDialog(context, profile);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete, color: Colors.red[400]),
+                title: Text('Hapus Profil', style: TextStyle(color: Colors.red[400])),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showDeleteConfirmation(context, profile);
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAddProfileDialog(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddProfileScreen()),
+    );
+  }
+
+  void _showEditProfileDialog(BuildContext context, FamilyProfile profile) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(profile: profile),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, FamilyProfile profile) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Profil'),
+        content: Text('Apakah Anda yakin ingin menghapus profil ${profile.name}? Semua data terkait akan dihapus.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await ProfileService.instance.deleteProfile(profile.id);
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Profil ${profile.name} telah dihapus')),
+              );
+            },
+            child: Text('Hapus', style: TextStyle(color: Colors.red[400])),
           ),
         ],
       ),

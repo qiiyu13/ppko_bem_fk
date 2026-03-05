@@ -126,6 +126,64 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
     final responsive = ResponsiveSize();
     responsive.init(context);
 
+    final content = Column(
+      children: [
+        // Tab Bar
+        Container(
+          margin: EdgeInsets.symmetric(
+            horizontal: ResponsiveSize.paddingMedium,
+            vertical: ResponsiveSize.paddingSmall,
+          ),
+          padding: EdgeInsets.all(ResponsiveSize.paddingSmall * 0.5),
+          decoration: BoxDecoration(
+            color: AppColors.surface.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: TabBar(
+            controller: _tabController,
+            indicator: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.textPrimary.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            indicatorSize: TabBarIndicatorSize.tab,
+            labelColor: AppColors.primary,
+            unselectedLabelColor: AppColors.textSecondary,
+            labelStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+            dividerColor: Colors.transparent,
+            tabs: const [
+              Tab(text: 'Daftar'),
+              Tab(text: 'Kalender'),
+            ],
+          ),
+        ),
+        // Tab Content
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [_buildDaftarTab(), _buildKalenderTab()],
+          ),
+        ),
+      ],
+    );
+
+    if (widget.isEmbedded) {
+      return Container(color: AppColors.background, child: content);
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -142,59 +200,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
         ),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          // Tab Bar
-          Container(
-            margin: EdgeInsets.symmetric(
-              horizontal: ResponsiveSize.paddingMedium,
-              vertical: ResponsiveSize.paddingSmall,
-            ),
-            padding: EdgeInsets.all(ResponsiveSize.paddingSmall * 0.5),
-            decoration: BoxDecoration(
-              color: AppColors.surface.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicator: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.textPrimary.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              labelColor: AppColors.primary,
-              unselectedLabelColor: AppColors.textSecondary,
-              labelStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-              dividerColor: Colors.transparent,
-              tabs: const [
-                Tab(text: 'Daftar'),
-                Tab(text: 'Kalender'),
-              ],
-            ),
-          ),
-          // Tab Content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [_buildDaftarTab(), _buildKalenderTab()],
-            ),
-          ),
-        ],
-      ),
+      body: content,
     );
   }
 

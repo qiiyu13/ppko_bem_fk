@@ -1,96 +1,151 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/app_colors.dart';
 import '../../utils/responsive_size.dart';
+import '../../services/chat_storage_service.dart';
 
 class TanyaAsistenScreen extends StatefulWidget {
-  final GlobalKey? sendTargetKey;
-  final bool isEmbedded;
-  final VoidCallback? onBack;
-
-  const TanyaAsistenScreen({
-    super.key,
-    this.sendTargetKey,
-    this.isEmbedded = false,
-    this.onBack,
-  });
+  const TanyaAsistenScreen({super.key});
 
   @override
   TanyaAsistenScreenState createState() => TanyaAsistenScreenState();
 }
 
 class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
-  /// Public method so the dashboard can trigger send via GlobalKey.
-  void sendCurrentMessage() {
-    _sendMessage(_messageController.text);
-  }
-
   // Message background colors
   static const Color assistantBubbleColor = Color(0xFFF5F5F5);
   static const Color userBubbleColor = AppColors.primary;
 
   final TextEditingController _messageController = TextEditingController();
-  final List<Map<String, dynamic>> _messages = [];
+  final List<ChatMessage> _messages = [];
+  final ChatStorageService _storageService = ChatStorageService();
   bool _isTyping = false;
+  bool _isLoading = true;
+  Timer? _saveTimer;
 
   @override
   void initState() {
     super.initState();
-    // Initial welcome messages
+    _loadConversation();
+  }
+
+  Future<void> _loadConversation() async {
+    await _storageService.init();
+
+    // Check if should end conversation (idle timeout)
+    final shouldEnd = await _storageService.shouldEndConversation();
+
+    if (shouldEnd) {
+      // End previous conversation and start fresh
+      await _storageService.endCurrentConversation();
+      _addWelcomeMessages();
+    } else {
+      // Load existing conversation
+      final existingMessages = await _storageService.loadCurrentConversation();
+      if (existingMessages != null && existingMessages.isNotEmpty) {
+        setState(() {
+          _messages.addAll(existingMessages);
+        });
+      } else {
+        _addWelcomeMessages();
+      }
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    // Update last activity
+    await _storageService.updateLastActivity();
+  }
+
+  void _addWelcomeMessages() {
+    final now = DateTime.now();
     _messages.addAll([
-      {
-        'isUser': false,
-        'text':
+      ChatMessage(
+        text:
             'Selamat pagi, Ibu/Bapak. Saya Asisten Sehat dari Desa Sejahtera.',
-        'time': '08:30',
-      },
-      {
-        'isUser': false,
-        'text':
+        isUser: false,
+        timestamp: now.subtract(const Duration(minutes: 1)),
+      ),
+      ChatMessage(
+        text:
             'Jangan ragu untuk bertanya. Ada yang bisa saya bantu terkait kesehatan Anda hari ini?',
-        'time': '08:31',
-      },
+        isUser: false,
+        timestamp: now,
+      ),
     ]);
+  }
+
+  Future<void> _saveConversation() async {
+    await _storageService.saveCurrentConversation(_messages);
   }
 
   void _sendMessage(String text) {
     if (text.trim().isEmpty) return;
 
+    final now = DateTime.now();
     setState(() {
-      _messages.add({'isUser': true, 'text': text, 'time': _getCurrentTime()});
+      _messages.add(ChatMessage(text: text, isUser: true, timestamp: now));
       _messageController.clear();
       _isTyping = true;
     });
+
+    // Save conversation
+    _saveConversation();
 
     // Simulate assistant response
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
           _isTyping = false;
-          _messages.add({
-            'isUser': false,
-            'text':
-                'Terima kasih atas pertanyaannya. Saya akan membantu menjelaskan.',
-            'time': _getCurrentTime(),
-          });
+          _messages.add(
+            ChatMessage(
+              text:
+                  'Terima kasih atas pertanyaannya. Saya akan membantu menjelaskan.',
+              isUser: false,
+              timestamp: DateTime.now(),
+            ),
+          );
         });
+        _saveConversation();
       }
     });
   }
 
-  String _getCurrentTime() {
-    final now = DateTime.now();
-    return '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+  String _formatTime(DateTime time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   void _sendQuickMessage(String text) {
     _sendMessage(text);
   }
 
+  Future<void> _onBackPressed() async {
+    // End current conversation if it has messages
+    if (_messages.isNotEmpty) {
+      await _storageService.endCurrentConversation();
+    }
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveSize();
     responsive.init(context);
+
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: _buildAppBar(),
+        body: const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -111,9 +166,9 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
               itemBuilder: (context, index) {
                 final message = _messages[index];
                 return _buildMessageBubble(
-                  isUser: message['isUser'],
-                  text: message['text'],
-                  time: message['time'],
+                  isUser: message.isUser,
+                  text: message.text,
+                  time: _formatTime(message.timestamp),
                 );
               },
             ),
@@ -138,13 +193,7 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-        onPressed: () {
-          if (widget.isEmbedded && widget.onBack != null) {
-            widget.onBack!();
-          } else {
-            Navigator.pop(context);
-          }
-        },
+        onPressed: _onBackPressed,
       ),
       title: Row(
         children: [
@@ -556,26 +605,23 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
             ),
             // Equal spacing
             SizedBox(width: ResponsiveSize.spacingSmall),
-            // Send button - 44x44 (placeholder when embedded, real button otherwise)
-            if (widget.sendTargetKey != null)
-              SizedBox(key: widget.sendTargetKey, width: 44, height: 44)
-            else
-              GestureDetector(
-                onTap: () => _sendMessage(_messageController.text),
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.send,
-                    color: AppColors.textOnPrimary,
-                    size: ResponsiveSize.iconMedium * 0.7,
-                  ),
+            // Send button
+            GestureDetector(
+              onTap: () => _sendMessage(_messageController.text),
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.send,
+                  color: AppColors.textOnPrimary,
+                  size: ResponsiveSize.iconMedium * 0.7,
                 ),
               ),
+            ),
           ],
         ),
       ),
@@ -584,6 +630,7 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
 
   @override
   void dispose() {
+    _saveTimer?.cancel();
     _messageController.dispose();
     super.dispose();
   }
