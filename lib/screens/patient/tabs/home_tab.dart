@@ -7,7 +7,7 @@ import '../../../screens/patient/metrics/metric_detail_screen.dart';
 import '../../../models/health_metric.dart';
 import '../../../models/family_profile.dart';
 import '../../../services/profile_service.dart';
-import '../../../widgets/profile_selector.dart';
+// Profile selector is now integrated as dropdown in greeting section
 import 'dart:math' as math;
 
 // Bar Chart Widget
@@ -118,50 +118,112 @@ class HomeTab extends StatelessWidget {
                 children: [
                   SizedBox(height: MediaQuery.of(context).padding.top + 16),
 
-                  // Greeting Section with Profile Selector
+                  // Greeting Section with Profile Dropdown
                   Container(
-                  margin: EdgeInsets.symmetric(
-                  horizontal: math.max(ResponsiveSize.paddingMedium, 16),
-                  ),
-                  child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                  Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                  Text(
-                    _getGreeting(),
-                      textAlign: TextAlign.left,
-                        style: TextStyle(
-                          fontSize: math.min(ResponsiveSize.fontMedium, 16),
-                          color: AppColors.textSecondary,
-                      ),
+                    margin: EdgeInsets.symmetric(
+                      horizontal: math.max(ResponsiveSize.paddingMedium, 16),
                     ),
-                    const SizedBox(height: 4),
-                  StreamBuilder<FamilyProfile?>(
-                    stream: ProfileService.instance.activeProfileStream,
-                    initialData: ProfileService.instance.activeProfile,
-                      builder: (context, snapshot) {
-                          final profile = snapshot.data;
-                            final displayName = profile?.name.split(' ').first ?? userName;
-                              return Text(
-                                  '$displayName!',
-                              textAlign: TextAlign.left,
-                              style: TextStyle(
-                                fontSize: math.min(ResponsiveSize.fontXXLarge, 28),
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                              ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _getGreeting(),
+                          textAlign: TextAlign.left,
+                          style: TextStyle(
+                            fontSize: math.min(ResponsiveSize.fontMedium, 16),
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Profile Dropdown
+                        StreamBuilder<List<FamilyProfile>>(
+                          stream: ProfileService.instance.profilesStream,
+                          initialData: ProfileService.instance.profiles,
+                          builder: (context, profilesSnapshot) {
+                            final profiles = profilesSnapshot.data ?? [];
+                            return StreamBuilder<FamilyProfile?>(
+                              stream: ProfileService.instance.activeProfileStream,
+                              initialData: ProfileService.instance.activeProfile,
+                              builder: (context, activeSnapshot) {
+                                final activeProfile = activeSnapshot.data;
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.card,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: AppColors.surface, width: 1),
+                                  ),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value: activeProfile?.id,
+                                      isExpanded: true,
+                                      icon: Icon(Icons.keyboard_arrow_down, color: AppColors.primary),
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                      dropdownColor: AppColors.card,
+                                      items: profiles.map((profile) {
+                                        return DropdownMenuItem<String>(
+                                          value: profile.id,
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 32,
+                                                height: 32,
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Icon(
+                                                  Icons.person,
+                                                  size: 18,
+                                                  color: AppColors.primary,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      profile.name,
+                                                      style: TextStyle(
+                                                        fontWeight: FontWeight.w600,
+                                                        color: AppColors.textPrimary,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      profile.formattedNik,
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: AppColors.textSecondary,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                      onChanged: (String? profileId) {
+                                        if (profileId != null) {
+                                          ProfileService.instance.setActiveProfile(profileId);
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
                             );
                           },
                         ),
                       ],
                     ),
-                    const ProfileSelector(),
-                  ],
-                ),
-              ),
+                  ),
 
                   const SizedBox(height: 16),
 

@@ -1,26 +1,46 @@
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
+  static bool _initialized = false;
 
   DatabaseHelper._init();
 
+  Future<void> _ensureInitialized() async {
+    if (_initialized) return;
+    
+    // Initialize FFI for desktop platforms
+    if (!kIsWeb && (Platform.isLinux || Platform.isMacOS || Platform.isWindows)) {
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    }
+    
+    _initialized = true;
+  }
+
   Future<Database> get database async {
     if (_database != null) return _database!;
+    await _ensureInitialized();
     _database = await _initDB('mediku.db');
     return _database!;
   }
 
   Future<Database> _initDB(String filePath) async {
+    await _ensureInitialized();
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(
+    return await databaseFactory.openDatabase(
       path,
-      version: 1,
-      onCreate: _createDB,
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: _createDB,
+      ),
     );
   }
 
