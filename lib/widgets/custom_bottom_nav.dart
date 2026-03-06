@@ -97,14 +97,14 @@ class CustomBottomNav extends StatelessWidget {
                       iconSize: iconSize,
                     ),
                     _buildNavItem(
+                      imagePath: 'assets/icon/leaf_icon.png',
                       index: 2,
                       iconSize: iconSize,
-                      imagePath: 'assets/icon/leaf_icon.png',
                     ),
                     _buildNavItem(
-                      index: 3,
-                      iconSize: iconSize * 0.8,
                       imagePath: 'assets/icon/chat.png',
+                      index: 3,
+                      iconSize: iconSize,
                     ),
                     _buildNavItem(
                       icon: Icons.person_outline,
@@ -163,7 +163,7 @@ class CustomBottomNav extends StatelessWidget {
       color: isSelected
           ? AppColors.primary
           : AppColors.textOnPrimary.withValues(alpha: 0.6),
-      size: iconSize,
+      size: iconSize * 1.15,
     );
   }
 

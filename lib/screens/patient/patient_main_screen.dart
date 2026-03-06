@@ -4,6 +4,7 @@ import '../../widgets/custom_bottom_nav.dart';
 import 'tabs/home_tab.dart';
 import 'tabs/profil_tab.dart';
 import 'tabs/settings_tab.dart';
+import 'tabs/tanaman_toga_tab.dart';
 import 'asisten_landing_screen.dart';
 import 'jadwal_saya_screen.dart';
 
@@ -76,7 +77,7 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
               children: [
                 _buildTab(HomeTab()),
                 _buildTab(JadwalSayaScreen(onBack: () {}, isEmbedded: true)),
-                _buildTab(_buildTanamanTogaTab()),
+                _buildTab(const TanamanTogaTab()),
                 _buildTab(const AsistenLandingScreen()),
                 _buildTab(const ProfilTab()),
               ],
@@ -111,33 +112,5 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
     );
   }
 
-  Widget _buildTanamanTogaTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.local_florist,
-            size: 64,
-            color: AppColors.primary.withValues(alpha: 0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Tanaman Toga',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Coming Soon',
-            style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
-          ),
-        ],
-      ),
-    );
-  }
+  
 }

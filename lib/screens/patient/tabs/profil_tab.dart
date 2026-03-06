@@ -108,14 +108,28 @@ class ProfilTab extends StatelessWidget {
 
                     SizedBox(height: spacing * 2),
 
-                    // Family Members List
-                    Text(
-                      'Semua Anggota',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
+                    // Family Members List Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Semua Anggota',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => _showAddProfileDialog(context),
+                          icon: Icon(
+                            Icons.person_add,
+                            color: AppColors.primary,
+                          ),
+                          tooltip: 'Tambah Anggota',
+                        ),
+                      ],
                     ),
 
                     SizedBox(height: spacing),
@@ -128,37 +142,6 @@ class ProfilTab extends StatelessWidget {
                       spacing,
                       context,
                     )),
-
-                    SizedBox(height: spacing * 2),
-
-                    // Add Family Member Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _showAddProfileDialog(context),
-                        icon: Icon(
-                          Icons.person_add,
-                          size: 20,
-                          color: AppColors.textOnPrimary,
-                        ),
-                        label: Text(
-                          'Tambah Anggota Keluarga',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: AppColors.textOnPrimary,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.background,
-                          padding: EdgeInsets.symmetric(vertical: padding * 0.75),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                      ),
-                    ),
 
                     SizedBox(height: spacing),
                   ],
@@ -192,27 +175,13 @@ class ProfilTab extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // Left side: Avatar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              'PROFIL AKTIF',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textOnPrimary,
-              ),
-            ),
-          ),
-          SizedBox(height: spacing),
-          Container(
-            width: screenWidth * 0.18,
-            height: screenWidth * 0.18,
+            width: screenWidth * 0.16,
+            height: screenWidth * 0.16,
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
@@ -224,35 +193,63 @@ class ProfilTab extends StatelessWidget {
               color: AppColors.textOnPrimary,
             ),
           ),
-          SizedBox(height: spacing),
-          Text(
-            profile.name,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textOnPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'NIK: ${profile.formattedNik}',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textOnPrimary.withValues(alpha: 0.8),
-            ),
-          ),
-          SizedBox(height: spacing),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildInfoChip('${profile.age} Tahun', Icons.cake),
-              const SizedBox(width: 8),
-              _buildInfoChip(profile.gender, profile.gender == 'Pria' ? Icons.male : Icons.female),
-              if (profile.bloodType != null) ...[
-                const SizedBox(width: 8),
-                _buildInfoChip(profile.bloodType!, Icons.water_drop),
+          const SizedBox(width: 16),
+          // Right side: All info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Badge row
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'PROFIL AKTIF',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textOnPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // Name
+                Text(
+                  profile.name,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textOnPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                // NIK
+                Text(
+                  'NIK: ${profile.formattedNik}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textOnPrimary.withValues(alpha: 0.8),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Info chips row
+                Row(
+                  children: [
+                    _buildInfoChipCompact('${profile.age} Tahun', Icons.cake),
+                    const SizedBox(width: 8),
+                    _buildInfoChipCompact(profile.gender, profile.gender == 'Pria' ? Icons.male : Icons.female),
+                    if (profile.bloodType != null) ...[
+                      const SizedBox(width: 8),
+                      _buildInfoChipCompact(profile.bloodType!, Icons.water_drop),
+                    ],
+                  ],
+                ),
               ],
-            ],
+            ),
           ),
         ],
       ),
@@ -279,6 +276,35 @@ class ProfilTab extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textOnPrimary.withValues(alpha: 0.9),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoChipCompact(String label, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 12,
+            color: AppColors.textOnPrimary.withValues(alpha: 0.9),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
               fontWeight: FontWeight.w500,
               color: AppColors.textOnPrimary.withValues(alpha: 0.9),
             ),

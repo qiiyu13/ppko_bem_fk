@@ -169,6 +169,27 @@ class ProfileService {
       address: 'Desa Ngemplak, Kecamatan Simokerto',
       phone: '081234567890',
     );
+
+    // Add 2 more dummy family members
+    await createProfile(
+      nik: '3375011234567891',
+      name: 'Ibu Siti Aminah',
+      gender: 'Wanita',
+      birthDate: DateTime(1962, 5, 15), // Age 62
+      bloodType: 'A+',
+      address: 'Desa Ngemplak, Kecamatan Simokerto',
+      phone: '081234567891',
+    );
+
+    await createProfile(
+      nik: '3375011234567892',
+      name: 'Anak Rina',
+      gender: 'Wanita',
+      birthDate: DateTime(1990, 8, 20), // Age 34
+      bloodType: 'B+',
+      address: 'Desa Ngemplak, Kecamatan Simokerto',
+      phone: '081234567892',
+    );
   }
 
   void dispose() {

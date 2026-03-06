@@ -135,86 +135,46 @@ class HomeTab extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        // Profile Dropdown
+                        // Profile Dropdown Button
                         StreamBuilder<List<FamilyProfile>>(
                           stream: ProfileService.instance.profilesStream,
                           initialData: ProfileService.instance.profiles,
                           builder: (context, profilesSnapshot) {
                             final profiles = profilesSnapshot.data ?? [];
                             return StreamBuilder<FamilyProfile?>(
-                              stream: ProfileService.instance.activeProfileStream,
-                              initialData: ProfileService.instance.activeProfile,
+                              stream:
+                                  ProfileService.instance.activeProfileStream,
+                              initialData:
+                                  ProfileService.instance.activeProfile,
                               builder: (context, activeSnapshot) {
                                 final activeProfile = activeSnapshot.data;
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.card,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: AppColors.surface, width: 1),
+                                if (activeProfile == null)
+                                  return const SizedBox.shrink();
+
+                                return GestureDetector(
+                                  onTap: () => _showProfileDropdown(
+                                    context,
+                                    activeProfile,
+                                    profiles,
                                   ),
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<String>(
-                                      value: activeProfile?.id,
-                                      isExpanded: true,
-                                      icon: Icon(Icons.keyboard_arrow_down, color: AppColors.primary),
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.textPrimary,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        activeProfile.name,
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textPrimary,
+                                        ),
                                       ),
-                                      dropdownColor: AppColors.card,
-                                      items: profiles.map((profile) {
-                                        return DropdownMenuItem<String>(
-                                          value: profile.id,
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                width: 32,
-                                                height: 32,
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.primary.withValues(alpha: 0.1),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: Icon(
-                                                  Icons.person,
-                                                  size: 18,
-                                                  color: AppColors.primary,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Text(
-                                                      profile.name,
-                                                      style: TextStyle(
-                                                        fontWeight: FontWeight.w600,
-                                                        color: AppColors.textPrimary,
-                                                      ),
-                                                    ),
-                                                    Text(
-                                                      profile.formattedNik,
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        color: AppColors.textSecondary,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      }).toList(),
-                                      onChanged: (String? profileId) {
-                                        if (profileId != null) {
-                                          ProfileService.instance.setActiveProfile(profileId);
-                                        }
-                                      },
-                                    ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.keyboard_arrow_down,
+                                        color: AppColors.primary,
+                                        size: 24,
+                                      ),
+                                    ],
                                   ),
                                 );
                               },
@@ -245,8 +205,9 @@ class HomeTab extends StatelessWidget {
                             ),
                           ],
                         ),
+                        padding: const EdgeInsets.all(16),
                         child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             SvgPicture.asset(
                               'assets/svg/medical-research-centered (1).svg',
@@ -262,7 +223,7 @@ class HomeTab extends StatelessWidget {
                                   Text(
                                     '$daysUntilAppointment hari menuju',
                                     style: TextStyle(
-                                      fontSize: 13,
+                                      fontSize: 15,
                                       color: AppColors.textSecondary,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -271,7 +232,7 @@ class HomeTab extends StatelessWidget {
                                   Text(
                                     _nextAppointment['title'] as String,
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                       color: AppColors.textPrimary,
                                     ),
@@ -306,7 +267,7 @@ class HomeTab extends StatelessWidget {
                             final cardWidth = (gridWidth - 16) / 2;
                             final cardHeight = cardWidth; // 1:1 aspect ratio
                             final gridHeight = (cardHeight * 2) + 16;
-                            
+
                             return Container(
                               height: gridHeight,
                               child: GridView.count(
@@ -475,6 +436,71 @@ class HomeTab extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _showProfileDropdown(
+    BuildContext context,
+    FamilyProfile activeProfile,
+    List<FamilyProfile> profiles,
+  ) {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final RenderBox overlay =
+        Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(
+          Offset(0, button.size.height + 8),
+          ancestor: overlay,
+        ),
+        button.localToGlobal(
+          Offset(button.size.width, button.size.height + 8),
+          ancestor: overlay,
+        ),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    showMenu<String>(
+      context: context,
+      position: position,
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: AppColors.card,
+      items: profiles.map((profile) {
+        final isSelected = profile.id == activeProfile.id;
+        return PopupMenuItem<String>(
+          value: profile.id,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? AppColors.primary.withValues(alpha: 0.1)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                if (isSelected)
+                  Icon(Icons.check, color: AppColors.primary, size: 20),
+                if (isSelected) const SizedBox(width: 8),
+                Text(
+                  profile.name,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    ).then((selectedId) {
+      if (selectedId != null) {
+        ProfileService.instance.setActiveProfile(selectedId);
+      }
+    });
   }
 
   String _formatTimeAgo(DateTime dateTime) {

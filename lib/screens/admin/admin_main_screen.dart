@@ -5,6 +5,7 @@ import '../../utils/responsive_size.dart';
 import '../patient/tabs/settings_tab.dart';
 import 'tabs/dashboard_tab.dart';
 import 'tabs/profil_tab.dart';
+import 'tabs/publish_tab.dart';
 import 'schedule_screen.dart';
 
 class AdminMainScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   final List<Widget> _screens = [
     const DashboardTab(),
     const ScheduleScreen(),
+    const PublishTab(),
     const AdminProfilTab(),
     const SettingsTab(),
   ];
@@ -34,6 +36,11 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
       icon: Icons.calendar_today_outlined,
       activeIcon: Icons.calendar_today,
       label: 'Jadwal',
+    ),
+    NavBarItem(
+      icon: Icons.article_outlined,
+      activeIcon: Icons.article,
+      label: 'Publikasi',
     ),
     NavBarItem(
       icon: Icons.person_outline,
