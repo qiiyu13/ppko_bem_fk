@@ -34,19 +34,19 @@ class MiniBarChart extends StatelessWidget {
         final isHighlighted = index % 3 == 0;
 
         return Container(
-          width: 6,
-          height: 36,
-          margin: const EdgeInsets.symmetric(horizontal: 2.5),
+          width: 8,
+          height: 48,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
           child: Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              width: 4.5,
-              height: 36 * height,
+              width: 6,
+              height: 48 * height,
               decoration: BoxDecoration(
                 color: isHighlighted
-                    ? primaryColor
-                    : primaryColor.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(2.5),
+                    ? Colors.white
+                    : Colors.black.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(3),
               ),
             ),
           ),
@@ -118,68 +118,124 @@ class HomeTab extends StatelessWidget {
                 children: [
                   SizedBox(height: MediaQuery.of(context).padding.top + 16),
 
-                  // Greeting Section with Profile Dropdown
+                  // Greeting Section with Profile Dropdown and Notification Icon
                   Container(
                     margin: EdgeInsets.symmetric(
                       horizontal: math.max(ResponsiveSize.paddingMedium, 16),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Text(
-                          _getGreeting(),
-                          textAlign: TextAlign.left,
-                          style: TextStyle(
-                            fontSize: math.min(ResponsiveSize.fontMedium, 16),
-                            color: AppColors.textSecondary,
+                        // Left side: Greeting and Profile
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _getGreeting(),
+                                textAlign: TextAlign.left,
+                                style: TextStyle(
+                                  fontSize: math.min(
+                                    ResponsiveSize.fontMedium,
+                                    16,
+                                  ),
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              // Profile Dropdown Button
+                              StreamBuilder<List<FamilyProfile>>(
+                                stream: ProfileService.instance.profilesStream,
+                                initialData: ProfileService.instance.profiles,
+                                builder: (context, profilesSnapshot) {
+                                  final profiles = profilesSnapshot.data ?? [];
+                                  return StreamBuilder<FamilyProfile?>(
+                                    stream: ProfileService
+                                        .instance
+                                        .activeProfileStream,
+                                    initialData:
+                                        ProfileService.instance.activeProfile,
+                                    builder: (context, activeSnapshot) {
+                                      final activeProfile = activeSnapshot.data;
+                                      if (activeProfile == null)
+                                        return const SizedBox.shrink();
+
+                                      return GestureDetector(
+                                        onTap: () => _showProfileDropdown(
+                                          context,
+                                          activeProfile,
+                                          profiles,
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              activeProfile.name,
+                                              style: TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.textPrimary,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Icon(
+                                              Icons.keyboard_arrow_down,
+                                              color: AppColors.primary,
+                                              size: 24,
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        // Profile Dropdown Button
-                        StreamBuilder<List<FamilyProfile>>(
-                          stream: ProfileService.instance.profilesStream,
-                          initialData: ProfileService.instance.profiles,
-                          builder: (context, profilesSnapshot) {
-                            final profiles = profilesSnapshot.data ?? [];
-                            return StreamBuilder<FamilyProfile?>(
-                              stream:
-                                  ProfileService.instance.activeProfileStream,
-                              initialData:
-                                  ProfileService.instance.activeProfile,
-                              builder: (context, activeSnapshot) {
-                                final activeProfile = activeSnapshot.data;
-                                if (activeProfile == null)
-                                  return const SizedBox.shrink();
-
-                                return GestureDetector(
-                                  onTap: () => _showProfileDropdown(
-                                    context,
-                                    activeProfile,
-                                    profiles,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        activeProfile.name,
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Icon(
-                                        Icons.keyboard_arrow_down,
-                                        color: AppColors.primary,
-                                        size: 24,
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            );
+                        // Right side: Notification Icon
+                        GestureDetector(
+                          onTap: () {
+                            // TODO: Navigate to notifications screen or show dropdown
                           },
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: AppColors.card,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Stack(
+                                children: [
+                                  Icon(
+                                    Icons.notifications_outlined,
+                                    color: AppColors.primary,
+                                    size: 24,
+                                  ),
+                                  // Notification badge (uncomment when needed)
+                                  // Positioned(
+                                  //   right: 0,
+                                  //   top: 0,
+                                  //   child: Container(
+                                  //     width: 8,
+                                  //     height: 8,
+                                  //     decoration: BoxDecoration(
+                                  //       color: Colors.red,
+                                  //       shape: BoxShape.circle,
+                                  //     ),
+                                  //   ),
+                                  // ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -209,13 +265,6 @@ class HomeTab extends StatelessWidget {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            SvgPicture.asset(
-                              'assets/svg/medical-research-centered (1).svg',
-                              height: 72,
-                              width: 72,
-                              fit: BoxFit.contain,
-                            ),
-                            const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,6 +288,13 @@ class HomeTab extends StatelessWidget {
                                   ),
                                 ],
                               ),
+                            ),
+                            const SizedBox(width: 12),
+                            SvgPicture.asset(
+                              'assets/svg/medical-research-v2.svg',
+                              height: 86,
+                              width: 86,
+                              fit: BoxFit.contain,
                             ),
                           ],
                         ),
@@ -293,7 +349,6 @@ class HomeTab extends StatelessWidget {
 
                         // Action Button
                         _buildActionButton(
-                          icon: Icons.description_outlined,
                           title: 'Lihat Laporan Lengkap',
                           subtitle: 'Riwayat dan detail pemeriksaan',
                           onTap: () {
@@ -345,7 +400,6 @@ class HomeTab extends StatelessWidget {
   }
 
   Widget _buildActionButton({
-    required IconData icon,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
@@ -382,15 +436,11 @@ class HomeTab extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              padding: EdgeInsets.all(
-                math.max(ResponsiveSize.paddingSmall + 4, 10),
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(icon, color: AppColors.primary, size: iconSize),
+            SvgPicture.asset(
+              'assets/svg/document-icon.svg',
+              height: iconSize * 2.2,
+              width: iconSize * 2.2,
+              fit: BoxFit.contain,
             ),
             SizedBox(width: math.max(ResponsiveSize.paddingMedium, 12)),
             Expanded(
@@ -420,17 +470,10 @@ class HomeTab extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.arrow_forward_ios,
-                color: AppColors.primary,
-                size: arrowSize,
-              ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: AppColors.primary,
+              size: arrowSize,
             ),
           ],
         ),
@@ -643,7 +686,7 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
             onTap: _onCardTap,
             child: Container(
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: widget.metric.primaryColor,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
@@ -670,9 +713,9 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
                             Text(
                               widget.metric.nameId,
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
+                                color: AppColors.card,
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -683,9 +726,9 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
                                 Text(
                                   widget.metric.displayValue,
                                   style: TextStyle(
-                                    fontSize: 18,
+                                    fontSize: 21,
                                     fontWeight: FontWeight.bold,
-                                    color: widget.metric.primaryColor,
+                                    color: AppColors.card,
                                     height: 1,
                                   ),
                                 ),
@@ -693,9 +736,8 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
                                 Text(
                                   widget.metric.unit,
                                   style: TextStyle(
-                                    fontSize: 11,
-                                    color: widget.metric.primaryColor
-                                        .withValues(alpha: 0.8),
+                                    fontSize: 14,
+                                    color: AppColors.card,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -723,9 +765,7 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
                           width: widget.chipSize,
                           height: widget.chipSize,
                           decoration: BoxDecoration(
-                            color: widget.metric.primaryColor.withValues(
-                              alpha: 0.12,
-                            ),
+                            color: AppColors.card.withValues(alpha: 0.2),
                             borderRadius: const BorderRadius.only(
                               bottomLeft: Radius.circular(20),
                               topRight: Radius.circular(24),
@@ -734,7 +774,7 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper>
                           child: Center(
                             child: Icon(
                               widget.metric.icon,
-                              color: widget.metric.primaryColor,
+                              color: AppColors.card,
                               size: widget.iconSize,
                             ),
                           ),
