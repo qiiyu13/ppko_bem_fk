@@ -564,6 +564,29 @@ class HomeTab extends StatelessWidget {
   }
 }
 
+// Custom RectTween that provides a smooth, linear expansion of the rect.
+// We remove the internal curve transform to avoid the 'bounce' effect caused by double-curving.
+class _SmoothAspectRatioRectTween extends RectTween {
+  _SmoothAspectRatioRectTween({required Rect? begin, required Rect? end})
+    : super(begin: begin, end: end);
+
+  @override
+  Rect lerp(double t) {
+    if (begin == null || end == null) return super.lerp(t) ?? Rect.zero;
+
+    // Linear interpolation of all properties. The PageRoute's animation curve
+    // already provides the necessary easing (e.g., easeInOut).
+    return Rect.fromCenter(
+      center: Offset(
+        begin!.center.dx + (end!.center.dx - begin!.center.dx) * t,
+        begin!.center.dy + (end!.center.dy - begin!.center.dy) * t,
+      ),
+      width: begin!.width + (end!.width - begin!.width) * t,
+      height: begin!.height + (end!.height - begin!.height) * t,
+    );
+  }
+}
+
 // Separate widget for animated metric card with pre-flight animation
 class _MetricCardWrapper extends StatefulWidget {
   final HealthMetric metric;
@@ -580,214 +603,157 @@ class _MetricCardWrapper extends StatefulWidget {
   State<_MetricCardWrapper> createState() => _MetricCardWrapperState();
 }
 
-class _MetricCardWrapperState extends State<_MetricCardWrapper>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _preFlightController;
-  late Animation<double> _contentFadeAnimation;
-  bool _isNavigating = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _preFlightController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-
-    _contentFadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _preFlightController, curve: Curves.easeOutCubic),
-    );
-  }
-
-  @override
-  void dispose() {
-    _preFlightController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _onCardTap() async {
-    if (_isNavigating) return;
-    _isNavigating = true;
-
-    // Step 1: Fade content out (100ms - quick)
-    await _preFlightController.forward();
-
-    if (!mounted) return;
-
-    // Step 2: Navigate with Hero animation (white card expands)
-    // Wait for the result (when user closes detail screen)
-    await Navigator.of(context).push(
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 500),
-        reverseTransitionDuration: const Duration(milliseconds: 500),
-        opaque: true,
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return MetricDetailScreen(
-            metric: widget.metric,
-            transitionAnimation: animation,
-          );
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return child;
-        },
-      ),
-    );
-
-    if (!mounted) return;
-
-    // Step 3: Wait for card to fully return, then fade content back in (300ms)
-    // Wait allows Hero shrink (500ms parallel with fade+color 300ms) + settlement time
-    await Future.delayed(const Duration(milliseconds: 400));
-    if (mounted) {
-      await _preFlightController.reverse();
-      _isNavigating = false;
-    }
-  }
-
+class _MetricCardWrapperState extends State<_MetricCardWrapper> {
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _preFlightController,
-      builder: (context, child) {
-        return Hero(
-          tag: 'metric_${widget.metric.type.name}',
-          transitionOnUserGestures: false,
-          createRectTween: (begin, end) {
-            return RectTween(begin: begin, end: end);
-          },
-          placeholderBuilder: (context, heroSize, child) {
-            return Opacity(
-              opacity: 0.3,
+    final metricId = widget.metric.type.name;
+
+    // Use our custom SmoothAspectRatioRectTween for linear, predictable movement
+    RectTween createTween(Rect? begin, Rect? end) {
+      return _SmoothAspectRatioRectTween(begin: begin, end: end);
+    }
+
+    return GestureDetector(
+      onTap: _onCardTap,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // 1. Background Hero
+          Positioned.fill(
+            child: Hero(
+              tag: 'metric_bg_$metricId',
+              createRectTween: createTween,
               child: Container(
                 decoration: BoxDecoration(
-                  color: AppColors.card,
+                  color: widget.metric.primaryColor,
                   borderRadius: BorderRadius.circular(24),
-                ),
-              ),
-            );
-          },
-          flightShuttleBuilder:
-              (
-                flightContext,
-                animation,
-                flightDirection,
-                fromHeroContext,
-                toHeroContext,
-              ) {
-                return Material(
-                  color: AppColors.card,
-                  elevation: 0,
-                  borderRadius: BorderRadius.circular(24),
-                  clipBehavior: Clip.antiAlias,
-                  child: Container(color: AppColors.card),
-                );
-              },
-          child: GestureDetector(
-            onTap: _onCardTap,
-            child: Container(
-              decoration: BoxDecoration(
-                color: widget.metric.primaryColor,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Stack(
-                  children: [
-                    // Content - Layout for square card
-                    Opacity(
-                      opacity: _contentFadeAnimation.value,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            const SizedBox(height: 8),
-                            Text(
-                              widget.metric.nameId,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.card,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.baseline,
-                              textBaseline: TextBaseline.alphabetic,
-                              children: [
-                                Text(
-                                  widget.metric.displayValue,
-                                  style: TextStyle(
-                                    fontSize: 21,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.card,
-                                    height: 1,
-                                  ),
-                                ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  widget.metric.unit,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: AppColors.card,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Spacer(),
-                            Center(
-                              child: MiniBarChart(
-                                primaryColor: widget.metric.primaryColor,
-                                barCount: 9,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // Chipped corner icon
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: Opacity(
-                        opacity: _contentFadeAnimation.value,
-                        child: Container(
-                          width: widget.chipSize,
-                          height: widget.chipSize,
-                          decoration: BoxDecoration(
-                            color: AppColors.card.withValues(alpha: 0.2),
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(20),
-                              topRight: Radius.circular(24),
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              widget.metric.icon,
-                              color: AppColors.card,
-                              size: widget.iconSize,
-                            ),
-                          ),
-                        ),
-                      ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
               ),
             ),
           ),
-        );
-      },
+
+          // 2. Mini Chart (NOT a hero - just static)
+          Positioned(
+            bottom: 16,
+            left: 12,
+            right: 12,
+            child: MiniBarChart(
+              primaryColor: widget.metric.primaryColor,
+              barCount: 9,
+            ),
+          ),
+
+          // 3. Content: Title, Value, Unit (NOT heroes - just text)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                Text(
+                  widget.metric.nameId,
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.card,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      widget.metric.displayValue,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                      style: TextStyle(
+                        fontSize: 21,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.card,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      widget.metric.unit,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.card,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // 4. Icon Hero
+          Positioned(
+            top: 0,
+            right: 0,
+            child: Hero(
+              tag: 'metric_icon_$metricId',
+              createRectTween: createTween,
+              child: Container(
+                width: widget.chipSize,
+                height: widget.chipSize,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                padding: EdgeInsets.all(widget.chipSize * 0.2),
+                child: Icon(
+                  widget.metric.icon,
+                  color: AppColors.card,
+                  size: widget.iconSize,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onCardTap() {
+    // Navigate with custom transparent route to keep home screen visible during animation
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false, // Allow home screen to show through
+        barrierColor: Colors.transparent,
+        transitionDuration: const Duration(milliseconds: 400),
+        reverseTransitionDuration: const Duration(milliseconds: 350),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return MetricDetailScreen(
+            metric: widget.metric,
+            routeAnimation: animation,
+          );
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // No fade transition - let hero animation be the only animation
+          // This prevents compositing issues at animation boundaries
+          return child;
+        },
+      ),
     );
   }
 }

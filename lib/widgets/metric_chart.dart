@@ -36,7 +36,7 @@ class _MetricChartState extends State<MetricChart> {
 
     return Column(
       children: [
-        // Chart Container
+        // Chart Container - fills the fixed height from parent
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -154,26 +154,26 @@ class _MetricChartState extends State<MetricChart> {
           tooltipRoundedRadius: 8,
           tooltipPadding: const EdgeInsets.all(12),
           getTooltipItems: (touchedSpots) {
-            // Only show tooltip for the last line (main data line), not reference zones
-            if (touchedSpots.isEmpty) return [];
-
-            // Get the last spot which corresponds to the main data line
-            final spot = touchedSpots.last;
-            final index = spot.x.toInt();
-            if (index >= 0 && index < widget.readings.length) {
-              final reading = widget.readings[index];
-              return [
-                LineTooltipItem(
-                  _getTooltipText(reading),
-                  const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ];
-            }
-            return [];
+            // Must return same number of items as touchedSpots (one per line)
+            return touchedSpots.map((spot) {
+              // Only show tooltip for main data line (last in list)
+              if (spot == touchedSpots.last) {
+                final index = spot.x.toInt();
+                if (index >= 0 && index < widget.readings.length) {
+                  final reading = widget.readings[index];
+                  return LineTooltipItem(
+                    _getTooltipText(reading),
+                    const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                }
+              }
+              // Return null for reference zones (no tooltip)
+              return null;
+            }).toList();
           },
         ),
         handleBuiltInTouches: true,
@@ -200,18 +200,25 @@ class _MetricChartState extends State<MetricChart> {
     }).toList();
   }
 
-  List<LineChartBarData> _buildReferenceZones(double chartMinY, double chartMaxY) {
+  List<LineChartBarData> _buildReferenceZones(
+    double chartMinY,
+    double chartMaxY,
+  ) {
     final zones = <LineChartBarData>[];
 
     // Helper to clip zone to chart bounds
-    LineChartBarData? _createClippedZone(double zoneMin, double zoneMax, Color color) {
+    LineChartBarData? _createClippedZone(
+      double zoneMin,
+      double zoneMax,
+      Color color,
+    ) {
       // Clip zone to chart bounds
       final clippedMin = zoneMin.clamp(chartMinY, chartMaxY);
       final clippedMax = zoneMax.clamp(chartMinY, chartMaxY);
-      
+
       // Skip if zone is completely outside chart bounds
       if (clippedMin >= clippedMax) return null;
-      
+
       return _createZoneLine(clippedMax, clippedMin, color);
     }
 
@@ -219,76 +226,100 @@ class _MetricChartState extends State<MetricChart> {
       case MetricType.bloodPressure:
         // Normal zone: 90-120 (systolic) - clipped to chart bounds
         final normalZone = _createClippedZone(
-          90, 120, AppColors.success.withValues(alpha: 0.15),
+          90,
+          120,
+          AppColors.success.withValues(alpha: 0.15),
         );
         if (normalZone != null) zones.add(normalZone);
-        
+
         // Warning zone: 120-140 - clipped to chart bounds
         final warningZone = _createClippedZone(
-          120, 140, AppColors.warning.withValues(alpha: 0.15),
+          120,
+          140,
+          AppColors.warning.withValues(alpha: 0.15),
         );
         if (warningZone != null) zones.add(warningZone);
-        
+
         // Critical zone: 140+ - clipped to chart bounds
         final criticalZone = _createClippedZone(
-          140, chartMaxY, AppColors.error.withValues(alpha: 0.15),
+          140,
+          chartMaxY,
+          AppColors.error.withValues(alpha: 0.15),
         );
         if (criticalZone != null) zones.add(criticalZone);
         break;
       case MetricType.cholesterol:
         // Normal: <200 - clipped to chart bounds
         final normalZone = _createClippedZone(
-          chartMinY, 200, AppColors.success.withValues(alpha: 0.15),
+          chartMinY,
+          200,
+          AppColors.success.withValues(alpha: 0.15),
         );
         if (normalZone != null) zones.add(normalZone);
-        
+
         // Warning: 200-240 - clipped to chart bounds
         final warningZone = _createClippedZone(
-          200, 240, AppColors.warning.withValues(alpha: 0.15),
+          200,
+          240,
+          AppColors.warning.withValues(alpha: 0.15),
         );
         if (warningZone != null) zones.add(warningZone);
-        
+
         // Critical: >240 - clipped to chart bounds
         final criticalZone = _createClippedZone(
-          240, chartMaxY, AppColors.error.withValues(alpha: 0.15),
+          240,
+          chartMaxY,
+          AppColors.error.withValues(alpha: 0.15),
         );
         if (criticalZone != null) zones.add(criticalZone);
         break;
       case MetricType.bloodSugar:
         // Low: <70 - clipped to chart bounds
         final lowZone = _createClippedZone(
-          chartMinY, 70, AppColors.error.withValues(alpha: 0.15),
+          chartMinY,
+          70,
+          AppColors.error.withValues(alpha: 0.15),
         );
         if (lowZone != null) zones.add(lowZone);
-        
+
         // Normal: 70-100 - clipped to chart bounds
         final normalZone = _createClippedZone(
-          70, 100, AppColors.success.withValues(alpha: 0.15),
+          70,
+          100,
+          AppColors.success.withValues(alpha: 0.15),
         );
         if (normalZone != null) zones.add(normalZone);
-        
+
         // Warning: 100-126 - clipped to chart bounds
         final warningZone = _createClippedZone(
-          100, 126, AppColors.warning.withValues(alpha: 0.15),
+          100,
+          126,
+          AppColors.warning.withValues(alpha: 0.15),
         );
         if (warningZone != null) zones.add(warningZone);
-        
+
         // Critical: >126 - clipped to chart bounds
         final criticalZone = _createClippedZone(
-          126, chartMaxY, AppColors.error.withValues(alpha: 0.15),
+          126,
+          chartMaxY,
+          AppColors.error.withValues(alpha: 0.15),
         );
         if (criticalZone != null) zones.add(criticalZone);
         break;
       case MetricType.uricAcid:
         // Male: 3.5-7.2 - clipped to chart bounds
         final normalZone = _createClippedZone(
-          3.5, 7.2, AppColors.success.withValues(alpha: 0.15),
+          3.5,
+          7.2,
+          AppColors.success.withValues(alpha: 0.15),
         );
         if (normalZone != null) zones.add(normalZone);
-        
+
         // Above normal: >7.2 - clipped to chart bounds
         final warningZone = _createClippedZone(
-          7.2, chartMaxY, AppColors.warning.withValues(alpha: 0.15),
+          7.2,
+          chartMaxY,
+          AppColors.warning.withValues(alpha: 0.15),
         );
         if (warningZone != null) zones.add(warningZone);
         break;

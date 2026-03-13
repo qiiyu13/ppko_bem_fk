@@ -5,12 +5,12 @@ import '../../../widgets/metric_chart.dart';
 
 class MetricDetailScreen extends StatefulWidget {
   final HealthMetric metric;
-  final Animation<double>? transitionAnimation;
+  final Animation<double> routeAnimation;
 
   const MetricDetailScreen({
     super.key,
     required this.metric,
-    this.transitionAnimation,
+    required this.routeAnimation,
   });
 
   @override
@@ -19,13 +19,8 @@ class MetricDetailScreen extends StatefulWidget {
 
 class _MetricDetailScreenState extends State<MetricDetailScreen>
     with TickerProviderStateMixin {
-  late AnimationController _colorController;
-  late AnimationController _headerController;
-  late AnimationController _chartController;
-  late Animation<Color?> _backgroundColorAnimation;
-  late Animation<double> _headerFadeAnimation;
+  late Animation<double> _contentFadeAnimation;
   late Animation<double> _chartFadeAnimation;
-  late Animation<Offset> _chartSlideAnimation;
   bool _isClosing = false;
   late List<MetricReading> _readings;
 
@@ -34,308 +29,144 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     super.initState();
     _readings = HealthMetricData.getMockHistoryForType(widget.metric.type);
 
-    // Background color: white -> metric color (300ms)
-    _colorController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _backgroundColorAnimation =
-        ColorTween(
-          begin: AppColors.card,
-          end: widget.metric.primaryColor,
-        ).animate(
-          CurvedAnimation(parent: _colorController, curve: Curves.easeInOut),
-        );
-
-    // Header fades in (300ms)
-    _headerController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _headerFadeAnimation = CurvedAnimation(
-      parent: _headerController,
-      curve: Curves.easeOutCubic,
+    // Content fade animation synchronized with route animation
+    // Content appears after hero is 75% complete (prevents flicker at boundaries)
+    _contentFadeAnimation = CurvedAnimation(
+      parent: widget.routeAnimation,
+      curve: const Interval(0.75, 1.0, curve: Curves.easeOutCubic),
     );
 
-    // Chart slides up (300ms)
-    _chartController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
+    // Chart fades in slightly later for staggered effect
     _chartFadeAnimation = CurvedAnimation(
-      parent: _chartController,
-      curve: Curves.easeOutCubic,
+      parent: widget.routeAnimation,
+      curve: const Interval(0.80, 1.0, curve: Curves.easeOutCubic),
     );
-    _chartSlideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
-          CurvedAnimation(parent: _chartController, curve: Curves.easeOutCubic),
-        );
-
-    // Use transition animation to drive content appearance
-    if (widget.transitionAnimation != null) {
-      widget.transitionAnimation!.addListener(_onTransitionUpdate);
-    } else {
-      // Fallback: animate immediately (all parallel)
-      _colorController.forward();
-      _headerController.forward();
-      _chartController.forward();
-    }
-  }
-
-  void _onTransitionUpdate() {
-    if (!mounted) return;
-
-    final value = widget.transitionAnimation!.value;
-    if (value >= 1.0 && _colorController.status == AnimationStatus.dismissed) {
-      // Hero complete: start color + header + chart all together (300ms parallel)
-      _colorController.forward();
-      _headerController.forward();
-      _chartController.forward();
-      widget.transitionAnimation!.removeListener(_onTransitionUpdate);
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.transitionAnimation?.removeListener(_onTransitionUpdate);
-    _colorController.dispose();
-    _headerController.dispose();
-    _chartController.dispose();
-    super.dispose();
   }
 
   Future<void> _closeScreen() async {
     if (_isClosing) return;
     setState(() => _isClosing = true);
 
-    // Exit sequence: chart + header + color all together (300ms) -> wait (400ms) -> pop
-    // Total: ~700ms before pop
-    await Future.wait([
-      _chartController.reverse(),
-      _headerController.reverse(),
-      _colorController.reverse(),
-    ]);
-
-    if (mounted) {
-      Navigator.of(context).pop();
-    }
+    // Pop immediately - the route's reverse animation will handle content fade
+    // Content fades out during first 25% of reverse animation
+    Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _backgroundColorAnimation,
-      builder: (context, child) {
-        return Hero(
-          tag: 'metric_${widget.metric.type.name}',
-          child: Material(
-            color: _backgroundColorAnimation.value,
-            child: Scaffold(
-              backgroundColor: _backgroundColorAnimation.value,
-              body: SafeArea(
-                child: Column(
-                  children: [
-                    // Header with back button and metric info (fades in)
-                    FadeTransition(
-                      opacity: _headerFadeAnimation,
-                      child: _buildHeader(),
-                    ),
+    final metricId = widget.metric.type.name;
 
-                    // Chart section slides up after header
-                    Expanded(
-                      child: AnimatedBuilder(
-                        animation: _chartController,
-                        builder: (context, child) {
-                          final slideOffset =
-                              (1 - _chartSlideAnimation.value.dy) * 30;
-                          return Visibility(
-                            visible: _chartFadeAnimation.value > 0.01,
-                            child: Opacity(
-                              opacity: _chartFadeAnimation.value,
-                              child: Transform.translate(
-                                offset: Offset(0, slideOffset),
-                                child: child,
-                              ),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(32),
-                              topRight: Radius.circular(32),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              // Drag handle
-                              Container(
-                                margin: const EdgeInsets.only(top: 12),
-                                width: 40,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[300],
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                              // Chart title
-                              Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.show_chart,
-                                      color: widget.metric.primaryColor,
-                                      size: 24,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Riwayat Pengukuran',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Chart with proper constraints
-                              Expanded(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    return SizedBox(
-                                      width: constraints.maxWidth,
-                                      height: constraints.maxHeight,
-                                      child: MetricChart(
-                                        type: widget.metric.type,
-                                        readings: _readings,
-                                        primaryColor:
-                                            widget.metric.primaryColor,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
+    // Use our custom SmoothAspectRatioRectTween for linear, predictable movement
+    RectTween createTween(Rect? begin, Rect? end) {
+      return _SmoothAspectRatioRectTween(begin: begin, end: end);
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Hero 1: Background surface
+          Hero(
+            tag: 'metric_bg_$metricId',
+            transitionOnUserGestures: false,
+            createRectTween: createTween,
+            child: Container(
+              decoration: BoxDecoration(
+                color: widget.metric.primaryColor,
+                // These will interpolate from the card's radius/shadow
+                borderRadius: BorderRadius.zero,
+                boxShadow: const [],
+              ),
+            ),
+          ),
+
+          // Content layer
+          SafeArea(
+            bottom: false,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Header section with Heros - positioned at top
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: _buildHeader(createTween),
+                ),
+                // Chart section - positioned at bottom, shrink-to-fit
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: FadeTransition(
+                    opacity: _contentFadeAnimation,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(32),
+                          topRight: Radius.circular(32),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              // Back button
-              GestureDetector(
-                onTap: _closeScreen,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.close, color: Colors.white, size: 24),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.metric.nameId,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Drag handle
+                          Container(
+                            margin: const EdgeInsets.only(top: 12),
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          // Chart title
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.show_chart,
+                                  color: widget.metric.primaryColor,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Riwayat Pengukuran',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Chart content - fades in with chart animation
+                          // Adaptive height: 450px for taller screens, 280px for standard
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final chartHeight = constraints.maxHeight > 750
+                                  ? 450.0
+                                  : 280.0;
+                              return SizedBox(
+                                height: chartHeight,
+                                child: FadeTransition(
+                                  opacity: _chartFadeAnimation,
+                                  child: MetricChart(
+                                    type: widget.metric.type,
+                                    readings: _readings,
+                                    primaryColor: widget.metric.primaryColor,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.metric.name,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.8),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Status icon
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(widget.metric.icon, color: Colors.white, size: 28),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          // Value display
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                widget.metric.displayValue,
-                style: const TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                widget.metric.unit,
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Status badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  HealthMetricData.getStatusIcon(widget.metric.status),
-                  color: Colors.white,
-                  size: 16,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  HealthMetricData.getStatusLabel(widget.metric.status),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -343,6 +174,193 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildHeader(RectTween Function(Rect? begin, Rect? end) createTween) {
+    final metricId = widget.metric.type.name;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              // Back button (fades in) - always clickable
+              AnimatedBuilder(
+                animation: _contentFadeAnimation,
+                builder: (context, child) {
+                  return Opacity(
+                    opacity: _contentFadeAnimation.value,
+                    child: IgnorePointer(
+                      ignoring: _contentFadeAnimation.value < 0.1,
+                      child: child,
+                    ),
+                  );
+                },
+                child: GestureDetector(
+                  onTap: _closeScreen,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title - fades in with content
+                    FadeTransition(
+                      opacity: _contentFadeAnimation,
+                      child: Text(
+                        widget.metric.nameId,
+                        maxLines: 1,
+                        overflow: TextOverflow.visible,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Subtitle (fades in)
+                    FadeTransition(
+                      opacity: _contentFadeAnimation,
+                      child: Text(
+                        widget.metric.name,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Hero 5: Icon (always visible to destination)
+              Hero(
+                tag: 'metric_icon_$metricId',
+                transitionOnUserGestures: false,
+                createRectTween: createTween,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    widget.metric.icon,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          // Value display with Heros
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Value - fades in with content
+              FadeTransition(
+                opacity: _contentFadeAnimation,
+                child: Text(
+                  widget.metric.displayValue,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                  style: const TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Unit - fades in with content
+              FadeTransition(
+                opacity: _contentFadeAnimation,
+                child: Text(
+                  widget.metric.unit,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Status badge (fades in)
+          FadeTransition(
+            opacity: _contentFadeAnimation,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    HealthMetricData.getStatusIcon(widget.metric.status),
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    HealthMetricData.getStatusLabel(widget.metric.status),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Custom RectTween that provides a smooth, linear expansion of the rect.
+class _SmoothAspectRatioRectTween extends RectTween {
+  _SmoothAspectRatioRectTween({required Rect? begin, required Rect? end})
+    : super(begin: begin, end: end);
+
+  @override
+  Rect lerp(double t) {
+    if (begin == null || end == null) return super.lerp(t) ?? Rect.zero;
+
+    return Rect.fromCenter(
+      center: Offset(
+        begin!.center.dx + (end!.center.dx - begin!.center.dx) * t,
+        begin!.center.dy + (end!.center.dy - begin!.center.dy) * t,
+      ),
+      width: begin!.width + (end!.width - begin!.width) * t,
+      height: begin!.height + (end!.height - begin!.height) * t,
     );
   }
 }
