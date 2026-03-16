@@ -87,7 +87,7 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: bottomPadding + 12,
+            bottom: bottomPadding,
             child: CustomBottomNav(
               currentIndex: _currentIndex,
               onTap: (index) {
@@ -111,6 +111,4 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
       ),
     );
   }
-
-  
 }

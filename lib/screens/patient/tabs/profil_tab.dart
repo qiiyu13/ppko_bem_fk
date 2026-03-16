@@ -30,8 +30,6 @@ class ProfilTab extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: spacing),
-
                     // Header
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -58,7 +56,10 @@ class ProfilTab extends StatelessWidget {
                           ],
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
@@ -86,7 +87,7 @@ class ProfilTab extends StatelessWidget {
                       ],
                     ),
 
-                    SizedBox(height: spacing * 2),
+                    SizedBox(height: spacing * 1.5),
 
                     // Active Profile Card
                     StreamBuilder<FamilyProfile?>(
@@ -94,7 +95,8 @@ class ProfilTab extends StatelessWidget {
                       initialData: ProfileService.instance.activeProfile,
                       builder: (context, snapshot) {
                         final activeProfile = snapshot.data;
-                        if (activeProfile == null) return const SizedBox.shrink();
+                        if (activeProfile == null)
+                          return const SizedBox.shrink();
 
                         return _buildActiveProfileCard(
                           activeProfile,
@@ -135,13 +137,15 @@ class ProfilTab extends StatelessWidget {
                     SizedBox(height: spacing),
 
                     // List of all profiles
-                    ...profiles.map((profile) => _buildProfileListItem(
-                      profile,
-                      screenWidth,
-                      padding,
-                      spacing,
-                      context,
-                    )),
+                    ...profiles.map(
+                      (profile) => _buildProfileListItem(
+                        profile,
+                        screenWidth,
+                        padding,
+                        spacing,
+                        context,
+                      ),
+                    ),
 
                     SizedBox(height: spacing),
                   ],
@@ -202,7 +206,10 @@ class ProfilTab extends StatelessWidget {
               children: [
                 // Badge row
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
@@ -241,10 +248,16 @@ class ProfilTab extends StatelessWidget {
                   children: [
                     _buildInfoChipCompact('${profile.age} Tahun', Icons.cake),
                     const SizedBox(width: 8),
-                    _buildInfoChipCompact(profile.gender, profile.gender == 'Pria' ? Icons.male : Icons.female),
+                    _buildInfoChipCompact(
+                      profile.gender,
+                      profile.gender == 'Pria' ? Icons.male : Icons.female,
+                    ),
                     if (profile.bloodType != null) ...[
                       const SizedBox(width: 8),
-                      _buildInfoChipCompact(profile.bloodType!, Icons.water_drop),
+                      _buildInfoChipCompact(
+                        profile.bloodType!,
+                        Icons.water_drop,
+                      ),
                     ],
                   ],
                 ),
@@ -358,7 +371,9 @@ class ProfilTab extends StatelessWidget {
                       child: Icon(
                         Icons.person,
                         size: 24,
-                        color: isActive ? AppColors.primary : AppColors.textSecondary,
+                        color: isActive
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
                       ),
                     ),
                     SizedBox(width: padding * 0.75),
@@ -373,7 +388,9 @@ class ProfilTab extends StatelessWidget {
                                   profile.name,
                                   style: TextStyle(
                                     fontSize: 15,
-                                    fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
+                                    fontWeight: isActive
+                                        ? FontWeight.bold
+                                        : FontWeight.w600,
                                     color: AppColors.textPrimary,
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -382,7 +399,10 @@ class ProfilTab extends StatelessWidget {
                               if (isActive) ...[
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AppColors.primary,
                                     borderRadius: BorderRadius.circular(4),
@@ -412,16 +432,15 @@ class ProfilTab extends StatelessWidget {
                             '${profile.age} tahun • ${profile.gender}${profile.bloodType != null ? ' • ${profile.bloodType}' : ''}',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textSecondary.withValues(alpha: 0.7),
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.7,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Icon(
-                      Icons.more_vert,
-                      color: AppColors.textSecondary,
-                    ),
+                    Icon(Icons.more_vert, color: AppColors.textSecondary),
                   ],
                 ),
               ),
@@ -432,7 +451,11 @@ class ProfilTab extends StatelessWidget {
     );
   }
 
-  void _showProfileOptions(BuildContext context, FamilyProfile profile, bool isActive) {
+  void _showProfileOptions(
+    BuildContext context,
+    FamilyProfile profile,
+    bool isActive,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -458,9 +481,13 @@ class ProfilTab extends StatelessWidget {
                 leading: Icon(Icons.switch_account, color: AppColors.primary),
                 title: Text(
                   isActive ? 'Profil Aktif' : 'Pilih Profil Ini',
-                  style: TextStyle(color: isActive ? AppColors.primary : AppColors.textPrimary),
+                  style: TextStyle(
+                    color: isActive ? AppColors.primary : AppColors.textPrimary,
+                  ),
                 ),
-                trailing: isActive ? Icon(Icons.check, color: AppColors.primary) : null,
+                trailing: isActive
+                    ? Icon(Icons.check, color: AppColors.primary)
+                    : null,
                 onTap: () async {
                   if (!isActive) {
                     await ProfileService.instance.setActiveProfile(profile.id);
@@ -478,7 +505,10 @@ class ProfilTab extends StatelessWidget {
               ),
               ListTile(
                 leading: Icon(Icons.delete, color: Colors.red[400]),
-                title: Text('Hapus Profil', style: TextStyle(color: Colors.red[400])),
+                title: Text(
+                  'Hapus Profil',
+                  style: TextStyle(color: Colors.red[400]),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _showDeleteConfirmation(context, profile);
@@ -513,7 +543,9 @@ class ProfilTab extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Hapus Profil'),
-        content: Text('Apakah Anda yakin ingin menghapus profil ${profile.name}? Semua data terkait akan dihapus.'),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus profil ${profile.name}? Semua data terkait akan dihapus.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
