@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/tanaman_article.dart';
+import '../../../utils/asset_helper.dart';
 import '../tanaman_article_detail_screen.dart';
 
 class TanamanTogaTab extends StatelessWidget {
@@ -73,7 +74,7 @@ class _ArticleCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: article.imagePath.isNotEmpty
                     ? Image.asset(
-                        article.imagePath,
+                        AssetHelper.getImagePath(article.imagePath.replaceFirst('assets/images/', '')),
                         width: 80,
                         height: 80,
                         fit: BoxFit.cover,

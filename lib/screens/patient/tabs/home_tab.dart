@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../constants/app_colors.dart';
+import '../../../utils/asset_helper.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../screens/patient/laporan_saya_screen.dart';
 import '../../../screens/patient/metrics/metric_detail_screen.dart';
@@ -291,7 +292,7 @@ class HomeTab extends StatelessWidget {
                             ),
                             const SizedBox(width: 12),
                             SvgPicture.asset(
-                              'assets/svg/medical-research-v2.svg',
+                              AssetHelper.getSvgPath('medical-research-v2.svg'),
                               height: 86,
                               width: 86,
                               fit: BoxFit.contain,
@@ -437,7 +438,7 @@ class HomeTab extends StatelessWidget {
         child: Row(
           children: [
             SvgPicture.asset(
-              'assets/svg/document-icon.svg',
+              AssetHelper.getSvgPath('document-icon.svg'),
               height: iconSize * 2.2,
               width: iconSize * 2.2,
               fit: BoxFit.contain,

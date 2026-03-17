@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../utils/asset_helper.dart';
 import 'welcome_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -70,7 +71,7 @@ class _SplashScreenState extends State<SplashScreen>
         },
         child: Center(
           child: SvgPicture.asset(
-            'assets/svg/Group 2.svg',
+            AssetHelper.getSvgPath('Group 2.svg'),
             width: 240,
             height: 67,
             fit: BoxFit.contain,

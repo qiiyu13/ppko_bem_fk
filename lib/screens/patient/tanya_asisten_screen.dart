@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/app_colors.dart';
+import '../../utils/asset_helper.dart';
 import '../../utils/responsive_size.dart';
 import '../../services/chat_storage_service.dart';
 
@@ -207,11 +208,11 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
               border: Border.all(color: AppColors.surface, width: 1),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: SvgPicture.asset(
-                'assets/svg/doodle-01.svg',
-                fit: BoxFit.cover,
-              ),
+            borderRadius: BorderRadius.circular(8),
+            child: SvgPicture.asset(
+            AssetHelper.getSvgPath('doodle-01.svg'),
+            fit: BoxFit.cover,
+            ),
             ),
           ),
           SizedBox(width: ResponsiveSize.paddingSmall),
@@ -319,11 +320,11 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
                       border: Border.all(color: AppColors.surface, width: 1),
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: SvgPicture.asset(
-                        'assets/svg/doodle-01.svg',
-                        fit: BoxFit.cover,
-                      ),
+                    borderRadius: BorderRadius.circular(6),
+                    child: SvgPicture.asset(
+                    AssetHelper.getSvgPath('doodle-01.svg'),
+                    fit: BoxFit.cover,
+                    ),
                     ),
                   ),
                 ],
@@ -434,7 +435,7 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(6),
                 child: SvgPicture.asset(
-                  'assets/svg/doodle-01.svg',
+                  AssetHelper.getSvgPath('doodle-01.svg'),
                   fit: BoxFit.cover,
                 ),
               ),

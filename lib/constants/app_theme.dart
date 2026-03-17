@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
@@ -56,11 +57,12 @@ class AppTheme {
   // ============================================
   // TYPOGRAPHY TOKENS
   // ============================================
-  static const String fontFamily = 'Plus Jakarta Sans';
+  static const String _baseFontFamily = 'Plus Jakarta Sans';
+  static String get fontFamily => kIsWeb ? 'packages/mediku/$_baseFontFamily' : _baseFontFamily;
 
   // Metric numbers (health data)
   static TextStyle metricNumber(BuildContext context) {
-    return const TextStyle(
+    return TextStyle(
       fontFamily: fontFamily,
       fontSize: 28,
       fontWeight: FontWeight.w700,
@@ -81,7 +83,7 @@ class AppTheme {
   }
 
   // Card labels
-  static const TextStyle cardLabel = TextStyle(
+  static TextStyle get cardLabel => TextStyle(
     fontFamily: fontFamily,
     fontSize: 14,
     fontWeight: FontWeight.w500,
@@ -90,7 +92,7 @@ class AppTheme {
   );
 
   // Screen titles
-  static const TextStyle screenTitle = TextStyle(
+  static TextStyle get screenTitle => TextStyle(
     fontFamily: fontFamily,
     fontSize: 22,
     fontWeight: FontWeight.w700,
@@ -99,7 +101,7 @@ class AppTheme {
   );
 
   // Section headings
-  static const TextStyle sectionTitle = TextStyle(
+  static TextStyle get sectionTitle => TextStyle(
     fontFamily: fontFamily,
     fontSize: 18,
     fontWeight: FontWeight.w700,
@@ -108,7 +110,7 @@ class AppTheme {
   );
 
   // Body text (minimum 16sp for elderly users)
-  static const TextStyle bodyLarge = TextStyle(
+  static TextStyle get bodyLarge => TextStyle(
     fontFamily: fontFamily,
     fontSize: 16,
     fontWeight: FontWeight.w400,
@@ -116,7 +118,7 @@ class AppTheme {
     height: 1.5,
   );
 
-  static const TextStyle bodyMedium = TextStyle(
+  static TextStyle get bodyMedium => TextStyle(
     fontFamily: fontFamily,
     fontSize: 14,
     fontWeight: FontWeight.w400,
@@ -124,7 +126,7 @@ class AppTheme {
     height: 1.5,
   );
 
-  static const TextStyle bodySmall = TextStyle(
+  static TextStyle get bodySmall => TextStyle(
     fontFamily: fontFamily,
     fontSize: 12,
     fontWeight: FontWeight.w400,
@@ -133,7 +135,7 @@ class AppTheme {
   );
 
   // Button text
-  static const TextStyle buttonText = TextStyle(
+  static TextStyle get buttonText => TextStyle(
     fontFamily: fontFamily,
     fontSize: 16,
     fontWeight: FontWeight.w600,
@@ -143,7 +145,7 @@ class AppTheme {
   );
 
   // AppBar title
-  static const TextStyle appBarTitle = TextStyle(
+  static TextStyle get appBarTitle => TextStyle(
     fontFamily: fontFamily,
     fontSize: 18,
     fontWeight: FontWeight.w600,
@@ -206,7 +208,7 @@ class AppTheme {
         borderRadius: BorderRadius.circular(radiusMedium),
         borderSide: const BorderSide(color: AppColors.statusRed),
       ),
-      hintStyle: const TextStyle(
+      hintStyle: TextStyle(
         fontFamily: fontFamily,
         fontSize: 16,
         fontWeight: FontWeight.w400,
@@ -249,7 +251,7 @@ class AppTheme {
           horizontal: spaceMedium,
           vertical: spaceSmall,
         ),
-        textStyle: const TextStyle(
+        textStyle: TextStyle(
           fontFamily: fontFamily,
           fontSize: 16,
           fontWeight: FontWeight.w600,
@@ -274,7 +276,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
         ),
-        textStyle: const TextStyle(
+        textStyle: TextStyle(
           fontFamily: fontFamily,
           fontSize: 16,
           fontWeight: FontWeight.w600,
@@ -305,12 +307,12 @@ class AppTheme {
       backgroundColor: AppColors.background,
       selectedItemColor: AppColors.primary,
       unselectedItemColor: AppColors.textSecondary,
-      selectedLabelStyle: const TextStyle(
+      selectedLabelStyle: TextStyle(
         fontFamily: fontFamily,
         fontSize: 11,
         fontWeight: FontWeight.w600,
       ),
-      unselectedLabelStyle: const TextStyle(
+      unselectedLabelStyle: TextStyle(
         fontFamily: fontFamily,
         fontSize: 11,
         fontWeight: FontWeight.w400,
@@ -341,13 +343,13 @@ class AppTheme {
     return ChipThemeData(
       backgroundColor: AppColors.primarySurface,
       selectedColor: AppColors.primary,
-      labelStyle: const TextStyle(
+      labelStyle: TextStyle(
         fontFamily: fontFamily,
         fontSize: 14,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
       ),
-      secondaryLabelStyle: const TextStyle(
+      secondaryLabelStyle: TextStyle(
         fontFamily: fontFamily,
         fontSize: 14,
         fontWeight: FontWeight.w600,
@@ -380,7 +382,7 @@ class AppTheme {
   static SnackBarThemeData get snackBarTheme {
     return SnackBarThemeData(
       backgroundColor: AppColors.textPrimary,
-      contentTextStyle: const TextStyle(
+      contentTextStyle: TextStyle(
         fontFamily: fontFamily,
         fontSize: 16,
         fontWeight: FontWeight.w400,

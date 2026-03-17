@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../utils/asset_helper.dart';
 
 /// Icon-only floating pill navigation bar with sliding active indicator.
 /// Features: 5 evenly-spaced icons, animated sliding circular indicator.
@@ -97,12 +98,12 @@ class CustomBottomNav extends StatelessWidget {
                       iconSize: iconSize,
                     ),
                     _buildNavItem(
-                      imagePath: 'assets/icon/leaf_icon.png',
+                      imagePath: AssetHelper.getIconPath('leaf_icon.png'),
                       index: 2,
                       iconSize: iconSize,
                     ),
                     _buildNavItem(
-                      imagePath: 'assets/icon/chat.png',
+                      imagePath: AssetHelper.getIconPath('chat.png'),
                       index: 3,
                       iconSize: iconSize,
                     ),

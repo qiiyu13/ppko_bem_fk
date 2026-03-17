@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:async';
 import '../constants/app_colors.dart';
+import '../utils/asset_helper.dart';
 import 'patient/patient_main_screen.dart';
 import 'admin/admin_main_screen.dart';
 import 'superadmin/superadmin_main_screen.dart';
@@ -244,7 +245,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     children: [
                       Center(
                         child: SvgPicture.asset(
-                          'assets/svg/doctor_modified.svg',
+                          AssetHelper.getSvgPath('doctor_modified.svg'),
                           height: screenHeight * 0.45,
                           fit: BoxFit.contain,
                         ),

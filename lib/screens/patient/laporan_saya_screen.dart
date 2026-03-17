@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/app_colors.dart';
+import '../../utils/asset_helper.dart';
 import '../../utils/responsive_size.dart';
 
 class LaporanSayaScreen extends StatelessWidget {
@@ -398,7 +399,7 @@ class _ExpandableScreeningCardWidgetState
                 children: [
                   // Document icon
                   SvgPicture.asset(
-                    'assets/svg/document_recolored_final (2).svg',
+                    AssetHelper.getSvgPath('document_recolored_final (2).svg'),
                     width: ResponsiveSize.iconMedium * 1.2,
                     height: ResponsiveSize.iconMedium * 1.2,
                   ),
@@ -779,7 +780,7 @@ class _TouchableSuggestionCardState extends State<TouchableSuggestionCard>
     if (widget.iconAsset != null) {
       if (widget.isSvg) {
         return SvgPicture.asset(
-          widget.iconAsset!,
+          AssetHelper.getSvgPath(widget.iconAsset!.replaceFirst('assets/svg/', '').replaceFirst('assets/images/', '')),
           width: ResponsiveSize.iconMedium,
           height: ResponsiveSize.iconMedium,
           colorFilter: ColorFilter.mode(widget.iconColor, BlendMode.srcIn),

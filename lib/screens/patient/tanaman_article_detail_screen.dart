@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../models/tanaman_article.dart';
+import '../../utils/asset_helper.dart';
 
 class TanamanArticleDetailScreen extends StatelessWidget {
   final TanamanArticle article;
@@ -27,7 +28,7 @@ class TanamanArticleDetailScreen extends StatelessWidget {
               background: Hero(
                 tag: 'article_image_${article.id}',
                 child: Image.asset(
-                  article.imagePath,
+                  AssetHelper.getImagePath(article.imagePath.replaceFirst('assets/images/', '')),
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: double.infinity,
