@@ -40,4 +40,20 @@ class AssetHelper {
     }
     return fontFamily;
   }
+
+  /// Get web-optimized image path for faster loading
+  /// Falls back to original if web version doesn't exist
+  /// Only applies to web platform - mobile uses original high-res
+  static String getWebImagePath(String filename) {
+    if (kIsWeb) {
+      // Convert to webp extension
+      final webpFilename = filename
+          .replaceAll('.jpg', '.webp')
+          .replaceAll('.jpeg', '.webp')
+          .replaceAll('.png', '.webp');
+      return 'packages/mediku/assets/images/web/$webpFilename';
+    }
+    // Mobile uses original high-res
+    return 'packages/mediku/assets/images/$filename';
+  }
 }
