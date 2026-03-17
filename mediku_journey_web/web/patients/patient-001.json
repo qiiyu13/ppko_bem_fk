@@ -1,0 +1,89 @@
+{
+  "id": "patient-001",
+  "name": "Budi Santoso",
+  "age": 45,
+  "gender": "Pria",
+  "bloodType": "O+",
+  "avatarUrl": null,
+  "summary": "Perjalanan kesehatan 6 bulan terakhir menunjukkan perbaikan signifikan",
+  "metrics": {
+    "bloodPressure": {
+      "current": "120/80",
+      "unit": "mmHg",
+      "history": [
+        {"date": "2024-07-01", "value": 135, "secondaryValue": 88},
+        {"date": "2024-08-01", "value": 128, "secondaryValue": 85},
+        {"date": "2024-09-01", "value": 125, "secondaryValue": 82},
+        {"date": "2024-10-01", "value": 122, "secondaryValue": 80},
+        {"date": "2024-11-01", "value": 120, "secondaryValue": 78},
+        {"date": "2024-12-01", "value": 120, "secondaryValue": 80}
+      ]
+    },
+    "cholesterol": {
+      "current": "195",
+      "unit": "mg/dL",
+      "history": [
+        {"date": "2024-07-01", "value": 220},
+        {"date": "2024-08-01", "value": 215},
+        {"date": "2024-09-01", "value": 210},
+        {"date": "2024-10-01", "value": 205},
+        {"date": "2024-11-01", "value": 200},
+        {"date": "2024-12-01", "value": 195}
+      ]
+    },
+    "bloodSugar": {
+      "current": "95",
+      "unit": "mg/dL",
+      "history": [
+        {"date": "2024-07-01", "value": 105},
+        {"date": "2024-08-01", "value": 102},
+        {"date": "2024-09-01", "value": 100},
+        {"date": "2024-10-01", "value": 98},
+        {"date": "2024-11-01", "value": 96},
+        {"date": "2024-12-01", "value": 95}
+      ]
+    },
+    "uricAcid": {
+      "current": "5.8",
+      "unit": "mg/dL",
+      "history": [
+        {"date": "2024-07-01", "value": 6.8},
+        {"date": "2024-08-01", "value": 6.5},
+        {"date": "2024-09-01", "value": 6.2},
+        {"date": "2024-10-01", "value": 6.0},
+        {"date": "2024-11-01", "value": 5.9},
+        {"date": "2024-12-01", "value": 5.8}
+      ]
+    }
+  },
+  "timeline": [
+    {
+      "date": "2024-07-15",
+      "type": "appointment",
+      "title": "Pemeriksaan Awal",
+      "description": "Tekanan darah tinggi, diberikan rekomendasi diet",
+      "status": "completed"
+    },
+    {
+      "date": "2024-08-20",
+      "type": "lab",
+      "title": "Cek Lab Bulanan",
+      "description": "Kolesterol menurun, perbaikan terlihat",
+      "status": "completed"
+    },
+    {
+      "date": "2024-09-25",
+      "type": "appointment",
+      "title": "Kontrol Rutin",
+      "description": "Tekanan darah mulai normal, lanjutkan pola hidup sehat",
+      "status": "completed"
+    },
+    {
+      "date": "2024-11-10",
+      "type": "lab",
+      "title": "Cek Lab 3 Bulanan",
+      "description": "Semua parameter dalam batas normal",
+      "status": "completed"
+    }
+  ]
+}
