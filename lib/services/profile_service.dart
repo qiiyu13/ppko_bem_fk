@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 import '../models/family_profile.dart';
 import 'database_helper.dart';
@@ -13,7 +12,8 @@ class ProfileService {
   List<FamilyProfile> _profiles = [];
 
   final _activeProfileController = StreamController<FamilyProfile?>.broadcast();
-  Stream<FamilyProfile?> get activeProfileStream => _activeProfileController.stream;
+  Stream<FamilyProfile?> get activeProfileStream =>
+      _activeProfileController.stream;
 
   final _profilesController = StreamController<List<FamilyProfile>>.broadcast();
   Stream<List<FamilyProfile>> get profilesStream => _profilesController.stream;
@@ -27,15 +27,16 @@ class ProfileService {
   }
 
   Future<void> _loadProfiles() async {
-    final db = await DatabaseHelper.instance.database;
-    final maps = await db.query('family_profiles', orderBy: 'created_at DESC');
+    final maps = await DatabaseHelper.instance.query(
+      'family_profiles',
+      orderBy: 'created_at DESC',
+    );
     _profiles = maps.map((map) => FamilyProfile.fromMap(map)).toList();
     _profilesController.add(_profiles);
   }
 
   Future<void> _loadActiveProfile() async {
-    final db = await DatabaseHelper.instance.database;
-    final result = await db.query(
+    final result = await DatabaseHelper.instance.query(
       'app_state',
       where: 'key = ?',
       whereArgs: ['active_profile_id'],
@@ -60,12 +61,10 @@ class ProfileService {
   }
 
   Future<void> _saveActiveProfileId(String profileId) async {
-    final db = await DatabaseHelper.instance.database;
-    await db.insert(
-      'app_state',
-      {'key': 'active_profile_id', 'value': profileId},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await DatabaseHelper.instance.insert('app_state', {
+      'key': 'active_profile_id',
+      'value': profileId,
+    });
   }
 
   Future<void> setActiveProfile(String profileId) async {
@@ -99,9 +98,7 @@ class ProfileService {
       phone: phone,
     );
 
-    final db = await DatabaseHelper.instance.database;
-    await db.insert('family_profiles', profile.toMap());
-
+    await DatabaseHelper.instance.insert('family_profiles', profile.toMap());
     await _loadProfiles();
 
     // If this is the first profile, set it as active
@@ -113,8 +110,7 @@ class ProfileService {
   }
 
   Future<void> updateProfile(FamilyProfile profile) async {
-    final db = await DatabaseHelper.instance.database;
-    await db.update(
+    await DatabaseHelper.instance.update(
       'family_profiles',
       profile.toMap(),
       where: 'id = ?',
@@ -131,12 +127,22 @@ class ProfileService {
   }
 
   Future<void> deleteProfile(String profileId) async {
-    final db = await DatabaseHelper.instance.database;
-    
     // Delete related data first
-    await db.delete('health_metrics', where: 'profile_id = ?', whereArgs: [profileId]);
-    await db.delete('appointments', where: 'profile_id = ?', whereArgs: [profileId]);
-    await db.delete('family_profiles', where: 'id = ?', whereArgs: [profileId]);
+    await DatabaseHelper.instance.delete(
+      'health_metrics',
+      where: 'profile_id = ?',
+      whereArgs: [profileId],
+    );
+    await DatabaseHelper.instance.delete(
+      'appointments',
+      where: 'profile_id = ?',
+      whereArgs: [profileId],
+    );
+    await DatabaseHelper.instance.delete(
+      'family_profiles',
+      where: 'id = ?',
+      whereArgs: [profileId],
+    );
 
     await _loadProfiles();
 
