@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../models/tanaman_article.dart';
@@ -6,10 +7,7 @@ import '../../utils/asset_helper.dart';
 class TanamanArticleDetailScreen extends StatelessWidget {
   final TanamanArticle article;
 
-  const TanamanArticleDetailScreen({
-    super.key,
-    required this.article,
-  });
+  const TanamanArticleDetailScreen({super.key, required this.article});
 
   @override
   Widget build(BuildContext context) {
@@ -28,10 +26,26 @@ class TanamanArticleDetailScreen extends StatelessWidget {
               background: Hero(
                 tag: 'article_image_${article.id}',
                 child: Image.asset(
-                  AssetHelper.getImagePath(article.imagePath.replaceFirst('assets/images/', '')),
+                  kIsWeb
+                      ? AssetHelper.getWebImagePath(
+                          article.imagePath.replaceFirst('assets/images/', ''),
+                        )
+                      : AssetHelper.getImagePath(
+                          article.imagePath.replaceFirst('assets/images/', ''),
+                        ),
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: double.infinity,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Image.asset(
+                      AssetHelper.getImagePath(
+                        article.imagePath.replaceFirst('assets/images/', ''),
+                      ),
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                    );
+                  },
                 ),
               ),
             ),
@@ -42,10 +56,7 @@ class TanamanArticleDetailScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: AppColors.primary,
-                ),
+                icon: const Icon(Icons.arrow_back, color: AppColors.primary),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
