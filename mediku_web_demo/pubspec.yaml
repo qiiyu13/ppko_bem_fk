@@ -1,5 +1,5 @@
 name: mediku_web_demo
-description: "Web demo wrapper for Mediku mobile app"
+description: "Web demo with mock data - standalone"
 
 publish_to: 'none'
 
@@ -13,11 +13,6 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   device_preview: ^1.2.0
-  sqflite_common_ffi_web: ^0.4.2+9
-  
-  # Import the main Mediku app
-  mediku:
-    path: ../
 
 dev_dependencies:
   flutter_test:
