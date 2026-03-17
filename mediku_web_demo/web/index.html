@@ -20,6 +20,11 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="MEDIKU Mobile App Demo">
 
+  <!-- Cache control for development -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -31,8 +36,80 @@
 
   <title>MEDIKU Mobile Demo</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Loading screen styles -->
+  <link rel="stylesheet" href="loading-style.css">
 </head>
 <body>
+  <!-- Loading screen -->
+  <div id="loading-container">
+    <svg id="loading-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <!-- Leaf shape -->
+      <path d="M50 8 Q75 28 75 50 Q75 75 50 92 Q25 75 25 50 Q25 28 50 8" 
+            fill="#144425" opacity="0.9"/>
+      <!-- Leaf vein -->
+      <path d="M50 8 Q50 50 50 92" stroke="#1E6B38" stroke-width="2.5" fill="none"/>
+      <!-- Side veins -->
+      <path d="M50 25 Q60 35 68 30" stroke="#1E6B38" stroke-width="1.5" fill="none" opacity="0.7"/>
+      <path d="M50 40 Q62 48 70 42" stroke="#1E6B38" stroke-width="1.5" fill="none" opacity="0.7"/>
+      <path d="M50 55 Q60 62 65 58" stroke="#1E6B38" stroke-width="1.5" fill="none" opacity="0.7"/>
+      <path d="M50 25 Q40 35 32 30" stroke="#1E6B38" stroke-width="1.5" fill="none" opacity="0.7"/>
+      <path d="M50 40 Q38 48 30 42" stroke="#1E6B38" stroke-width="1.5" fill="none" opacity="0.7"/>
+      <path d="M50 55 Q40 62 35 58" stroke="#1E6B38" stroke-width="1.5" fill="none" opacity="0.7"/>
+    </svg>
+    <div id="loading-text">Mediku</div>
+    <div id="loading-bar-container">
+      <div id="loading-bar"></div>
+    </div>
+    <div id="loading-status">Loading application...</div>
+    <div id="loading-info">This may take a moment on first load</div>
+  </div>
+
   <script src="flutter_bootstrap.js" async></script>
+
+  <script>
+    // Hide loading screen when Flutter app is ready
+    window.addEventListener('flutter-first-frame', function () {
+      var loadingContainer = document.getElementById('loading-container');
+      if (loadingContainer) {
+        loadingContainer.style.opacity = '0';
+        loadingContainer.style.transition = 'opacity 0.5s ease';
+        setTimeout(function() {
+          loadingContainer.style.display = 'none';
+        }, 500);
+      }
+    });
+    
+    // Track asset loading progress
+    var assetCount = 0;
+    var loadingStatus = document.getElementById('loading-status');
+    
+    // Override fetch to track progress
+    var originalFetch = window.fetch;
+    window.fetch = function(url) {
+      // Only count asset fetches
+      if (typeof url === 'string' && url.includes('assets/')) {
+        assetCount++;
+        if (loadingStatus && assetCount <= 30) {
+          loadingStatus.textContent = 'Loading assets... (' + assetCount + ')';
+        } else if (loadingStatus) {
+          loadingStatus.textContent = 'Almost ready...';
+        }
+      }
+      return originalFetch.apply(this, arguments);
+    };
+    
+    // Fallback: hide loading after 15 seconds max
+    setTimeout(function() {
+      var loadingContainer = document.getElementById('loading-container');
+      if (loadingContainer && loadingContainer.style.display !== 'none') {
+        loadingContainer.style.opacity = '0';
+        loadingContainer.style.transition = 'opacity 0.5s ease';
+        setTimeout(function() {
+          loadingContainer.style.display = 'none';
+        }, 500);
+      }
+    }, 15000);
+  </script>
 </body>
 </html>
