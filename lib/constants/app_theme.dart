@@ -58,7 +58,7 @@ class AppTheme {
   // TYPOGRAPHY TOKENS
   // ============================================
   static const String _baseFontFamily = 'Plus Jakarta Sans';
-  static String get fontFamily => kIsWeb ? 'packages/mediku/$_baseFontFamily' : _baseFontFamily;
+  static String get fontFamily => _baseFontFamily;
 
   // Metric numbers (health data)
   static TextStyle metricNumber(BuildContext context) {

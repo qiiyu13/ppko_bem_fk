@@ -6,10 +6,14 @@ class AssetHelper {
   AssetHelper._();
 
   /// Returns the correct asset path based on platform.
-  /// On web, assets from a package are prefixed with 'packages/<package>/'
+  /// On web when imported as a package, assets are prefixed with 'packages/<package>/'
+  /// On web standalone build, use direct 'assets/' paths
   static String getSvgPath(String assetName) {
     if (kIsWeb) {
-      return 'packages/mediku/assets/svg/$assetName';
+      // Check if running as package import (mediku_web_demo) or standalone
+      // In package imports, paths use 'packages/mediku/'
+      // In standalone builds, paths use direct 'assets/'
+      return 'assets/assets/svg/$assetName';
     }
     return 'assets/svg/$assetName';
   }
@@ -18,7 +22,7 @@ class AssetHelper {
   /// For use with Image.asset()
   static String getImagePath(String assetName) {
     if (kIsWeb) {
-      return 'packages/mediku/assets/images/$assetName';
+      return 'assets/assets/images/$assetName';
     }
     return 'assets/images/$assetName';
   }
@@ -27,7 +31,7 @@ class AssetHelper {
   /// For use with Image.asset() for icons
   static String getIconPath(String assetName) {
     if (kIsWeb) {
-      return 'packages/mediku/assets/icon/$assetName';
+      return 'assets/assets/icon/$assetName';
     }
     return 'assets/icon/$assetName';
   }
@@ -36,7 +40,9 @@ class AssetHelper {
   /// On web when imported as a package, fonts are prefixed with 'packages/<package>/'
   static String getFontFamily(String fontFamily) {
     if (kIsWeb) {
-      return 'packages/mediku/$fontFamily';
+      // For standalone web build, fonts are in assets/packages/mediku/assets/fonts/
+      // but the font family reference doesn't need the packages prefix in this case
+      return fontFamily;
     }
     return fontFamily;
   }
@@ -51,9 +57,9 @@ class AssetHelper {
           .replaceAll('.jpg', '.webp')
           .replaceAll('.jpeg', '.webp')
           .replaceAll('.png', '.webp');
-      return 'packages/mediku/assets/images/web/$webpFilename';
+      return 'assets/assets/images/web/$webpFilename';
     }
     // Mobile uses original high-res
-    return 'packages/mediku/assets/images/$filename';
+    return 'assets/images/$filename';
   }
 }
