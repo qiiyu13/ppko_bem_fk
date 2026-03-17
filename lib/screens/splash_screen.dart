@@ -71,7 +71,7 @@ class _SplashScreenState extends State<SplashScreen>
         },
         child: Center(
           child: SvgPicture.asset(
-            AssetHelper.getSvgPath('Group 2.svg'),
+            AssetHelper.getSvgPath('Group_2.svg'),
             width: 240,
             height: 67,
             fit: BoxFit.contain,

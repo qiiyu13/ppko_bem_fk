@@ -399,7 +399,7 @@ class _ExpandableScreeningCardWidgetState
                 children: [
                   // Document icon
                   SvgPicture.asset(
-                    AssetHelper.getSvgPath('document_recolored_final (2).svg'),
+                    AssetHelper.getSvgPath('document_recolored_final_2.svg'),
                     width: ResponsiveSize.iconMedium * 1.2,
                     height: ResponsiveSize.iconMedium * 1.2,
                   ),
@@ -780,7 +780,11 @@ class _TouchableSuggestionCardState extends State<TouchableSuggestionCard>
     if (widget.iconAsset != null) {
       if (widget.isSvg) {
         return SvgPicture.asset(
-          AssetHelper.getSvgPath(widget.iconAsset!.replaceFirst('assets/svg/', '').replaceFirst('assets/images/', '')),
+          AssetHelper.getSvgPath(
+            widget.iconAsset!
+                .replaceFirst('assets/svg/', '')
+                .replaceFirst('assets/images/', ''),
+          ),
           width: ResponsiveSize.iconMedium,
           height: ResponsiveSize.iconMedium,
           colorFilter: ColorFilter.mode(widget.iconColor, BlendMode.srcIn),
