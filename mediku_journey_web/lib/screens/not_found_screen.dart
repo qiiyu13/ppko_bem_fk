@@ -1,6 +1,7 @@
 // lib/screens/not_found_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class NotFoundScreen extends StatelessWidget {
   final String message;
@@ -36,7 +37,7 @@ class NotFoundScreen extends StatelessWidget {
                       (id) => ActionChip(
                         label: Text(id),
                         onPressed: () {
-                          // Navigate to demo
+                          context.go('/journey?patient_id=$id');
                         },
                       ),
                     )

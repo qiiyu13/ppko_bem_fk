@@ -14,10 +14,17 @@ class AppRouter {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => const NotFoundScreen(
-          message:
-              'Silakan scan QR code untuk melihat perjalanan kesehatan pasien',
-        ),
+        builder: (context, state) {
+          // Check if patient_id is provided on root route
+          final patientId = state.uri.queryParameters['patient_id'];
+          if (patientId != null && patientId.isNotEmpty) {
+            return JourneyScreen(patientId: patientId);
+          }
+          return const NotFoundScreen(
+            message:
+                'Silakan scan QR code untuk melihat perjalanan kesehatan pasien',
+          );
+        },
       ),
       GoRoute(
         path: '/journey',
