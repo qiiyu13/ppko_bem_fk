@@ -1,19 +1,67 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
+import '../../../services/screening_service.dart';
+import '../../../services/admin_service.dart';
 import '../../../utils/responsive_size.dart';
 
-class BerandaTab extends StatelessWidget {
+class BerandaTab extends StatefulWidget {
   const BerandaTab({super.key});
 
+  @override
+  State<BerandaTab> createState() => _BerandaTabState();
+}
+
+class _BerandaTabState extends State<BerandaTab> {
   static const Color purpleAccent = Color(0xFF9C27B0);
   static const Color orangeAccent = Color(0xFFFF9800);
 
-  static const String adminName = 'Admin Desa';
+  bool _isLoading = true;
+  int _totalPatients = 0;
+  int _todayScreenings = 0;
+  int _activeSchedules = 0;
+  int _needAttention = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final stats = await ScreeningService.getStats();
+      final patientData = await AdminService.getPatients(page: 1, limit: 1);
+      final totalPatients = patientData['meta']?['total'] ?? 0;
+
+      final categoryCounts = stats['categories'] as Map<String, dynamic>? ?? {};
+      final attentionCount = (categoryCounts['attention'] as num?)?.toInt() ?? 0;
+      final highRiskCount = (categoryCounts['high'] as num?)?.toInt() ?? 0;
+
+      setState(() {
+        _totalPatients = totalPatients;
+        _todayScreenings = (stats['total'] as num?)?.toInt() ?? 0;
+        _activeSchedules = 0; // Could be fetched from appointments API
+        _needAttention = attentionCount + highRiskCount;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveSize();
     responsive.init(context);
+
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -56,7 +104,7 @@ class BerandaTab extends StatelessWidget {
                         ),
                         SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
                         Text(
-                          adminName,
+                          'Admin Desa',
                           style: TextStyle(
                             fontSize: ResponsiveSize.fontXLarge,
                             fontWeight: FontWeight.bold,
@@ -76,7 +124,7 @@ class BerandaTab extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            '24 Oktober 2023',
+                            '${DateTime.now().day} ${_getMonthName(DateTime.now().month)} ${DateTime.now().year}',
                             style: TextStyle(
                               fontSize: ResponsiveSize.fontSmall,
                               color: AppColors.primary,
@@ -110,7 +158,7 @@ class BerandaTab extends StatelessWidget {
                   Expanded(
                     child: _buildStatCard(
                       'Total Pasien',
-                      '1,240',
+                      _totalPatients.toString(),
                       Icons.people,
                       AppColors.primary,
                     ),
@@ -118,8 +166,8 @@ class BerandaTab extends StatelessWidget {
                   SizedBox(width: ResponsiveSize.paddingSmall),
                   Expanded(
                     child: _buildStatCard(
-                      'Screening Hari Ini',
-                      '15',
+                      'Total Screening',
+                      _todayScreenings.toString(),
                       Icons.medical_services,
                       AppColors.primarySurface,
                     ),
@@ -134,7 +182,7 @@ class BerandaTab extends StatelessWidget {
                   Expanded(
                     child: _buildStatCard(
                       'Jadwal Aktif',
-                      '3',
+                      _activeSchedules.toString(),
                       Icons.calendar_today,
                       purpleAccent,
                     ),
@@ -143,7 +191,7 @@ class BerandaTab extends StatelessWidget {
                   Expanded(
                     child: _buildStatCard(
                       'Perlu Perhatian',
-                      '5',
+                      _needAttention.toString(),
                       Icons.warning,
                       orangeAccent,
                     ),
@@ -180,24 +228,24 @@ class BerandaTab extends StatelessWidget {
 
               SizedBox(height: ResponsiveSize.spacingMedium),
 
-              // Activity List
+              // Activity List (still placeholder - would need a real activity API)
               _buildActivityItem(
                 'Pasien Baru Terdaftar',
-                'Budi Santoso telah terdaftar',
+                'Data pasien telah terdaftar',
                 '2 jam lalu',
                 Icons.person_add,
                 AppColors.primary,
               ),
               _buildActivityItem(
                 'Screening Selesai',
-                '12 pasien selesai screening',
+                'Pasien selesai screening',
                 '4 jam lalu',
                 Icons.check_circle,
                 AppColors.success,
               ),
               _buildActivityItem(
                 'Jadwal Baru',
-                'Screening massal RW 01',
+                'Screening massal dijadwalkan',
                 '1 hari lalu',
                 Icons.calendar_today,
                 purpleAccent,
@@ -210,6 +258,14 @@ class BerandaTab extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    return months[month - 1];
   }
 
   Widget _buildStatCard(
