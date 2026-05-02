@@ -7,6 +7,8 @@ import '../utils/asset_helper.dart';
 import 'patient/patient_main_screen.dart';
 import 'admin/admin_main_screen.dart';
 import 'superadmin/superadmin_main_screen.dart';
+import 'register_screen.dart';
+import '../services/auth_service.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -16,31 +18,45 @@ class WelcomeScreen extends StatefulWidget {
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
-  final TextEditingController _nikController = TextEditingController();
+  final TextEditingController _kkController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   int _logoTapCount = 0;
   Timer? _tapResetTimer;
 
-  // Hardcoded NIK for patient login
-  static const String VALID_PATIENT_NIK = '12131415';
-
-  // Admin passcodes
-  static const String ADMIN_PASSCODE = 'ADMIN123';
-  static const String SUPERADMIN_PASSCODE = 'SUPER456';
+  bool _isLoading = true;
+  bool _isLoggedIn = false;
+  String _userName = '';
 
   @override
   void initState() {
     super.initState();
-    // Lock to portrait only
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final userData = await AuthService.getMe();
+    if (userData != null && mounted) {
+      final user = userData['user'];
+      setState(() {
+        _isLoggedIn = true;
+        _userName = user['responsibleName'] ?? 'Pengguna';
+        _isLoading = false;
+      });
+    } else if (mounted) {
+      setState(() {
+        _isLoggedIn = false;
+        _isLoading = false;
+      });
+    }
   }
 
   void _onLogoTap() {
     _logoTapCount++;
 
-    // Reset counter after 2 seconds if no more taps
     _tapResetTimer?.cancel();
     _tapResetTimer = Timer(const Duration(seconds: 2), () {
       if (mounted) {
@@ -50,16 +66,16 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       }
     });
 
-    // Show passcode dialog after 5 taps
     if (_logoTapCount >= 5) {
       _logoTapCount = 0;
       _tapResetTimer?.cancel();
-      _showPasscodeDialog();
+      _showAdminLoginDialog();
     }
   }
 
-  void _showPasscodeDialog() {
-    final TextEditingController passcodeController = TextEditingController();
+  void _showAdminLoginDialog() {
+    final adminKkController = TextEditingController();
+    final adminPasswordController = TextEditingController();
     final textScaler = MediaQuery.textScalerOf(context);
 
     showDialog(
@@ -77,17 +93,48 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Masukkan kode akses:',
+              'Masukkan KK dan Password:',
               style: TextStyle(fontSize: 16 * textScaler.scale(1.0)),
             ),
             const SizedBox(height: 16),
             TextField(
-              controller: passcodeController,
-              obscureText: true,
-              keyboardType: TextInputType.text,
+              controller: adminKkController,
+              keyboardType: TextInputType.number,
               style: TextStyle(fontSize: 18 * textScaler.scale(1.0)),
               decoration: InputDecoration(
-                hintText: 'Kode akses',
+                hintText: 'Nomor KK',
+                hintStyle: TextStyle(
+                  fontSize: 16 * textScaler.scale(1.0),
+                  color: AppColors.textSecondary,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.divider),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.divider),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: adminPasswordController,
+              obscureText: true,
+              style: TextStyle(fontSize: 18 * textScaler.scale(1.0)),
+              decoration: InputDecoration(
+                hintText: 'Password',
                 hintStyle: TextStyle(
                   fontSize: 16 * textScaler.scale(1.0),
                   color: AppColors.textSecondary,
@@ -127,16 +174,32 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
-              final passcode = passcodeController.text.toUpperCase().trim();
+            onPressed: () async {
+              final kk = adminKkController.text.trim();
+              final password = adminPasswordController.text;
+              if (kk.isEmpty || password.isEmpty) return;
+
               Navigator.pop(context);
 
-              if (passcode == ADMIN_PASSCODE) {
-                _navigateToAdminDashboard();
-              } else if (passcode == SUPERADMIN_PASSCODE) {
-                _navigateToSuperadminDashboard();
-              } else {
-                _showErrorDialog('Kode akses salah');
+              try {
+                final data = await AuthService.login(
+                  kkNumber: kk,
+                  password: password,
+                );
+                if (!mounted) return;
+                final user = data['user'];
+                final role = user['role'];
+
+                if (role == 'ADMIN') {
+                  _navigateToAdminDashboard();
+                } else if (role == 'SUPERADMIN') {
+                  _navigateToSuperadminDashboard();
+                } else {
+                  _showErrorDialog('Akun ini bukan admin');
+                }
+              } catch (e) {
+                if (!mounted) return;
+                _showErrorDialog('Login gagal. Periksa kembali KK dan password Anda.');
               }
             },
             style: ElevatedButton.styleFrom(
@@ -148,7 +211,143 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ),
             ),
             child: Text(
-              'Masuk',
+              'Masuk sebagai Admin',
+              style: TextStyle(fontSize: 16 * textScaler.scale(1.0)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showForgotPasswordDialog() {
+    final forgotKkController = TextEditingController(text: _kkController.text);
+    final phoneController = TextEditingController();
+    final textScaler = MediaQuery.textScalerOf(context);
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Lupa Password',
+          style: TextStyle(
+            fontSize: 22 * textScaler.scale(1.0),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Masukkan KK dan nomor telepon:',
+              style: TextStyle(fontSize: 16 * textScaler.scale(1.0)),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: forgotKkController,
+              keyboardType: TextInputType.number,
+              style: TextStyle(fontSize: 18 * textScaler.scale(1.0)),
+              decoration: InputDecoration(
+                hintText: 'Nomor KK',
+                hintStyle: TextStyle(
+                  fontSize: 16 * textScaler.scale(1.0),
+                  color: AppColors.textSecondary,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.divider),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.divider),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: phoneController,
+              keyboardType: TextInputType.phone,
+              style: TextStyle(fontSize: 18 * textScaler.scale(1.0)),
+              decoration: InputDecoration(
+                hintText: 'Nomor Telepon',
+                hintStyle: TextStyle(
+                  fontSize: 16 * textScaler.scale(1.0),
+                  color: AppColors.textSecondary,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.divider),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.divider),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Batal',
+              style: TextStyle(
+                fontSize: 16 * textScaler.scale(1.0),
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final kk = forgotKkController.text.trim();
+              final phone = phoneController.text.trim();
+              if (kk.isEmpty || phone.isEmpty) return;
+
+              final success = await AuthService.forgotPassword(
+                kkNumber: kk,
+                phone: phone,
+              );
+              if (!context.mounted) return;
+              Navigator.pop(context);
+              if (success) {
+                _showSuccessDialog('Kode reset telah dikirim via SMS (mock)');
+              } else {
+                _showErrorDialog('Gagal mengirim kode reset');
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.textOnPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Kirim',
               style: TextStyle(fontSize: 16 * textScaler.scale(1.0)),
             ),
           ),
@@ -165,6 +364,36 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       builder: (context) => AlertDialog(
         title: Text(
           'Error',
+          style: TextStyle(fontSize: 20 * textScaler.scale(1.0)),
+        ),
+        content: Text(
+          message,
+          style: TextStyle(fontSize: 16 * textScaler.scale(1.0)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'OK',
+              style: TextStyle(
+                fontSize: 16 * textScaler.scale(1.0),
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSuccessDialog(String message) {
+    final textScaler = MediaQuery.textScalerOf(context);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Sukses',
           style: TextStyle(fontSize: 20 * textScaler.scale(1.0)),
         ),
         content: Text(
@@ -207,9 +436,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   @override
   void dispose() {
-    _nikController.dispose();
+    _kkController.dispose();
+    _passwordController.dispose();
     _tapResetTimer?.cancel();
-    // Reset orientation when screen is disposed (if needed for other screens)
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -217,6 +446,353 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       DeviceOrientation.landscapeRight,
     ]);
     super.dispose();
+  }
+
+  Widget _buildLoadingForm() {
+    return const Center(
+      child: CircularProgressIndicator(color: AppColors.primary),
+    );
+  }
+
+  Widget _buildWelcomeBackForm(bool isShortScreen) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Selamat datang kembali,',
+              style: TextStyle(
+                fontSize: isShortScreen ? 14 : 16,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            SizedBox(height: isShortScreen ? 4 : 6),
+            Text(
+              _userName,
+              style: TextStyle(
+                fontSize: isShortScreen ? 20 : 24,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+
+        SizedBox(height: isShortScreen ? 24 : 32),
+
+        SizedBox(
+          width: double.infinity,
+          height: isShortScreen ? 44 : 52,
+          child: ElevatedButton(
+            onPressed: _navigateToPatientDashboard,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.textOnPrimary,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'LANJUTKAN',
+                  style: TextStyle(
+                    fontSize: isShortScreen ? 14 : 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                SizedBox(width: isShortScreen ? 6 : 8),
+                Icon(Icons.arrow_forward, size: isShortScreen ? 16 : 18),
+              ],
+            ),
+          ),
+        ),
+
+        SizedBox(height: isShortScreen ? 16 : 24),
+
+        Center(
+          child: TextButton(
+            onPressed: () async {
+              setState(() => _isLoading = true);
+              await AuthService.logout();
+              await _checkLoginStatus();
+            },
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: Text(
+              'Bukan Anda? Masuk dengan akun lain',
+              style: TextStyle(
+                fontSize: isShortScreen ? 12 : 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.statusRed,
+              ),
+            ),
+          ),
+        ),
+
+        SizedBox(height: 20),
+
+        Center(
+          child: Text(
+            'v1.0 © 2024 MEDIKU',
+            style: TextStyle(
+              fontSize: isShortScreen ? 10 : 11,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoginForm(bool isShortScreen) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Selamat datang di MEDIKU',
+              style: TextStyle(
+                fontSize: isShortScreen ? 20 : 22,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            SizedBox(height: isShortScreen ? 4 : 6),
+            Text(
+              'Masukkan KK dan Password',
+              style: TextStyle(
+                fontSize: isShortScreen ? 12 : 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+
+        SizedBox(height: isShortScreen ? 16 : 24),
+
+        TextField(
+          controller: _kkController,
+          keyboardType: TextInputType.number,
+          style: TextStyle(
+            fontSize: isShortScreen ? 16 : 17,
+            letterSpacing: 1.5,
+            color: AppColors.textPrimary,
+          ),
+          decoration: InputDecoration(
+            hintText: 'Contoh: 3201...',
+            hintStyle: TextStyle(
+              fontSize: isShortScreen ? 14 : 15,
+              color: AppColors.textSecondary,
+            ),
+            prefixIcon: Icon(
+              Icons.badge_outlined,
+              color: AppColors.primary,
+              size: isShortScreen ? 20 : 22,
+            ),
+            filled: true,
+            fillColor: AppColors.surface,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: isShortScreen ? 12 : 14,
+            ),
+          ),
+        ),
+
+        SizedBox(height: isShortScreen ? 12 : 16),
+
+        TextField(
+          controller: _passwordController,
+          obscureText: true,
+          style: TextStyle(
+            fontSize: isShortScreen ? 16 : 17,
+            letterSpacing: 1.5,
+            color: AppColors.textPrimary,
+          ),
+          decoration: InputDecoration(
+            hintText: 'Password',
+            hintStyle: TextStyle(
+              fontSize: isShortScreen ? 14 : 15,
+              color: AppColors.textSecondary,
+            ),
+            prefixIcon: Icon(
+              Icons.lock_outlined,
+              color: AppColors.primary,
+              size: isShortScreen ? 20 : 22,
+            ),
+            filled: true,
+            fillColor: AppColors.surface,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: isShortScreen ? 12 : 14,
+            ),
+          ),
+        ),
+
+        SizedBox(height: isShortScreen ? 8 : 12),
+
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            onPressed: _showForgotPasswordDialog,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              'Lupa password?',
+              style: TextStyle(
+                fontSize: isShortScreen ? 12 : 13,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+
+        SizedBox(height: isShortScreen ? 8 : 12),
+
+        SizedBox(
+          width: double.infinity,
+          height: isShortScreen ? 44 : 48,
+          child: ElevatedButton(
+            onPressed: () async {
+              final kk = _kkController.text.trim();
+              final password = _passwordController.text;
+              if (kk.isEmpty) {
+                _showErrorDialog('KK tidak boleh kosong');
+                return;
+              }
+              if (password.isEmpty) {
+                _showErrorDialog('Password tidak boleh kosong');
+                return;
+              }
+              try {
+                await AuthService.login(
+                  kkNumber: kk,
+                  password: password,
+                );
+                if (mounted) {
+                  _navigateToPatientDashboard();
+                }
+              } catch (e) {
+                if (mounted) {
+                  _showErrorDialog('Login gagal. Periksa kembali KK dan password Anda.');
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.textOnPrimary,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'MASUK',
+                  style: TextStyle(
+                    fontSize: isShortScreen ? 14 : 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                SizedBox(width: isShortScreen ? 6 : 8),
+                Icon(Icons.arrow_forward, size: isShortScreen ? 16 : 18),
+              ],
+            ),
+          ),
+        ),
+
+        SizedBox(height: isShortScreen ? 12 : 16),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Belum punya akun?',
+              style: TextStyle(
+                fontSize: isShortScreen ? 12 : 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RegisterScreen(),
+                  ),
+                );
+              },
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Daftar',
+                style: TextStyle(
+                  fontSize: isShortScreen ? 12 : 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        SizedBox(height: 20),
+
+        Center(
+          child: Text(
+            'v1.0 © 2024 MEDIKU',
+            style: TextStyle(
+              fontSize: isShortScreen ? 10 : 11,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -230,53 +806,196 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       backgroundColor: AppColors.background,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: CustomScrollView(
           physics: const ClampingScrollPhysics(),
-          child: SizedBox(
-            height: screenHeight - MediaQuery.of(context).padding.top,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Top section - Doctor SVG with admin access
-                SizedBox(
-                  height: screenHeight * 0.50,
-                  width: double.infinity,
-                  child: Stack(
-                    children: [
-                      Center(
-                        child: SvgPicture.asset(
-                          AssetHelper.getSvgPath('doctor_modified.svg'),
-                          height: screenHeight * 0.45,
-                          fit: BoxFit.contain,
+          slivers: [
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          top: -30,
+                          left: -30,
+                          child: Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primarySurface.withValues(
+                                alpha: 0.4,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                      Positioned(
-                        top: 16,
-                        right: isSmallScreen ? 16 : 24,
-                        child: GestureDetector(
-                          onTap: _onLogoTap,
+                        Positioned(
+                          top: 20,
+                          right: -20,
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primaryLight.withValues(
+                                alpha: 0.2,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 100,
+                          left: -10,
+                          child: Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.statusGreen.withValues(
+                                alpha: 0.12,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 40,
+                          right: 40,
+                          child: Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primary.withValues(alpha: 0.08),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 130,
+                          right: -30,
+                          child: Container(
+                            width: 70,
+                            height: 70,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primarySurface.withValues(
+                                alpha: 0.25,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 60,
+                          left: 80,
+                          child: Container(
+                            width: 35,
+                            height: 35,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primaryLight.withValues(
+                                alpha: 0.15,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 10,
+                          left: 50,
+                          child: Container(
+                            width: 25,
+                            height: 25,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.statusGreen.withValues(
+                                alpha: 0.2,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 60,
+                          left: -40,
+                          child: Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.statusGreen.withValues(
+                                alpha: 0.15,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 20,
+                          right: 20,
+                          child: Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 80,
+                          left: 60,
                           child: Container(
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: AppColors.primarySurface.withOpacity(0.2),
                               shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.favorite,
-                              color: AppColors.textSecondary,
-                              size: 20,
+                              color: AppColors.primarySurface.withValues(
+                                alpha: 0.3,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(24),
+                              topRight: Radius.circular(24),
+                            ),
+                            child: Image.asset(
+                              AssetHelper.getIllustrationPath('welcome-illustration.webp'),
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              alignment: Alignment.bottomCenter,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 16,
+                          right: isSmallScreen ? 16 : 24,
+                          child: GestureDetector(
+                            onTap: _onLogoTap,
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: AppColors.primarySurface.withValues(
+                                  alpha: 0.2,
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.favorite,
+                                color: AppColors.textSecondary,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
 
-                // Login form card
-                Expanded(
-                  child: Container(
+                  Container(
                     width: double.infinity,
                     decoration: const BoxDecoration(
                       color: AppColors.card,
@@ -292,148 +1011,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         top: isShortScreen ? 12.0 : 16.0,
                         bottom: 16.0,
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Title section
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Selamat datang di MEDIKU',
-                                style: TextStyle(
-                                  fontSize: isShortScreen ? 20 : 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              SizedBox(height: isShortScreen ? 4 : 6),
-                              Text(
-                                'Masukkan NIK untuk melanjutkan',
-                                style: TextStyle(
-                                  fontSize: isShortScreen ? 12 : 13,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          SizedBox(height: isShortScreen ? 16 : 24),
-
-                          // Form section
-                          TextField(
-                            controller: _nikController,
-                            keyboardType: TextInputType.number,
-                            style: TextStyle(
-                              fontSize: isShortScreen ? 16 : 17,
-                              letterSpacing: 1.5,
-                              color: AppColors.textPrimary,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Contoh: 3201...',
-                              hintStyle: TextStyle(
-                                fontSize: isShortScreen ? 14 : 15,
-                                color: AppColors.textSecondary,
-                              ),
-                              prefixIcon: Icon(
-                                Icons.badge_outlined,
-                                color: AppColors.primary,
-                                size: isShortScreen ? 20 : 22,
-                              ),
-                              filled: true,
-                              fillColor: AppColors.surface,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: AppColors.primary,
-                                  width: 2,
-                                ),
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: isShortScreen ? 12 : 14,
-                              ),
-                            ),
-                          ),
-
-                          SizedBox(height: isShortScreen ? 16 : 24),
-
-                          // Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: isShortScreen ? 44 : 48,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                final inputNik = _nikController.text.trim();
-                                if (inputNik.isEmpty) {
-                                  _showErrorDialog('NIK tidak boleh kosong');
-                                } else if (inputNik == VALID_PATIENT_NIK) {
-                                  _navigateToPatientDashboard();
-                                } else {
-                                  _showErrorDialog(
-                                    'NIK tidak valid. Gunakan: 12131415',
-                                  );
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: AppColors.textOnPrimary,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'MASUK',
-                                    style: TextStyle(
-                                      fontSize: isShortScreen ? 14 : 16,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.5,
-                                    ),
-                                  ),
-                                  SizedBox(width: isShortScreen ? 6 : 8),
-                                  Icon(
-                                    Icons.arrow_forward,
-                                    size: isShortScreen ? 16 : 18,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                          const Spacer(),
-
-                          // Footer
-                          Center(
-                            child: Text(
-                              'v1.0 © 2024 MEDIKU',
-                              style: TextStyle(
-                                fontSize: isShortScreen ? 10 : 11,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      child: _isLoading
+                          ? _buildLoadingForm()
+                          : _isLoggedIn
+                          ? _buildWelcomeBackForm(isShortScreen)
+                          : _buildLoginForm(isShortScreen),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

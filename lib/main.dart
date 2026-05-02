@@ -4,22 +4,21 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:device_preview/device_preview.dart';
 import 'constants/app_theme.dart';
 import 'screens/splash_screen.dart';
-import 'services/profile_service.dart';
+import 'services/api_service.dart';
+import 'services/cache_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize profile service
-  await ProfileService.instance.initialize();
+  // Initialize API service with interceptors
+  ApiService.setupInterceptors();
 
-  // If no profiles exist, create default profile
-  if (!await ProfileService.instance.hasProfiles()) {
-    await ProfileService.instance.createDefaultProfile();
-  }
+  // Initialize local cache for offline support
+  await CacheService.init();
 
   runApp(
     DevicePreview(
-      enabled: true, // Turn this off before going to production!
+      enabled: true,
       builder: (context) => const MyApp(),
     ),
   );
