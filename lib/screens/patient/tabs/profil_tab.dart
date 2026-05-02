@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/family_profile.dart';
 import '../../../services/profile_service.dart';
@@ -192,7 +194,7 @@ class ProfilTab extends StatelessWidget {
               border: Border.all(color: Colors.white, width: 3),
             ),
             child: Icon(
-              Icons.person,
+              profile.gender == 'Pria' ? Icons.male : Icons.female,
               size: screenWidth * 0.07,
               color: AppColors.textOnPrimary,
             ),
@@ -205,23 +207,35 @@ class ProfilTab extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Badge row
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'PROFIL AKTIF',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textOnPrimary,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'PROFIL AKTIF',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textOnPrimary,
+                        ),
+                      ),
                     ),
-                  ),
+                    IconButton(
+                      onPressed: () => _showQRCodeDialog(context, profile),
+                      icon: const Icon(Icons.qr_code, color: Colors.white),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      tooltip: 'Tampilkan QR',
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 // Name
@@ -369,7 +383,9 @@ class ProfilTab extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        Icons.person,
+                        profile.gender == 'Pria'
+                            ? Icons.male
+                            : Icons.female,
                         size: 24,
                         color: isActive
                             ? AppColors.primary
@@ -440,6 +456,11 @@ class ProfilTab extends StatelessWidget {
                         ],
                       ),
                     ),
+                    IconButton(
+                      icon: Icon(Icons.qr_code, color: AppColors.primary, size: 20),
+                      onPressed: () => _showQRCodeDialog(context, profile),
+                      tooltip: 'Tampilkan QR',
+                    ),
                     Icon(Icons.more_vert, color: AppColors.textSecondary),
                   ],
                 ),
@@ -448,6 +469,66 @@ class ProfilTab extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  void _showQRCodeDialog(BuildContext context, FamilyProfile profile) {
+    final qrData = jsonEncode({
+      'profileId': profile.id,
+      'name': profile.name,
+      'nik': profile.nik,
+    });
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          profile.name,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            QrImageView(
+              data: qrData,
+              version: QrVersions.auto,
+              size: 220,
+              backgroundColor: Colors.white,
+              eyeStyle: const QrEyeStyle(
+                eyeShape: QrEyeShape.square,
+                color: Colors.black,
+              ),
+              dataModuleStyle: const QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.square,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'NIK: ${profile.formattedNik}',
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Tutup',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

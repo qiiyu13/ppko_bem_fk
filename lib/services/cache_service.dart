@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'api_service.dart';
@@ -8,7 +9,7 @@ class CacheService {
   static Future<void> init() async {
     _db = await openDatabase(
       join(await getDatabasesPath(), 'mediku_cache.db'),
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE profiles (
@@ -36,6 +37,42 @@ class CacheService {
             created_at TEXT NOT NULL
           )
         ''');
+        await db.execute('''
+          CREATE TABLE articles (
+            id TEXT PRIMARY KEY,
+            data TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE appointments (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            data TEXT NOT NULL,
+            synced INTEGER DEFAULT 1,
+            updated_at TEXT NOT NULL
+          )
+        ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS articles (
+              id TEXT PRIMARY KEY,
+              data TEXT NOT NULL,
+              updated_at TEXT NOT NULL
+            )
+          ''');
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS appointments (
+              id TEXT PRIMARY KEY,
+              user_id TEXT NOT NULL,
+              data TEXT NOT NULL,
+              synced INTEGER DEFAULT 1,
+              updated_at TEXT NOT NULL
+            )
+          ''');
+        }
       },
     );
   }
@@ -54,16 +91,54 @@ class CacheService {
     return results ?? [];
   }
 
+  static Future<bool> isOnline() async {
+    final result = await Connectivity().checkConnectivity();
+    return result != ConnectivityResult.none;
+  }
+
+  static Future<void> saveArticles(List<Map<String, dynamic>> articles) async {
+    for (final article in articles) {
+      await _db?.insert('articles', {
+        'id': article['id'],
+        'data': article.toString(),
+        'updated_at': DateTime.now().toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getArticles() async {
+    final results = await _db?.query('articles', orderBy: 'updated_at DESC');
+    return results ?? [];
+  }
+
+  static Future<void> saveAppointment(String id, Map<String, dynamic> data) async {
+    await _db?.insert('appointments', {
+      'id': id,
+      'user_id': data['userId'] ?? '',
+      'data': data.toString(),
+      'synced': 1,
+      'updated_at': DateTime.now().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  static Future<List<Map<String, dynamic>>> getAppointments() async {
+    final results = await _db?.query('appointments', orderBy: 'updated_at DESC');
+    return results ?? [];
+  }
+
   static Future<void> queueSync(String endpoint, String method, Map<String, dynamic> data) async {
+    final json = data.toString();
     await _db?.insert('pending_sync', {
       'endpoint': endpoint,
       'method': method,
-      'data': data.toString(),
+      'data': json,
       'created_at': DateTime.now().toIso8601String(),
     });
   }
 
   static Future<void> processSyncQueue() async {
+    if (!await isOnline()) return;
+
     final pending = await _db?.query('pending_sync', orderBy: 'created_at ASC');
     if (pending == null || pending.isEmpty) return;
 
@@ -78,5 +153,18 @@ class CacheService {
         break;
       }
     }
+  }
+
+  static Future<int> getPendingSyncCount() async {
+    final result = await _db?.rawQuery('SELECT COUNT(*) as count FROM pending_sync');
+    return (result?.first['count'] as int?) ?? 0;
+  }
+
+  static Future<void> clearAll() async {
+    await _db?.delete('profiles');
+    await _db?.delete('metrics');
+    await _db?.delete('articles');
+    await _db?.delete('appointments');
+    await _db?.delete('pending_sync');
   }
 }

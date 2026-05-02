@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../utils/responsive_size.dart';
 import '../admin_patient_detail_screen.dart';
+import '../qr_scanner_screen.dart';
 
 class DashboardTab extends StatefulWidget {
   const DashboardTab({super.key});
@@ -288,6 +289,16 @@ class _DashboardTabState extends State<DashboardTab> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+          );
+        },
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.qr_code_scanner, color: Colors.white),
+      ),
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
