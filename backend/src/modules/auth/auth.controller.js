@@ -30,4 +30,25 @@ const getMe = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, getMe };
+const forgotPassword = async (req, res, next) => {
+  try {
+    const result = await authService.forgotPassword(req.body);
+    return success(res, result);
+  } catch (err) {
+    if (err.statusCode === 404) return error(res, err.message, 404, 'NOT_FOUND');
+    if (err.statusCode === 400) return error(res, err.message, 400, 'VALIDATION_ERROR');
+    next(err);
+  }
+};
+
+const resetPassword = async (req, res, next) => {
+  try {
+    const result = await authService.resetPassword(req.body);
+    return success(res, result);
+  } catch (err) {
+    if (err.statusCode === 400) return error(res, err.message, 400, 'VALIDATION_ERROR');
+    next(err);
+  }
+};
+
+module.exports = { register, login, getMe, forgotPassword, resetPassword };

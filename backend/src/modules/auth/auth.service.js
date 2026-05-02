@@ -41,4 +41,35 @@ const getMe = async (userId) => {
   return user;
 };
 
-module.exports = { register, login, getMe };
+const resetCodes = new Map();
+
+const forgotPassword = async ({ kkNumber, phone }) => {
+  const user = await prisma.user.findUnique({ where: { kkNumber } });
+  if (!user) throw Object.assign(new Error('KK number not found'), { statusCode: 404 });
+  if (user.phone !== phone) throw Object.assign(new Error('Phone number does not match'), { statusCode: 400 });
+
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  resetCodes.set(kkNumber, { code, expiresAt: Date.now() + 15 * 60 * 1000 });
+
+  console.log(`\n🔐 Reset code for ${kkNumber}: ${code}\n`);
+
+  return { message: 'Reset code sent via SMS' };
+};
+
+const resetPassword = async ({ kkNumber, resetCode, newPassword }) => {
+  const stored = resetCodes.get(kkNumber);
+  if (!stored) throw Object.assign(new Error('No reset code requested'), { statusCode: 400 });
+  if (stored.code !== resetCode) throw Object.assign(new Error('Invalid reset code'), { statusCode: 400 });
+  if (Date.now() > stored.expiresAt) throw Object.assign(new Error('Reset code expired'), { statusCode: 400 });
+
+  const hashedPassword = await hashPassword(newPassword);
+  await prisma.user.update({
+    where: { kkNumber },
+    data: { password: hashedPassword },
+  });
+
+  resetCodes.delete(kkNumber);
+  return { message: 'Password reset successful' };
+};
+
+module.exports = { register, login, getMe, forgotPassword, resetPassword };

@@ -19,4 +19,17 @@ router.post('/login', [
 
 router.get('/me', authenticate, controller.getMe);
 
+router.post('/forgot-password', [
+  body('kkNumber').isString().matches(/^\d{16}$/),
+  body('phone').isString().notEmpty(),
+  validate,
+], controller.forgotPassword);
+
+router.post('/reset-password', [
+  body('kkNumber').isString().matches(/^\d{16}$/),
+  body('resetCode').isString().isLength({ min: 6, max: 6 }),
+  body('newPassword').isString().isLength({ min: 6 }),
+  validate,
+], controller.resetPassword);
+
 module.exports = router;
