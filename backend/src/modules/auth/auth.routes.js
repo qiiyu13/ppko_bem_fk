@@ -12,7 +12,7 @@ router.post('/register', [
 ], controller.register);
 
 router.post('/login', [
-  body('kkNumber').isString().notEmpty(),
+  body('kkNumber').isString().matches(/^\d{16}$/).withMessage('KK number must be 16 digits'),
   body('password').isString().notEmpty(),
   validate,
 ], controller.login);
