@@ -4,6 +4,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../constants/app_colors.dart';
 import '../../models/tanaman_article.dart';
+import '../../services/article_service.dart';
 
 class ArticleEditorScreen extends StatefulWidget {
   final TanamanArticle? article;
@@ -222,51 +223,78 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
     return true;
   }
 
-  void _saveArticle({required bool publish}) {
+  Future<void> _saveArticle({required bool publish}) async {
     if (!_validateForm()) return;
 
     setState(() {
       _isLoading = true;
     });
 
-    // Simulate saving process
-    Future.delayed(const Duration(milliseconds: 500), () {
-      final now = DateTime.now();
-      final tags = _tagsController.text
-          .split(',')
-          .map((t) => t.trim())
-          .where((t) => t.isNotEmpty)
-          .toList();
+    final tags = _tagsController.text
+        .split(',')
+        .map((t) => t.trim())
+        .where((t) => t.isNotEmpty)
+        .toList();
 
-      // Get image path
-      String imagePath = _existingImagePath ?? '';
-      if (_selectedImage != null) {
-        // In real app, save to storage and get path
-        imagePath = _selectedImage!.path;
+    // Get image path
+    String imagePath = _existingImagePath ?? '';
+    if (_selectedImage != null) {
+      // In real app, save to storage and get path
+      imagePath = _selectedImage!.path;
+    }
+
+    try {
+      final TanamanArticle article;
+      if (widget.article != null) {
+        article = await ArticleService.updateArticle(
+          widget.article!.id,
+          title: _titleController.text.trim(),
+          content: _quillController.document.toPlainText(),
+          imagePath: imagePath.isNotEmpty ? imagePath : null,
+          tags: tags,
+          isDraft: !publish,
+          isPublished: publish,
+        );
+      } else {
+        article = await ArticleService.createArticle(
+          title: _titleController.text.trim(),
+          content: _quillController.document.toPlainText(),
+          imagePath: imagePath.isNotEmpty ? imagePath : null,
+          tags: tags,
+          isDraft: !publish,
+          isPublished: publish,
+        );
       }
 
-      final article = TanamanArticle(
-        id:
-            widget.article?.id ??
-            DateTime.now().millisecondsSinceEpoch.toString(),
-        title: _titleController.text.trim(),
-        content: _quillController.document.toPlainText(),
-        imagePath: imagePath,
-        publishDate: _publishDate,
-        createdAt: widget.article?.createdAt ?? now,
-        updatedAt: now,
-        tags: tags,
-        isPublished: publish,
-        isDraft: !publish,
-        isDeleted: false,
-      );
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      Navigator.pop(context, article);
-    });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        Navigator.pop(context, article);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        // Fallback to local-only article on API error
+        final now = DateTime.now();
+        final article = TanamanArticle(
+          id: widget.article?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+          title: _titleController.text.trim(),
+          content: _quillController.document.toPlainText(),
+          imagePath: imagePath,
+          publishDate: _publishDate,
+          createdAt: widget.article?.createdAt ?? now,
+          updatedAt: now,
+          tags: tags,
+          isPublished: publish,
+          isDraft: !publish,
+        );
+        _showSnackBar('Gagal menyimpan ke server. Artikel disimpan secara lokal.');
+        Navigator.pop(context, article);
+      }
+    }
   }
 
   void _showSnackBar(String message) {

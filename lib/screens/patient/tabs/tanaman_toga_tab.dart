@@ -2,17 +2,59 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/tanaman_article.dart';
+import '../../../services/article_service.dart';
 import '../../../utils/asset_helper.dart';
 import '../tanaman_article_detail_screen.dart';
 
-class TanamanTogaTab extends StatelessWidget {
+class TanamanTogaTab extends StatefulWidget {
   const TanamanTogaTab({super.key});
 
   @override
+  State<TanamanTogaTab> createState() => _TanamanTogaTabState();
+}
+
+class _TanamanTogaTabState extends State<TanamanTogaTab> {
+  List<TanamanArticle> _articles = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadArticles();
+  }
+
+  Future<void> _loadArticles() async {
+    try {
+      final articles = await ArticleService.getPublishedArticles();
+      setState(() {
+        _articles = articles.where((a) => a.imagePath.isNotEmpty).toList();
+        _isLoading = false;
+        _error = null;
+      });
+    } catch (e) {
+      // Fallback to mock data if API fails
+      final mockArticles = TanamanArticle.getMockArticles()
+          .where((a) => a.isPublished && !a.isDeleted && a.imagePath.isNotEmpty)
+          .toList();
+      setState(() {
+        _articles = mockArticles;
+        _isLoading = false;
+        _error = 'Gagal memuat artikel dari server. Menampilkan data lokal.';
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final articles = TanamanArticle.getMockArticles()
-        .where((a) => a.isPublished && !a.isDeleted && a.imagePath.isNotEmpty)
-        .toList();
+    if (_isLoading) {
+      return Container(
+        color: AppColors.background,
+        child: const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
 
     return Container(
       color: AppColors.background,
@@ -21,20 +63,56 @@ class TanamanTogaTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (_error != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                color: AppColors.warning.withOpacity(0.1),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber, color: AppColors.warning, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _error!,
+                        style: TextStyle(color: AppColors.warning, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             // Article List
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: articles.length,
-                separatorBuilder: (context, index) => const Divider(
-                  height: 1,
-                  color: AppColors.divider,
-                  indent: 96,
-                ),
-                itemBuilder: (context, index) {
-                  final article = articles[index];
-                  return _ArticleCard(article: article);
-                },
+              child: RefreshIndicator(
+                onRefresh: _loadArticles,
+                color: AppColors.primary,
+                child: _articles.isEmpty
+                    ? ListView(
+                        children: const [
+                          SizedBox(height: 100),
+                          Center(
+                            child: Text(
+                              'Belum ada artikel',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _articles.length,
+                        separatorBuilder: (context, index) => const Divider(
+                          height: 1,
+                          color: AppColors.divider,
+                          indent: 96,
+                        ),
+                        itemBuilder: (context, index) {
+                          final article = _articles[index];
+                          return _ArticleCard(article: article);
+                        },
+                      ),
               ),
             ),
 

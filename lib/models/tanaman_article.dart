@@ -88,6 +88,23 @@ class TanamanArticle {
     );
   }
 
+  factory TanamanArticle.fromApi(Map<String, dynamic> map) {
+    return TanamanArticle(
+      id: map['id'] ?? '',
+      title: map['title'] ?? '',
+      content: map['content'] ?? '',
+      imagePath: map['imagePath'] ?? '',
+      publishDate: map['publishDate'] != null
+          ? DateTime.parse(map['publishDate'])
+          : (map['createdAt'] != null ? DateTime.parse(map['createdAt']) : DateTime.now()),
+      createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt']) : DateTime.now(),
+      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : DateTime.now(),
+      tags: map['tags'] != null ? List<String>.from(map['tags']) : [],
+      isPublished: map['isPublished'] ?? false,
+      isDraft: map['isDraft'] ?? true,
+    );
+  }
+
   static List<TanamanArticle> getMockArticles() {
     final now = DateTime.now();
     return [

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/tanaman_article.dart';
+import '../../../services/article_service.dart';
 import '../article_editor_screen.dart';
 
 class PublishTab extends StatefulWidget {
@@ -13,7 +14,8 @@ class PublishTab extends StatefulWidget {
 class _PublishTabState extends State<PublishTab> {
   List<TanamanArticle> _articles = [];
   String _selectedFilter = 'Semua';
-  final List<String> _filters = ['Semua', 'Dipublikasikan', 'Draft', 'Dihapus'];
+  final List<String> _filters = ['Semua', 'Dipublikasikan', 'Draft'];
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -21,20 +23,29 @@ class _PublishTabState extends State<PublishTab> {
     _loadArticles();
   }
 
-  void _loadArticles() {
-    setState(() {
-      _articles = TanamanArticle.getMockArticles();
-    });
+  Future<void> _loadArticles() async {
+    setState(() => _isLoading = true);
+    try {
+      final articles = await ArticleService.getAllArticles();
+      setState(() {
+        _articles = articles;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _articles = TanamanArticle.getMockArticles();
+        _isLoading = false;
+      });
+      _showSnackBar('Gagal memuat artikel dari server. Menampilkan data lokal.');
+    }
   }
 
   List<TanamanArticle> get _filteredArticles {
     switch (_selectedFilter) {
       case 'Dipublikasikan':
-        return _articles.where((a) => a.isPublished && !a.isDeleted).toList();
+        return _articles.where((a) => a.isPublished && !a.isDraft).toList();
       case 'Draft':
-        return _articles.where((a) => a.isDraft && !a.isDeleted).toList();
-      case 'Dihapus':
-        return _articles.where((a) => a.isDeleted).toList();
+        return _articles.where((a) => a.isDraft).toList();
       default:
         return _articles;
     }
@@ -65,81 +76,114 @@ class _PublishTabState extends State<PublishTab> {
     );
 
     if (result != null && result is TanamanArticle) {
-      setState(() {
-        final index = _articles.indexWhere((a) => a.id == result.id);
-        if (index != -1) {
-          _articles[index] = result;
-        }
-      });
-      _showSnackBar('Artikel berhasil diperbarui');
+      try {
+        final updated = await ArticleService.updateArticle(
+          result.id,
+          title: result.title,
+          content: result.content,
+          imagePath: result.imagePath.isNotEmpty ? result.imagePath : null,
+          tags: result.tags,
+          isDraft: result.isDraft,
+          isPublished: result.isPublished,
+        );
+        setState(() {
+          final index = _articles.indexWhere((a) => a.id == updated.id);
+          if (index != -1) {
+            _articles[index] = updated;
+          }
+        });
+        _showSnackBar('Artikel berhasil diperbarui');
+      } catch (e) {
+        setState(() {
+          final index = _articles.indexWhere((a) => a.id == result.id);
+          if (index != -1) {
+            _articles[index] = result;
+          }
+        });
+        _showSnackBar('Artikel diperbarui secara lokal');
+      }
     }
   }
 
-  void _softDeleteArticle(TanamanArticle article) {
+  void _unpublishArticle(TanamanArticle article) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus Artikel'),
-        content: Text('Apakah Anda yakin ingin menghapus "${article.title}"?'),
+        title: const Text('Unpublish Artikel'),
+        content: Text('Artikel "${article.title}" akan diubah ke draft. Lanjutkan?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Batal'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              setState(() {
-                final index = _articles.indexWhere((a) => a.id == article.id);
-                if (index != -1) {
-                  _articles[index] = article.copyWith(isDeleted: true);
-                }
-              });
-              _showSnackBar('Artikel dipindahkan ke daftar dihapus');
+              try {
+                final updated = await ArticleService.updateArticle(
+                  article.id,
+                  isDraft: true,
+                  isPublished: false,
+                );
+                setState(() {
+                  final index = _articles.indexWhere((a) => a.id == article.id);
+                  if (index != -1) {
+                    _articles[index] = updated;
+                  }
+                });
+                _showSnackBar('Artikel diubah ke draft');
+              } catch (e) {
+                _showSnackBar('Gagal mengubah status artikel');
+              }
             },
-            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+            child: const Text('Unpublish', style: TextStyle(color: Colors.orange)),
           ),
         ],
       ),
     );
   }
 
-  void _restoreArticle(TanamanArticle article) {
-    setState(() {
-      final index = _articles.indexWhere((a) => a.id == article.id);
-      if (index != -1) {
-        _articles[index] = article.copyWith(
-          isDeleted: false,
-          isDraft: true,
-          isPublished: false,
-        );
-      }
-    });
-    _showSnackBar('Artikel berhasil dipulihkan ke draft');
+  void _publishArticle(TanamanArticle article) async {
+    try {
+      await ArticleService.publishArticle(article.id);
+      final updated = article.copyWith(isPublished: true, isDraft: false);
+      setState(() {
+        final index = _articles.indexWhere((a) => a.id == article.id);
+        if (index != -1) {
+          _articles[index] = updated;
+        }
+      });
+      _showSnackBar('Artikel berhasil dipublikasikan');
+    } catch (e) {
+      _showSnackBar('Gagal memublikasikan artikel');
+    }
   }
 
-  void _permanentlyDeleteArticle(TanamanArticle article) {
+  void _deleteArticle(TanamanArticle article) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus Permanen'),
-        content: Text(
-          'Artikel "${article.title}" akan dihapus secara permanen dan tidak dapat dipulihkan. Lanjutkan?',
-        ),
+        title: const Text('Hapus Artikel'),
+        content: Text('Artikel "${article.title}" akan dihapus secara permanen. Lanjutkan?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Batal'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              setState(() {
-                _articles.removeWhere((a) => a.id == article.id);
-              });
-              _showSnackBar('Artikel berhasil dihapus permanen');
+              try {
+                await ArticleService.deleteArticle(article.id);
+                setState(() {
+                  _articles.removeWhere((a) => a.id == article.id);
+                });
+                _showSnackBar('Artikel berhasil dihapus');
+              } catch (e) {
+                _showSnackBar('Gagal menghapus artikel');
+              }
             },
-            child: const Text('Hapus Permanen', style: TextStyle(color: Colors.red)),
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -166,9 +210,11 @@ class _PublishTabState extends State<PublishTab> {
             _buildHeader(),
             _buildFilterTabs(),
             Expanded(
-              child: _filteredArticles.isEmpty
-                  ? _buildEmptyState()
-                  : _buildArticleList(),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                  : _filteredArticles.isEmpty
+                      ? _buildEmptyState()
+                      : _buildArticleList(),
             ),
           ],
         ),
@@ -217,7 +263,7 @@ class _PublishTabState extends State<PublishTab> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${_articles.where((a) => !a.isDeleted).length} artikel aktif',
+                    '${_articles.length} artikel',
                     style: TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
@@ -236,7 +282,7 @@ class _PublishTabState extends State<PublishTab> {
                     Icon(Icons.article, color: AppColors.primary, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      '${_articles.where((a) => a.isPublished && !a.isDeleted).length}',
+                      '${_articles.where((a) => a.isPublished && !a.isDraft).length}',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -382,7 +428,7 @@ class _PublishTabState extends State<PublishTab> {
                             ),
                           ),
                         ),
-                        if (article.isPublished && !article.isDeleted) ...[
+                        if (article.isPublished && !article.isDraft) ...[
                           const SizedBox(width: 8),
                           Icon(
                             Icons.visibility,
@@ -451,37 +497,47 @@ class _PublishTabState extends State<PublishTab> {
                     case 'edit':
                       _editArticle(article);
                       break;
+                    case 'unpublish':
+                      _unpublishArticle(article);
+                      break;
+                    case 'publish':
+                      _publishArticle(article);
+                      break;
                     case 'delete':
-                      _softDeleteArticle(article);
-                      break;
-                    case 'restore':
-                      _restoreArticle(article);
-                      break;
-                    case 'permanent_delete':
-                      _permanentlyDeleteArticle(article);
+                      _deleteArticle(article);
                       break;
                   }
                 },
                 itemBuilder: (context) {
-                  if (article.isDeleted) {
+                  if (article.isPublished && !article.isDraft) {
                     return [
                       const PopupMenuItem(
-                        value: 'restore',
+                        value: 'edit',
                         child: Row(
                           children: [
-                            Icon(Icons.restore, color: Colors.green),
+                            Icon(Icons.edit, color: Colors.blue),
                             SizedBox(width: 8),
-                            Text('Pulihkan'),
+                            Text('Edit'),
                           ],
                         ),
                       ),
                       const PopupMenuItem(
-                        value: 'permanent_delete',
+                        value: 'unpublish',
                         child: Row(
                           children: [
-                            Icon(Icons.delete_forever, color: Colors.red),
+                            Icon(Icons.unpublished, color: Colors.orange),
                             SizedBox(width: 8),
-                            Text('Hapus Permanen'),
+                            Text('Unpublish'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Hapus'),
                           ],
                         ),
                       ),
@@ -495,6 +551,16 @@ class _PublishTabState extends State<PublishTab> {
                           Icon(Icons.edit, color: Colors.blue),
                           SizedBox(width: 8),
                           Text('Edit'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'publish',
+                      child: Row(
+                        children: [
+                          Icon(Icons.publish, color: Colors.green),
+                          SizedBox(width: 8),
+                          Text('Publikasikan'),
                         ],
                       ),
                     ),
@@ -530,29 +596,26 @@ class _PublishTabState extends State<PublishTab> {
           ),
           const SizedBox(height: 16),
           Text(
-            _selectedFilter == 'Dihapus'
-                ? 'Tidak ada artikel yang dihapus'
-                : 'Belum ada artikel ${_selectedFilter.toLowerCase()}',
+            'Belum ada artikel ${_selectedFilter.toLowerCase()}',
             style: TextStyle(
               fontSize: 16,
               color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 8),
-          if (_selectedFilter != 'Dihapus')
-            ElevatedButton.icon(
-              onPressed: _createNewArticle,
-              icon: const Icon(Icons.add),
-              label: const Text('Buat Artikel Baru'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+          ElevatedButton.icon(
+            onPressed: _createNewArticle,
+            icon: const Icon(Icons.add),
+            label: const Text('Buat Artikel Baru'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
+          ),
         ],
       ),
     );
