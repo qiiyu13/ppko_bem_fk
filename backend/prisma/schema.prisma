@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  ADMIN
+  SUPERADMIN
+}
+
+model User {
+  id              String   @id @default(uuid())
+  kkNumber        String   @unique @map("kk_number")
+  password        String
+  phone           String?
+  responsibleName String   @map("responsible_name")
+  role            Role     @default(PATIENT)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  familyProfiles  FamilyProfile[]
+  screenings      MedicalScreening[] @relation("Screener")
+  createdArticles Article[]          @relation("Author")
+  appointments    Appointment[]
+  conversations   ChatConversation[]
+
+  @@map("users")
+}
+
+model FamilyProfile {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  nik       String
+  gender    String
+  birthDate DateTime @map("birth_date")
+  height    Float?
+  weight    Float?
+  bloodType String?  @map("blood_type")
+  phone     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User              @relation(fields: [userId], references: [id])
+  metrics HealthMetric[]
+  screenings MedicalScreening[] @relation("PatientProfile")
+
+  @@map("family_profiles")
+}
+
+model HealthMetric {
+  id             String   @id @default(uuid())
+  profileId      String   @map("profile_id")
+  type           String
+  value          Float
+  secondaryValue Float?   @map("secondary_value")
+  unit           String
+  notes          String?
+  recordedAt     DateTime @map("recorded_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  profile FamilyProfile @relation(fields: [profileId], references: [id])
+
+  @@map("health_metrics")
+}
+
+model MedicalScreening {
+  id          String   @id @default(uuid())
+  profileId   String   @map("profile_id")
+  screenedBy  String   @map("screened_by")
+  systolic    Int
+  diastolic   Int
+  bloodSugar  Float?   @map("blood_sugar")
+  cholesterol Float?
+  uricAcid    Float?   @map("uric_acid")
+  height      Float?
+  weight      Float?
+  irdScore    Float    @map("ird_score")
+  irdCategory String   @map("ird_category")
+  notes       String?
+  screeningAt DateTime @map("screening_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  profile  FamilyProfile @relation("PatientProfile", fields: [profileId], references: [id])
+  screener User          @relation("Screener", fields: [screenedBy], references: [id])
+
+  @@map("medical_screenings")
+}
+
+model Appointment {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  profileId String?  @map("profile_id")
+  title     String
+  date      DateTime
+  location  String?
+  notes     String?
+  type      String   @default("GENERAL")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User           @relation(fields: [userId], references: [id])
+
+  @@map("appointments")
+}
+
+model Article {
+  id          String    @id @default(uuid())
+  authorId    String    @map("author_id")
+  title       String
+  content     String
+  imagePath   String?   @map("image_path")
+  tags        String[]
+  isPublished Boolean   @default(false) @map("is_published")
+  isDraft     Boolean   @default(true) @map("is_draft")
+  publishDate DateTime? @map("publish_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  author User @relation("Author", fields: [authorId], references: [id])
+
+  @@map("articles")
+}
+
+model Region {
+  id        String   @id @default(uuid())
+  type      String
+  name      String
+  parentId  String?  @map("parent_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  parent    Region?    @relation("RegionHierarchy", fields: [parentId], references: [id])
+  children  Region[]   @relation("RegionHierarchy")
+  residents Resident[]
+
+  @@map("regions")
+}
+
+model Resident {
+  id        String   @id @default(uuid())
+  regionId  String   @map("region_id")
+  name      String
+  nik       String   @unique
+  gender    String
+  birthDate DateTime @map("birth_date")
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  region Region @relation(fields: [regionId], references: [id])
+
+  @@map("residents")
+}
+
+model ChatConversation {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  startedAt      DateTime @default(now()) @map("started_at")
+  lastActivityAt DateTime @updatedAt @map("last_activity_at")
+
+  user     User          @relation(fields: [userId], references: [id])
+  messages ChatMessage[]
+
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id             String   @id @default(uuid())
+  conversationId String   @map("conversation_id")
+  content        String
+  role           String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id])
+
+  @@map("chat_messages")
+}
