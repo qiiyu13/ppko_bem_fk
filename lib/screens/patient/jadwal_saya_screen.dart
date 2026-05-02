@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
+import '../../services/appointment_service.dart';
+import '../../services/profile_service.dart';
 import '../../utils/responsive_size.dart';
 
 class JadwalSayaScreen extends StatefulWidget {
@@ -19,48 +21,53 @@ class JadwalSayaScreen extends StatefulWidget {
 class _JadwalSayaScreenState extends State<JadwalSayaScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  DateTime _focusedDate = DateTime(2023, 10, 12); // Mock focused date
+  DateTime _focusedDate = DateTime.now();
   DateTime? _selectedDate;
+  bool _isLoading = true;
 
-  // Mock schedule data
-  final List<Map<String, dynamic>> _schedules = [
-    {
-      'id': 1,
-      'title': 'Screening Diabetes',
-      'date': DateTime(2023, 10, 12),
-      'timeRange': '08:00 - 10:00',
-      'location': 'Balai Desa Sukamaju',
-      'doctor': 'Dr. Budi Santoso',
-      'status': 'Segera',
-      'type': 'today',
-    },
-    {
-      'id': 2,
-      'title': 'Cek Tensi Darah',
-      'date': DateTime(2023, 10, 15),
-      'time': '09:30 AM',
-      'location': 'Puskesmas Kecamatan',
-      'doctor': null,
-      'status': null,
-      'type': 'upcoming',
-    },
-    {
-      'id': 3,
-      'title': 'Vaksinasi Lansia',
-      'date': DateTime(2023, 10, 22),
-      'time': '10:00 AM',
-      'location': 'Posyandu Mawar',
-      'doctor': null,
-      'status': null,
-      'type': 'upcoming',
-    },
-  ];
+  List<Map<String, dynamic>> _schedules = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _selectedDate = _focusedDate;
+    _loadAppointments();
+  }
+
+  Future<void> _loadAppointments() async {
+    try {
+      final profileId = ProfileService.instance.activeProfile?.id;
+      final appointments = await AppointmentService.getAppointments(profileId: profileId);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+
+      final mapped = appointments.map((a) {
+        final date = DateTime.parse(a['date'] as String);
+        final dateOnly = DateTime(date.year, date.month, date.day);
+        final isToday = dateOnly == today;
+        return {
+          'id': a['id'],
+          'title': a['title'],
+          'date': date,
+          'timeRange': isToday ? '${date.hour.toString().padLeft(2, '0')}:00 - ${(date.hour + 2).toString().padLeft(2, '0')}:00' : null,
+          'time': '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}',
+          'location': a['location'] ?? 'Lokasi belum ditentukan',
+          'doctor': a['notes'],
+          'status': isToday ? 'Segera' : null,
+          'type': isToday ? 'today' : 'upcoming',
+        };
+      }).toList();
+
+      setState(() {
+        _schedules = mapped;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -573,8 +580,8 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
                   _selectedDate != null && _isSameDay(date, _selectedDate!);
               final isToday = _isSameDay(
                 date,
-                DateTime(2023, 10, 12),
-              ); // Mock today
+                DateTime.now(),
+              );
               final hasEvent = _markedDates.any((d) => _isSameDay(d, date));
 
               return GestureDetector(

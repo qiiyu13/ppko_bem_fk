@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
+import '../../services/appointment_service.dart';
 import '../../utils/responsive_size.dart';
 
 class ScheduleScreen extends StatefulWidget {
@@ -12,70 +13,55 @@ class ScheduleScreen extends StatefulWidget {
 class _ScheduleScreenState extends State<ScheduleScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  DateTime _focusedDate = DateTime(2023, 10, 12); // Mock focused date
+  DateTime _focusedDate = DateTime.now();
   DateTime? _selectedDate;
+  bool _isLoading = true;
 
-  // Mock schedule data for admin - shows all village screenings
-  final List<Map<String, dynamic>> _schedules = [
-    {
-      'id': 1,
-      'title': 'Screening Massal - Sukamaju',
-      'date': DateTime(2023, 10, 12),
-      'timeRange': '08:00 - 12:00',
-      'location': 'Balai Desa Sukamaju',
-      'village': 'Sukamaju',
-      'doctor': 'Dr. Budi Santoso',
-      'patientsCount': 45,
-      'highRiskCount': 8,
-      'status': 'Segera',
-      'type': 'today',
-    },
-    {
-      'id': 2,
-      'title': 'Follow-up High Risk - Cibadak',
-      'date': DateTime(2023, 10, 15),
-      'time': '09:00 - 11:00',
-      'location': 'Puskesmas Kecamatan',
-      'village': 'Cibadak',
-      'doctor': null,
-      'patientsCount': 12,
-      'highRiskCount': 12,
-      'status': null,
-      'type': 'upcoming',
-    },
-    {
-      'id': 3,
-      'title': 'Screening Massal - Mekarwangi',
-      'date': DateTime(2023, 10, 22),
-      'time': '08:00 - 14:00',
-      'location': 'Posyandu Mekarwangi',
-      'village': 'Mekarwangi',
-      'doctor': null,
-      'patientsCount': 62,
-      'highRiskCount': 5,
-      'status': null,
-      'type': 'upcoming',
-    },
-    {
-      'id': 4,
-      'title': 'Vaksinasi Lansia - Sukamaju',
-      'date': DateTime(2023, 10, 25),
-      'time': '10:00 - 15:00',
-      'location': 'Balai Desa Sukamaju',
-      'village': 'Sukamaju',
-      'doctor': null,
-      'patientsCount': 30,
-      'highRiskCount': 0,
-      'status': null,
-      'type': 'upcoming',
-    },
-  ];
+  List<Map<String, dynamic>> _schedules = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _selectedDate = _focusedDate;
+    _loadAppointments();
+  }
+
+  Future<void> _loadAppointments() async {
+    try {
+      final appointments = await AppointmentService.getAppointments();
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+
+      final mapped = appointments.map((a) {
+        final date = DateTime.parse(a['date'] as String);
+        final dateOnly = DateTime(date.year, date.month, date.day);
+        final isToday = dateOnly == today;
+        return {
+          'id': a['id'],
+          'title': a['title'],
+          'date': date,
+          'timeRange': isToday ? '${date.hour.toString().padLeft(2, '0')}:00 - ${(date.hour + 2).toString().padLeft(2, '0')}:00' : '${date.hour.toString().padLeft(2, '0')}:00 - ${(date.hour + 2).toString().padLeft(2, '0')}:00',
+          'time': '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}',
+          'location': a['location'] ?? 'Lokasi belum ditentukan',
+          'village': a['type'] ?? 'Desa',
+          'doctor': a['notes'],
+          'patientsCount': 0,
+          'highRiskCount': 0,
+          'status': isToday ? 'Segera' : null,
+          'type': isToday ? 'today' : 'upcoming',
+        };
+      }).toList();
+
+      setState(() {
+        _schedules = mapped;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -608,7 +594,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                   _selectedDate != null && _isSameDay(date, _selectedDate!);
               final isToday = _isSameDay(
                 date,
-                DateTime(2023, 10, 12),
+                DateTime.now(),
               ); // Mock today
               final hasEvent = _markedDates.any((d) => _isSameDay(d, date));
 
@@ -720,7 +706,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           .map(
             (event) => _buildScheduleCard(
               event,
-              _isSameDay(event['date'] as DateTime, DateTime(2023, 10, 12)),
+              _isSameDay(event['date'] as DateTime, DateTime.now()),
             ),
           )
           .toList(),
