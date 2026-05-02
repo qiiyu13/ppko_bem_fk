@@ -331,7 +331,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               if (!context.mounted) return;
               Navigator.pop(context);
               if (success) {
-                _showSuccessDialog('Kode reset telah dikirim via SMS (mock)');
+                Navigator.pop(context);
+                _showResetPasswordDialog(kk);
               } else {
                 _showErrorDialog('Gagal mengirim kode reset');
               }
@@ -346,6 +347,143 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             ),
             child: Text(
               'Kirim',
+              style: TextStyle(fontSize: 16 * textScaler.scale(1.0)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showResetPasswordDialog(String kkNumber) {
+    final resetCodeController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final textScaler = MediaQuery.textScalerOf(context);
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Reset Password',
+          style: TextStyle(
+            fontSize: 22 * textScaler.scale(1.0),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Masukkan kode reset dan password baru:',
+              style: TextStyle(fontSize: 16 * textScaler.scale(1.0)),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: resetCodeController,
+              keyboardType: TextInputType.number,
+              style: TextStyle(fontSize: 18 * textScaler.scale(1.0)),
+              decoration: InputDecoration(
+                hintText: 'Kode Reset (6 digit)',
+                hintStyle: TextStyle(
+                  fontSize: 16 * textScaler.scale(1.0),
+                  color: AppColors.textSecondary,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.divider),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.divider),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: newPasswordController,
+              obscureText: true,
+              style: TextStyle(fontSize: 18 * textScaler.scale(1.0)),
+              decoration: InputDecoration(
+                hintText: 'Password Baru',
+                hintStyle: TextStyle(
+                  fontSize: 16 * textScaler.scale(1.0),
+                  color: AppColors.textSecondary,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.divider),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.divider),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Batal',
+              style: TextStyle(
+                fontSize: 16 * textScaler.scale(1.0),
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final resetCode = resetCodeController.text.trim();
+              final newPassword = newPasswordController.text;
+              if (resetCode.isEmpty || newPassword.isEmpty) return;
+
+              final success = await AuthService.resetPassword(
+                kkNumber: kkNumber,
+                resetCode: resetCode,
+                newPassword: newPassword,
+              );
+              if (!context.mounted) return;
+              Navigator.pop(context);
+              if (success) {
+                _showSuccessDialog('Password berhasil direset. Silakan login dengan password baru.');
+              } else {
+                _showErrorDialog('Gagal reset password. Periksa kode reset.');
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.textOnPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Reset',
               style: TextStyle(fontSize: 16 * textScaler.scale(1.0)),
             ),
           ),
