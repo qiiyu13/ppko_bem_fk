@@ -46,6 +46,12 @@ dependencies:
   flutter_quill: ^11.5.0
   image_picker: ^1.1.2
   path_provider: ^2.1.2
+  phosphor_flutter: ^2.1.0
+  dio: ^5.4.0
+  flutter_secure_storage: ^9.0.0
+  connectivity_plus: ^5.0.1
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^3.5.0
 
 dev_dependencies:
   flutter_test:
@@ -76,6 +82,7 @@ flutter:
     - assets/images/
     - assets/images/web/
     - assets/icon/
+    - assets/illustration/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

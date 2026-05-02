@@ -1,0 +1,95 @@
+import 'api_service.dart';
+import 'token_service.dart';
+
+class AuthService {
+  static Future<Map<String, dynamic>> register({
+    required String kkNumber,
+    required String responsibleName,
+    required String password,
+    String? phone,
+  }) async {
+    final response = await ApiService.post('/auth/register', data: {
+      'kkNumber': kkNumber,
+      'responsibleName': responsibleName,
+      'password': password,
+      'phone': phone,
+    });
+
+    final data = response.data['data'];
+    await TokenService.setToken(data['token']);
+    await TokenService.setKKNumber(kkNumber);
+    await TokenService.setResponsibleName(responsibleName);
+
+    return data;
+  }
+
+  static Future<Map<String, dynamic>> login({
+    required String kkNumber,
+    required String password,
+  }) async {
+    final response = await ApiService.post('/auth/login', data: {
+      'kkNumber': kkNumber,
+      'password': password,
+    });
+
+    final data = response.data['data'];
+    final user = data['user'];
+    await TokenService.setToken(data['token']);
+    await TokenService.setKKNumber(kkNumber);
+    await TokenService.setResponsibleName(user['responsibleName']);
+
+    return data;
+  }
+
+  static Future<Map<String, dynamic>?> getMe() async {
+    try {
+      final response = await ApiService.get('/auth/me');
+      return response.data['data'];
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<bool> isLoggedIn() async {
+    final token = await TokenService.getToken();
+    if (token == null) return false;
+    final user = await getMe();
+    return user != null;
+  }
+
+  static Future<void> logout() async {
+    await TokenService.clearAll();
+  }
+
+  static Future<bool> forgotPassword({
+    required String kkNumber,
+    required String phone,
+  }) async {
+    try {
+      await ApiService.post('/auth/forgot-password', data: {
+        'kkNumber': kkNumber,
+        'phone': phone,
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<bool> resetPassword({
+    required String kkNumber,
+    required String resetCode,
+    required String newPassword,
+  }) async {
+    try {
+      await ApiService.post('/auth/reset-password', data: {
+        'kkNumber': kkNumber,
+        'resetCode': resetCode,
+        'newPassword': newPassword,
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+}

@@ -1,0 +1,53 @@
+import 'package:dio/dio.dart';
+import 'token_service.dart';
+
+class ApiService {
+  static const String baseUrl = 'http://localhost:3000/api/v1';
+
+  static final Dio dio = Dio(BaseOptions(
+    baseUrl: baseUrl,
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 10),
+    headers: {'Content-Type': 'application/json'},
+  ));
+
+  static void setupInterceptors() {
+    dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final token = await TokenService.getToken();
+        if (token != null) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        handler.next(options);
+      },
+      onError: (error, handler) async {
+        if (error.response?.statusCode == 401) {
+          await TokenService.clearAll();
+        }
+        handler.next(error);
+      },
+    ));
+  }
+
+  static Future<Response> get(String path, {Map<String, dynamic>? queryParameters}) =>
+      dio.get(path, queryParameters: queryParameters);
+
+  static Future<Response> post(String path, {dynamic data}) =>
+      dio.post(path, data: data);
+
+  static Future<Response> put(String path, {dynamic data}) =>
+      dio.put(path, data: data);
+
+  static Future<Response> delete(String path) =>
+      dio.delete(path);
+
+  static Future<Response> request(String method, String path, {dynamic data}) async {
+    switch (method.toUpperCase()) {
+      case 'GET': return get(path);
+      case 'POST': return post(path, data: data);
+      case 'PUT': return put(path, data: data);
+      case 'DELETE': return delete(path);
+      default: throw Exception('Unsupported method: $method');
+    }
+  }
+}

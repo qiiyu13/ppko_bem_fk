@@ -26,6 +26,44 @@ class ProfileService {
     await _loadActiveProfile();
   }
 
+  Future<bool> isLoggedIn() async {
+    final result = await DatabaseHelper.instance.query(
+      'app_state',
+      where: 'key = ?',
+      whereArgs: ['is_logged_in'],
+    );
+    if (result.isNotEmpty) {
+      return result.first['value'] == 'true';
+    }
+    return false;
+  }
+
+  Future<void> setLoggedIn(bool value) async {
+    final existing = await DatabaseHelper.instance.query(
+      'app_state',
+      where: 'key = ?',
+      whereArgs: ['is_logged_in'],
+    );
+
+    if (existing.isNotEmpty) {
+      await DatabaseHelper.instance.update(
+        'app_state',
+        {'value': value.toString()},
+        where: 'key = ?',
+        whereArgs: ['is_logged_in'],
+      );
+    } else {
+      await DatabaseHelper.instance.insert('app_state', {
+        'key': 'is_logged_in',
+        'value': value.toString(),
+      });
+    }
+  }
+
+  Future<void> logout() async {
+    await setLoggedIn(false);
+  }
+
   Future<void> _loadProfiles() async {
     final maps = await DatabaseHelper.instance.query(
       'family_profiles',
@@ -61,10 +99,25 @@ class ProfileService {
   }
 
   Future<void> _saveActiveProfileId(String profileId) async {
-    await DatabaseHelper.instance.insert('app_state', {
-      'key': 'active_profile_id',
-      'value': profileId,
-    });
+    final existing = await DatabaseHelper.instance.query(
+      'app_state',
+      where: 'key = ?',
+      whereArgs: ['active_profile_id'],
+    );
+
+    if (existing.isNotEmpty) {
+      await DatabaseHelper.instance.update(
+        'app_state',
+        {'value': profileId},
+        where: 'key = ?',
+        whereArgs: ['active_profile_id'],
+      );
+    } else {
+      await DatabaseHelper.instance.insert('app_state', {
+        'key': 'active_profile_id',
+        'value': profileId,
+      });
+    }
   }
 
   Future<void> setActiveProfile(String profileId) async {

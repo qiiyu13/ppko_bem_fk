@@ -23,16 +23,15 @@ class DatabaseHelper {
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
 
-    if (kIsWeb) {
-      // Initialize mock data for web
-      await _initMockData();
-    } else {
-      // Initialize FFI for desktop platforms
-      if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
-        sqfliteFfiInit();
-        databaseFactory = databaseFactoryFfi;
-      }
+    // Initialize FFI for desktop platforms (not web)
+    if (!kIsWeb &&
+        (Platform.isLinux || Platform.isMacOS || Platform.isWindows)) {
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
     }
+
+    // Initialize demo data for all platforms (web + mobile + desktop)
+    await _initMockData();
 
     _initialized = true;
   }
