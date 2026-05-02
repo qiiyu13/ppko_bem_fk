@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -88,7 +90,10 @@ class CacheService {
 
   static Future<List<Map<String, dynamic>>> getProfiles() async {
     final results = await _db?.query('profiles', orderBy: 'updated_at DESC');
-    return results ?? [];
+    return results?.map((row) {
+      final String dataStr = row['data'] as String;
+      return jsonDecode(dataStr) as Map<String, dynamic>;
+    }).toList() ?? [];
   }
 
   static Future<bool> isOnline() async {
@@ -100,7 +105,7 @@ class CacheService {
     for (final article in articles) {
       await _db?.insert('articles', {
         'id': article['id'],
-        'data': article.toString(),
+        'data': jsonEncode(article),
         'updated_at': DateTime.now().toIso8601String(),
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
@@ -108,14 +113,17 @@ class CacheService {
 
   static Future<List<Map<String, dynamic>>> getArticles() async {
     final results = await _db?.query('articles', orderBy: 'updated_at DESC');
-    return results ?? [];
+    return results?.map((row) {
+      final String dataStr = row['data'] as String;
+      return jsonDecode(dataStr) as Map<String, dynamic>;
+    }).toList() ?? [];
   }
 
   static Future<void> saveAppointment(String id, Map<String, dynamic> data) async {
     await _db?.insert('appointments', {
       'id': id,
       'user_id': data['userId'] ?? '',
-      'data': data.toString(),
+      'data': jsonEncode(data),
       'synced': 1,
       'updated_at': DateTime.now().toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
@@ -123,15 +131,17 @@ class CacheService {
 
   static Future<List<Map<String, dynamic>>> getAppointments() async {
     final results = await _db?.query('appointments', orderBy: 'updated_at DESC');
-    return results ?? [];
+    return results?.map((row) {
+      final String dataStr = row['data'] as String;
+      return jsonDecode(dataStr) as Map<String, dynamic>;
+    }).toList() ?? [];
   }
 
   static Future<void> queueSync(String endpoint, String method, Map<String, dynamic> data) async {
-    final json = data.toString();
     await _db?.insert('pending_sync', {
       'endpoint': endpoint,
       'method': method,
-      'data': json,
+      'data': jsonEncode(data),
       'created_at': DateTime.now().toIso8601String(),
     });
   }
@@ -144,9 +154,12 @@ class CacheService {
 
     for (final item in pending) {
       try {
+        final String dataStr = item['data'] as String? ?? '{}';
+        final Map<String, dynamic> data = jsonDecode(dataStr);
         await ApiService.request(
           item['method'] as String,
           item['endpoint'] as String,
+          data: data.isNotEmpty ? data : null,
         );
         await _db?.delete('pending_sync', where: 'id = ?', whereArgs: [item['id']]);
       } catch (_) {
