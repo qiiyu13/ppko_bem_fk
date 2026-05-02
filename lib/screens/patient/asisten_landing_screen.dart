@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
+import '../../services/chat_service.dart';
 import '../../services/chat_storage_service.dart';
 import 'tanya_asisten_screen.dart';
 
@@ -30,17 +31,66 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
 
   Future<void> _loadConversations() async {
     await _storageService.init();
-    final conversations = await _storageService.getAllConversations();
+    try {
+      final apiConversations = await ChatService.getConversations();
+      final localConversations = await _storageService.getAllConversations();
 
-    if (mounted) {
-      setState(() {
-        _conversations = conversations;
-        _isLoading = false;
-      });
+      // Merge API conversations with local ones, preferring API data
+      final merged = <Conversation>[];
+      final seenIds = <String>{};
+
+      for (final c in apiConversations) {
+        final id = c['id'] as String;
+        seenIds.add(id);
+        final messages = c['messages'] as List<dynamic>?;
+        final lastMessage = messages != null && messages.isNotEmpty
+            ? messages.first['content'] as String? ?? ''
+            : '';
+        merged.add(Conversation(
+          id: id,
+          startedAt: DateTime.parse(c['startedAt'] as String),
+          lastActivityAt: DateTime.parse(c['lastActivityAt'] as String),
+          messages: [
+            ChatMessage(
+              text: lastMessage,
+              isUser: false,
+              timestamp: DateTime.parse(c['lastActivityAt'] as String),
+            ),
+          ],
+        ));
+      }
+
+      // Add local-only conversations
+      for (final c in localConversations) {
+        if (!seenIds.contains(c.id)) {
+          merged.add(c);
+        }
+      }
+
+      merged.sort((a, b) => b.lastActivityAt.compareTo(a.lastActivityAt));
+
+      if (mounted) {
+        setState(() {
+          _conversations = merged;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      // Fallback to local only
+      final conversations = await _storageService.getAllConversations();
+      if (mounted) {
+        setState(() {
+          _conversations = conversations;
+          _isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _deleteConversation(String id) async {
+    try {
+      await ChatService.deleteConversation(id);
+    } catch (_) {}
     await _storageService.deleteConversation(id);
     await _loadConversations();
 
@@ -56,6 +106,14 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
   }
 
   Future<void> _clearAllConversations() async {
+    try {
+      final apiConversations = await ChatService.getConversations();
+      for (final c in apiConversations) {
+        try {
+          await ChatService.deleteConversation(c['id'] as String);
+        } catch (_) {}
+      }
+    } catch (_) {}
     await _storageService.clearAllConversations();
     await _loadConversations();
 
@@ -72,9 +130,17 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
   }
 
   Future<void> _navigateToChat() async {
+    String? conversationId;
+    try {
+      final conv = await ChatService.createConversation();
+      conversationId = conv['id'] as String;
+    } catch (_) {
+      // If API fails, we'll use local-only mode
+    }
+
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const TanyaAsistenScreen()),
+      MaterialPageRoute(builder: (context) => TanyaAsistenScreen(conversationId: conversationId)),
     );
     // Refresh when returning
     _loadConversations();

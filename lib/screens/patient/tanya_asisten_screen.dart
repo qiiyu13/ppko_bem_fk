@@ -2,12 +2,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/app_colors.dart';
+import '../../services/chat_service.dart';
 import '../../utils/asset_helper.dart';
 import '../../utils/responsive_size.dart';
 import '../../services/chat_storage_service.dart';
 
 class TanyaAsistenScreen extends StatefulWidget {
-  const TanyaAsistenScreen({super.key});
+  final String? conversationId;
+
+  const TanyaAsistenScreen({super.key, this.conversationId});
 
   @override
   TanyaAsistenScreenState createState() => TanyaAsistenScreenState();
@@ -34,15 +37,43 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
   Future<void> _loadConversation() async {
     await _storageService.init();
 
-    // Check if should end conversation (idle timeout)
+    if (widget.conversationId != null) {
+      // Load from API
+      try {
+        final apiMessages = await ChatService.getMessages(widget.conversationId!);
+        if (apiMessages.isNotEmpty) {
+          setState(() {
+            _messages.addAll(apiMessages.map((m) => ChatMessage(
+              text: m['content'] as String,
+              isUser: (m['role'] as String) == 'user',
+              timestamp: DateTime.parse(m['createdAt'] as String),
+            )));
+          });
+        } else {
+          _addWelcomeMessages();
+        }
+      } catch (e) {
+        // Fallback to local storage
+        _loadFromLocalStorage();
+      }
+    } else {
+      _loadFromLocalStorage();
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    await _storageService.updateLastActivity();
+  }
+
+  Future<void> _loadFromLocalStorage() async {
     final shouldEnd = await _storageService.shouldEndConversation();
 
     if (shouldEnd) {
-      // End previous conversation and start fresh
       await _storageService.endCurrentConversation();
       _addWelcomeMessages();
     } else {
-      // Load existing conversation
       final existingMessages = await _storageService.loadCurrentConversation();
       if (existingMessages != null && existingMessages.isNotEmpty) {
         setState(() {
@@ -52,13 +83,6 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
         _addWelcomeMessages();
       }
     }
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    // Update last activity
-    await _storageService.updateLastActivity();
   }
 
   void _addWelcomeMessages() {
@@ -93,10 +117,30 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
       _isTyping = true;
     });
 
-    // Save conversation
+    // Save conversation locally
     _saveConversation();
 
-    // Simulate assistant response
+    // Send to API if conversationId is available
+    if (widget.conversationId != null) {
+      _sendMessageToApi(text);
+    } else {
+      // Simulate assistant response for local-only mode
+      _simulateAssistantResponse();
+    }
+  }
+
+  Future<void> _sendMessageToApi(String text) async {
+    try {
+      await ChatService.sendMessage(widget.conversationId!, text);
+      // Simulate assistant response after API send
+      _simulateAssistantResponse();
+    } catch (e) {
+      // If API fails, just simulate locally
+      _simulateAssistantResponse();
+    }
+  }
+
+  void _simulateAssistantResponse() {
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
@@ -124,8 +168,8 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
   }
 
   Future<void> _onBackPressed() async {
-    // End current conversation if it has messages
-    if (_messages.isNotEmpty) {
+    // End current local conversation if it has messages and we're in local-only mode
+    if (widget.conversationId == null && _messages.isNotEmpty) {
       await _storageService.endCurrentConversation();
     }
     if (mounted) {
