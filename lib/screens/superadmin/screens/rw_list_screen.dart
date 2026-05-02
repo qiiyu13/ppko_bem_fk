@@ -1,16 +1,41 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
+import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
 import 'rt_list_screen.dart';
 
-class RwListScreen extends StatelessWidget {
-  RwListScreen({super.key});
+class RwListScreen extends StatefulWidget {
+  const RwListScreen({super.key});
 
-  final List<Map<String, dynamic>> _rws = [
-    {'number': '01', 'rtCount': 3, 'residentCount': 80, 'ketua': 'Pak Budi'},
-    {'number': '02', 'rtCount': 2, 'residentCount': 60, 'ketua': 'Pak Ahmad'},
-    {'number': '03', 'rtCount': 3, 'residentCount': 55, 'ketua': 'Ibu Siti'},
-  ];
+  @override
+  State<RwListScreen> createState() => _RwListScreenState();
+}
+
+class _RwListScreenState extends State<RwListScreen> {
+  List<Map<String, dynamic>> _rws = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRegions();
+  }
+
+  Future<void> _loadRegions() async {
+    try {
+      final regions = await RegionService.getRegions();
+      // Filter only RW-level regions (regions with type 'RW' and no parent)
+      final rwList = regions.where((r) => r['type'] == 'RW').toList();
+      setState(() {
+        _rws = rwList;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,29 +60,45 @@ class RwListScreen extends StatelessWidget {
           ),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add, color: AppColors.primary),
-            onPressed: () {
-              // TODO: Add RW
-            },
-          ),
-        ],
       ),
       body: SafeArea(
-        child: ListView.builder(
-          padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-          itemCount: _rws.length,
-          itemBuilder: (context, index) {
-            final rw = _rws[index];
-            return _buildRwCard(context, rw);
-          },
-        ),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+            : RefreshIndicator(
+                onRefresh: _loadRegions,
+                color: AppColors.primary,
+                child: _rws.isEmpty
+                    ? ListView(
+                        children: const [
+                          SizedBox(height: 100),
+                          Center(
+                            child: Text(
+                              'Belum ada RW',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : ListView.builder(
+                        padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+                        itemCount: _rws.length,
+                        itemBuilder: (context, index) {
+                          final rw = _rws[index];
+                          return _buildRwCard(context, rw);
+                        },
+                      ),
+              ),
       ),
     );
   }
 
   Widget _buildRwCard(BuildContext context, Map<String, dynamic> rw) {
+    final children = rw['children'] as List<dynamic>? ?? [];
+    final residents = rw['residents'] as List<dynamic>? ?? [];
+
     return Container(
       margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
       decoration: BoxDecoration(
@@ -77,8 +118,7 @@ class RwListScreen extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) =>
-                  RtListScreen(rwNumber: rw['number'], rwData: rw),
+              builder: (context) => RtListScreen(rwId: rw['id'] as String, rwName: rw['name'] as String? ?? 'RW'),
             ),
           );
         },
@@ -88,33 +128,20 @@ class RwListScreen extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 70,
-                height: 70,
+                width: 60,
+                height: 60,
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'RW',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        rw['number'],
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    rw['name']?.toString() ?? 'RW',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: ResponsiveSize.fontLarge,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -124,49 +151,28 @@ class RwListScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'RW ${rw['number']} - ${rw['ketua']}',
+                      'RW ${rw['name'] ?? ''}',
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontLarge,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    SizedBox(height: ResponsiveSize.spacingSmall),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_city,
-                          size: 16,
-                          color: AppColors.textSecondary,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          '${rw['rtCount']} RT',
-                          style: TextStyle(
-                            fontSize: ResponsiveSize.fontMedium,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        SizedBox(width: 16),
-                        Icon(Icons.people, size: 16, color: AppColors.primary),
-                        SizedBox(width: 4),
-                        Text(
-                          '${rw['residentCount']} Penduduk',
-                          style: TextStyle(
-                            fontSize: ResponsiveSize.fontMedium,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                    SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
+                    Text(
+                      '${children.length} RT • ${residents.length} Penduduk',
+                      style: TextStyle(
+                        fontSize: ResponsiveSize.fontSmall,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
               ),
               Icon(
                 Icons.arrow_forward_ios,
-                color: AppColors.primary,
-                size: ResponsiveSize.iconSmall,
+                color: AppColors.textSecondary,
+                size: 16,
               ),
             ],
           ),

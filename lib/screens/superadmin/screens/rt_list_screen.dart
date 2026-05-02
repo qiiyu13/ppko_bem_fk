@@ -4,70 +4,19 @@ import '../../../utils/responsive_size.dart';
 import 'resident_list_screen.dart';
 
 class RtListScreen extends StatelessWidget {
-  final String rwNumber;
-  final Map<String, dynamic> rwData;
+  final String rwId;
+  final String rwName;
+  final List<Map<String, dynamic>>? rtData;
 
-  const RtListScreen({super.key, required this.rwNumber, required this.rwData});
+  const RtListScreen({
+    super.key,
+    required this.rwId,
+    required this.rwName,
+    this.rtData,
+  });
 
   List<Map<String, dynamic>> get _rts {
-    if (rwNumber == '01') {
-      return [
-        {
-          'number': '001',
-          'houseCount': 25,
-          'residentCount': 30,
-          'ketua': 'Pak Amin',
-        },
-        {
-          'number': '002',
-          'houseCount': 30,
-          'residentCount': 35,
-          'ketua': 'Ibu Rina',
-        },
-        {
-          'number': '003',
-          'houseCount': 20,
-          'residentCount': 15,
-          'ketua': 'Pak Dodi',
-        },
-      ];
-    } else if (rwNumber == '02') {
-      return [
-        {
-          'number': '001',
-          'houseCount': 35,
-          'residentCount': 40,
-          'ketua': 'Pak Joko',
-        },
-        {
-          'number': '002',
-          'houseCount': 25,
-          'residentCount': 20,
-          'ketua': 'Ibu Ani',
-        },
-      ];
-    } else {
-      return [
-        {
-          'number': '001',
-          'houseCount': 20,
-          'residentCount': 25,
-          'ketua': 'Pak Surya',
-        },
-        {
-          'number': '002',
-          'houseCount': 25,
-          'residentCount': 20,
-          'ketua': 'Ibu Mina',
-        },
-        {
-          'number': '003',
-          'houseCount': 15,
-          'residentCount': 10,
-          'ketua': 'Pak Budi',
-        },
-      ];
-    }
+    return rtData ?? [];
   }
 
   @override
@@ -85,7 +34,7 @@ class RtListScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'RW $rwNumber - Daftar RT',
+          'Daftar RT - $rwName',
           style: TextStyle(
             color: AppColors.primary,
             fontSize: ResponsiveSize.fontXLarge,
@@ -93,88 +42,19 @@ class RtListScreen extends StatelessWidget {
           ),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add, color: AppColors.primary),
-            onPressed: () {
-              // TODO: Add RT
-            },
-          ),
-        ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-              color: AppColors.background,
-              child: Row(
-                children: [
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'RW',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+        child: _rts.isEmpty
+            ? const Center(
+                child: Text(
+                  'Belum ada RT',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 16,
                   ),
-                  SizedBox(width: ResponsiveSize.paddingMedium),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'RW $rwNumber',
-                          style: TextStyle(
-                            fontSize: ResponsiveSize.fontLarge,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          'Ketua: ${rwData['ketua']}',
-                          style: TextStyle(
-                            fontSize: ResponsiveSize.fontMedium,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '${rwData['rtCount']} RT',
-                        style: TextStyle(
-                          fontSize: ResponsiveSize.fontMedium,
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        '${rwData['residentCount']} Penduduk',
-                        style: TextStyle(
-                          fontSize: ResponsiveSize.fontSmall,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
+                ),
+              )
+            : ListView.builder(
                 padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
                 itemCount: _rts.length,
                 itemBuilder: (context, index) {
@@ -182,14 +62,13 @@ class RtListScreen extends StatelessWidget {
                   return _buildRtCard(context, rt);
                 },
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
 
   Widget _buildRtCard(BuildContext context, Map<String, dynamic> rt) {
+    final residents = rt['residents'] as List<dynamic>? ?? [];
+
     return Container(
       margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
       decoration: BoxDecoration(
@@ -210,9 +89,9 @@ class RtListScreen extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder: (context) => ResidentListScreen(
-                rwNumber: rwNumber,
-                rtNumber: rt['number'],
-                rtData: rt,
+                rwNumber: rwName,
+                rtNumber: rt['name']?.toString() ?? 'RT',
+                rtId: rt['id'] as String?,
               ),
             ),
           );
@@ -226,30 +105,17 @@ class RtListScreen extends StatelessWidget {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: AppColors.primarySurface.withValues(alpha: 0.1),
+                  color: AppColors.primarySurface.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'RT',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        rt['number'],
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    rt['name']?.toString() ?? 'RT',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: ResponsiveSize.fontLarge,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -259,57 +125,28 @@ class RtListScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'RT ${rt['number']} - ${rt['ketua']}',
+                      'RT ${rt['name'] ?? ''}',
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontLarge,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
                     ),
-                    SizedBox(height: ResponsiveSize.spacingSmall),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.home,
-                          size: 16,
-                          color: AppColors.textSecondary,
-                        ),
-                        SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            '${rt['houseCount']} Rumah',
-                            style: TextStyle(
-                              fontSize: ResponsiveSize.fontMedium,
-                              color: AppColors.textSecondary,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        SizedBox(width: 16),
-                        Icon(Icons.people, size: 16, color: AppColors.primary),
-                        SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            '${rt['residentCount']} Penduduk',
-                            style: TextStyle(
-                              fontSize: ResponsiveSize.fontMedium,
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                    SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
+                    Text(
+                      '${residents.length} Penduduk',
+                      style: TextStyle(
+                        fontSize: ResponsiveSize.fontSmall,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
               ),
               Icon(
                 Icons.arrow_forward_ios,
-                color: AppColors.primary,
-                size: ResponsiveSize.iconSmall,
+                color: AppColors.textSecondary,
+                size: 16,
               ),
             ],
           ),
