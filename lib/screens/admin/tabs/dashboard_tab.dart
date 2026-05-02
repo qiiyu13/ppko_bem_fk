@@ -18,8 +18,11 @@ class _DashboardTabState extends State<DashboardTab> {
   String _selectedFilter = 'All';
   String _searchQuery = '';
   bool _isLoading = false;
+  bool _isLoadingMore = false;
   List<Map<String, dynamic>> _patients = [];
   int _totalCount = 0;
+  int _currentPage = 1;
+  int _totalPages = 1;
 
   @override
   void initState() {
@@ -27,11 +30,17 @@ class _DashboardTabState extends State<DashboardTab> {
     _fetchPatients();
   }
 
-  Future<void> _fetchPatients() async {
-    setState(() => _isLoading = true);
+  Future<void> _fetchPatients({bool loadMore = false}) async {
+    if (loadMore) {
+      setState(() => _isLoadingMore = true);
+    } else {
+      setState(() => _isLoading = true);
+      _currentPage = 1;
+    }
+
     try {
       final queryParams = <String, dynamic>{
-        'page': 1,
+        'page': _currentPage,
         'limit': 20,
       };
       if (_searchQuery.isNotEmpty) {
@@ -42,17 +51,36 @@ class _DashboardTabState extends State<DashboardTab> {
         queryParameters: queryParams,
       );
       final List<dynamic> data = response.data['data'] ?? [];
+      final meta = response.data['meta'];
+
       setState(() {
-        _patients = data.cast<Map<String, dynamic>>();
-        _totalCount = response.data['meta']?['total'] ?? _patients.length;
+        if (loadMore) {
+          _patients.addAll(data.cast<Map<String, dynamic>>());
+        } else {
+          _patients = data.cast<Map<String, dynamic>>();
+        }
+        _totalCount = meta?['total'] ?? _patients.length;
+        _totalPages = meta?['totalPages'] ?? 1;
       });
     } catch (e) {
-      setState(() {
-        _patients = [];
-        _totalCount = 0;
-      });
+      if (!loadMore) {
+        setState(() {
+          _patients = [];
+          _totalCount = 0;
+        });
+      }
     } finally {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _isLoadingMore = false;
+      });
+    }
+  }
+
+  void _loadMore() {
+    if (_currentPage < _totalPages && !_isLoadingMore) {
+      _currentPage++;
+      _fetchPatients(loadMore: true);
     }
   }
 
@@ -539,6 +567,30 @@ class _DashboardTabState extends State<DashboardTab> {
                   final patient = _filteredPatients[index];
                   return _buildPatientCard(patient);
                 }, childCount: _filteredPatients.length),
+              ),
+
+            if (_currentPage < _totalPages)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: ResponsiveSize.paddingMedium,
+                    vertical: ResponsiveSize.spacingMedium,
+                  ),
+                  child: _isLoadingMore
+                      ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                      : ElevatedButton(
+                          onPressed: _loadMore,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Muat Lebih Banyak'),
+                        ),
+                ),
               ),
 
             SliverToBoxAdapter(
