@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../components/animated_line_navbar.dart';
 import '../../constants/app_colors.dart';
-import '../../utils/responsive_size.dart';
 import 'tabs/settings_tab.dart';
 import 'tabs/beranda_tab.dart';
 import 'tabs/medical_tab.dart';

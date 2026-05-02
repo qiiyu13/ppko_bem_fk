@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../services/api_service.dart';
 import '../admin_patient_detail_screen.dart';
 import '../qr_scanner_screen.dart';
 
@@ -16,87 +17,80 @@ class _DashboardTabState extends State<DashboardTab> {
 
   String _selectedFilter = 'All';
   String _searchQuery = '';
+  bool _isLoading = false;
+  List<Map<String, dynamic>> _patients = [];
+  int _totalCount = 0;
 
-  // Mock patient data
-  final List<Map<String, dynamic>> _patients = [
-    {
-      'name': 'Budi Santoso',
-      'nik': '320123199812220001',
-      'village': 'Sukamaju',
-      'systolic': 180,
-      'diastolic': 100,
-      'riskLevel': 'high',
-    },
-    {
-      'name': 'Sari Wulandari',
-      'nik': '320123199908880004',
-      'village': 'Cibadak',
-      'systolic': 135,
-      'diastolic': 88,
-      'riskLevel': 'attention',
-    },
-    {
-      'name': 'Ahmad Dahlan',
-      'nik': '320123199217770002',
-      'village': 'Sukamaju',
-      'systolic': 175,
-      'diastolic': 110,
-      'riskLevel': 'high',
-    },
-    {
-      'name': 'Siti Aminah',
-      'nik': '3201231995221990002',
-      'village': 'Mekarwangi',
-      'systolic': 120,
-      'diastolic': 80,
-      'riskLevel': 'normal',
-    },
-    {
-      'name': 'Yanto Basna',
-      'nik': '320123197722110005',
-      'village': 'Cibadak',
-      'systolic': 118,
-      'diastolic': 76,
-      'riskLevel': 'normal',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchPatients();
+  }
+
+  Future<void> _fetchPatients() async {
+    setState(() => _isLoading = true);
+    try {
+      final queryParams = <String, dynamic>{
+        'page': 1,
+        'limit': 20,
+      };
+      if (_searchQuery.isNotEmpty) {
+        queryParams['search'] = _searchQuery;
+      }
+      final response = await ApiService.get(
+        '/admin/patients',
+        queryParameters: queryParams,
+      );
+      final List<dynamic> data = response.data['data'] ?? [];
+      setState(() {
+        _patients = data.cast<Map<String, dynamic>>();
+        _totalCount = response.data['meta']?['total'] ?? _patients.length;
+      });
+    } catch (e) {
+      setState(() {
+        _patients = [];
+        _totalCount = 0;
+      });
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  String? _getRiskCategory(Map<String, dynamic> patient) {
+    final latestIrd = patient['latestIrd'];
+    if (latestIrd is Map) {
+      return latestIrd['irdCategory'] as String?;
+    }
+    return null;
+  }
 
   List<Map<String, dynamic>> get _filteredPatients {
     return _patients.where((patient) {
-      // Filter by risk level
+      final riskLevel = _getRiskCategory(patient) ?? 'normal';
       if (_selectedFilter != 'All') {
         final riskMap = {
           'High Risk': 'high',
           'Attention': 'attention',
           'Normal': 'normal',
         };
-        if (patient['riskLevel'] != riskMap[_selectedFilter]) {
+        if (riskLevel != riskMap[_selectedFilter]) {
           return false;
         }
       }
-
-      // Filter by search query
-      if (_searchQuery.isNotEmpty) {
-        final name = patient['name'].toString().toLowerCase();
-        final nik = patient['nik'].toString().toLowerCase();
-        final query = _searchQuery.toLowerCase();
-        if (!name.contains(query) && !nik.contains(query)) {
-          return false;
-        }
-      }
-
       return true;
     }).toList();
   }
 
   Map<String, int> get _riskCounts {
-    final counts = {
+    return {
       'All': _patients.length,
-      'High Risk': _patients.where((p) => p['riskLevel'] == 'high').length,
-      'Attention': _patients.where((p) => p['riskLevel'] == 'attention').length,
-      'Normal': _patients.where((p) => p['riskLevel'] == 'normal').length,
+      'High Risk': _patients.where((p) => _getRiskCategory(p) == 'high').length,
+      'Attention': _patients.where((p) => _getRiskCategory(p) == 'attention').length,
+      'Normal': _patients.where((p) {
+        final c = _getRiskCategory(p);
+        return c == null || c == 'normal';
+      }).length,
     };
-    return counts;
   }
 
   void _showActionModal(Map<String, dynamic> patient) {
@@ -116,7 +110,6 @@ class _DashboardTabState extends State<DashboardTab> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Handle bar
                 Center(
                   child: Container(
                     width: 40,
@@ -128,7 +121,6 @@ class _DashboardTabState extends State<DashboardTab> {
                   ),
                 ),
                 SizedBox(height: ResponsiveSize.spacingMedium),
-                // Patient info header
                 Text(
                   patient['name'],
                   style: TextStyle(
@@ -146,7 +138,6 @@ class _DashboardTabState extends State<DashboardTab> {
                   ),
                 ),
                 SizedBox(height: ResponsiveSize.spacingXLarge),
-                // Action buttons
                 _buildActionButton(
                   icon: Icons.phone,
                   title: 'Contact Patient',
@@ -154,7 +145,6 @@ class _DashboardTabState extends State<DashboardTab> {
                   color: AppColors.primary,
                   onTap: () {
                     Navigator.pop(context);
-                    // TODO: Implement contact
                   },
                 ),
                 SizedBox(height: ResponsiveSize.spacingMedium),
@@ -165,7 +155,6 @@ class _DashboardTabState extends State<DashboardTab> {
                   color: AppColors.statusRed,
                   onTap: () {
                     Navigator.pop(context);
-                    // TODO: Implement referral
                   },
                 ),
                 SizedBox(height: ResponsiveSize.spacingMedium),
@@ -176,7 +165,6 @@ class _DashboardTabState extends State<DashboardTab> {
                   color: normalGreen,
                   onTap: () {
                     Navigator.pop(context);
-                    // TODO: Implement resolve
                   },
                 ),
                 SizedBox(height: ResponsiveSize.spacingMedium),
@@ -187,11 +175,9 @@ class _DashboardTabState extends State<DashboardTab> {
                   color: AppColors.statusAmber,
                   onTap: () {
                     Navigator.pop(context);
-                    // TODO: Implement scheduling
                   },
                 ),
                 SizedBox(height: ResponsiveSize.spacingXLarge),
-                // Cancel button
                 SizedBox(
                   width: double.infinity,
                   child: TextButton(
@@ -286,6 +272,7 @@ class _DashboardTabState extends State<DashboardTab> {
     responsive.init(context);
 
     final riskCounts = _riskCounts;
+    final highRiskCount = riskCounts['High Risk'] ?? 0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -302,7 +289,6 @@ class _DashboardTabState extends State<DashboardTab> {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // App Bar
             SliverToBoxAdapter(
               child: Container(
                 padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
@@ -348,9 +334,7 @@ class _DashboardTabState extends State<DashboardTab> {
                             color: AppColors.textPrimary,
                             size: ResponsiveSize.iconMedium,
                           ),
-                          onPressed: () {
-                            // TODO: Show notifications
-                          },
+                          onPressed: () {},
                         ),
                         Positioned(
                           right: 8,
@@ -371,14 +355,12 @@ class _DashboardTabState extends State<DashboardTab> {
               ),
             ),
 
-            // Search and Filter Section
             SliverToBoxAdapter(
               child: Container(
                 padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
                 color: AppColors.card,
                 child: Column(
                   children: [
-                    // Search bar
                     Row(
                       children: [
                         Expanded(
@@ -392,6 +374,7 @@ class _DashboardTabState extends State<DashboardTab> {
                                 setState(() {
                                   _searchQuery = value;
                                 });
+                                _fetchPatients();
                               },
                               decoration: InputDecoration(
                                 hintText: 'Search NIK or Name...',
@@ -416,7 +399,6 @@ class _DashboardTabState extends State<DashboardTab> {
                           ),
                         ),
                         SizedBox(width: ResponsiveSize.paddingSmall),
-                        // Desa dropdown
                         Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: ResponsiveSize.paddingMedium,
@@ -455,7 +437,6 @@ class _DashboardTabState extends State<DashboardTab> {
                       ],
                     ),
                     SizedBox(height: ResponsiveSize.spacingMedium),
-                    // Filter chips
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
@@ -491,7 +472,6 @@ class _DashboardTabState extends State<DashboardTab> {
               ),
             ),
 
-            // Stats Cards
             SliverToBoxAdapter(
               child: Container(
                 padding: EdgeInsets.symmetric(
@@ -504,7 +484,7 @@ class _DashboardTabState extends State<DashboardTab> {
                     Expanded(
                       child: _buildStatCard(
                         'Total Screened',
-                        '1,240',
+                        _totalCount.toString(),
                         AppColors.textPrimary,
                         Icons.people_outline,
                       ),
@@ -513,7 +493,7 @@ class _DashboardTabState extends State<DashboardTab> {
                     Expanded(
                       child: _buildStatCard(
                         'High Risk',
-                        '45',
+                        highRiskCount.toString(),
                         AppColors.error,
                         Icons.warning_amber,
                         isHighlighted: true,
@@ -524,7 +504,6 @@ class _DashboardTabState extends State<DashboardTab> {
               ),
             ),
 
-            // Patient List Header
             SliverToBoxAdapter(
               child: Container(
                 padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
@@ -545,15 +524,23 @@ class _DashboardTabState extends State<DashboardTab> {
               ),
             ),
 
-            // Patient List
-            SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final patient = _filteredPatients[index];
-                return _buildPatientCard(patient);
-              }, childCount: _filteredPatients.length),
-            ),
+            if (_isLoading)
+              const SliverToBoxAdapter(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+              )
+            else
+              SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final patient = _filteredPatients[index];
+                  return _buildPatientCard(patient);
+                }, childCount: _filteredPatients.length),
+              ),
 
-            // Bottom spacing
             SliverToBoxAdapter(
               child: SizedBox(height: ResponsiveSize.spacingXLarge * 2),
             ),
@@ -692,7 +679,8 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   Widget _buildPatientCard(Map<String, dynamic> patient) {
-    final riskLevel = patient['riskLevel'] as String;
+    final riskCategory = _getRiskCategory(patient);
+    final riskLevel = riskCategory ?? 'normal';
     final riskColor = riskLevel == 'high'
         ? AppColors.error
         : riskLevel == 'attention'
@@ -736,7 +724,6 @@ class _DashboardTabState extends State<DashboardTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header: Name and Risk Badge
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -784,24 +771,24 @@ class _DashboardTabState extends State<DashboardTab> {
                 ],
               ),
               SizedBox(height: ResponsiveSize.spacingMedium),
-              // Village
-              Row(
-                children: [
-                  Icon(
-                    Icons.location_on_outlined,
-                    color: AppColors.textSecondary,
-                    size: ResponsiveSize.iconSmall,
-                  ),
-                  SizedBox(width: ResponsiveSize.paddingSmall * 0.5),
-                  Text(
-                    patient['village'],
-                    style: TextStyle(
-                      fontSize: ResponsiveSize.fontMedium,
+              if (patient['village'] != null)
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on_outlined,
                       color: AppColors.textSecondary,
+                      size: ResponsiveSize.iconSmall,
                     ),
-                  ),
-                ],
-              ),
+                    SizedBox(width: ResponsiveSize.paddingSmall * 0.5),
+                    Text(
+                      patient['village'],
+                      style: TextStyle(
+                        fontSize: ResponsiveSize.fontMedium,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),

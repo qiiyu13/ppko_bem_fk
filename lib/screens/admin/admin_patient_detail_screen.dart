@@ -1,63 +1,143 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
+import '../../services/api_service.dart';
 import '../../utils/responsive_size.dart';
 
-class AdminPatientDetailScreen extends StatelessWidget {
+class AdminPatientDetailScreen extends StatefulWidget {
   final Map<String, dynamic> patient;
 
-  AdminPatientDetailScreen({super.key, required this.patient});
+  const AdminPatientDetailScreen({super.key, required this.patient});
 
+  @override
+  State<AdminPatientDetailScreen> createState() =>
+      _AdminPatientDetailScreenState();
+}
+
+class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
   static const Color attentionOrange = Color(0xFFFF9800);
 
+  bool _isLoading = true;
+  Map<String, dynamic>? _patientData;
+  List<Map<String, dynamic>> _screenings = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPatientDetail();
+  }
+
+  Future<void> _fetchPatientDetail() async {
+    final patientId =
+        widget.patient['profileId'] ?? widget.patient['id'];
+    try {
+      final response =
+          await ApiService.get('/admin/patients/$patientId');
+      final data =
+          response.data['data'] as Map<String, dynamic>? ?? {};
+      final List<dynamic> screenings = data['screenings'] ?? [];
+      setState(() {
+        _patientData = data;
+        _screenings = screenings.cast<Map<String, dynamic>>();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
   Map<String, dynamic> get _extendedData {
+    if (_patientData == null) return {...widget.patient};
+    final metrics =
+        _patientData!['metrics'] as Map<String, dynamic>? ?? {};
     return {
-      'age': 68,
-      'gender': 'Laki-laki',
-      'glucose': 110,
-      'weight': 62,
-      'height': 165,
-      'uricAcid': 5.8,
-      'cholesterol': 185,
-      ...patient,
+      'name': _patientData!['name'] ?? widget.patient['name'] ?? '',
+      'nik': _patientData!['nik'] ?? widget.patient['nik'] ?? '',
+      'age': _patientData!['age'] ?? 0,
+      'gender': _patientData!['gender'] ?? '',
+      'systolic': metrics['systolic'] ?? 0,
+      'diastolic': metrics['diastolic'] ?? 0,
+      'glucose': metrics['bloodSugar'] ?? metrics['glucose'] ?? 0,
+      'weight': metrics['weight'] ?? 0,
+      'height': metrics['height'] ?? 0,
+      'uricAcid': metrics['uricAcid'] ?? 0,
+      'cholesterol': metrics['cholesterol'] ?? 0,
     };
   }
 
   double get _bmi {
-    final heightInMeters = (_extendedData['height'] as int) / 100;
-    return _extendedData['weight'] / (heightInMeters * heightInMeters);
+    final height = (_extendedData['height'] as num?)?.toDouble() ?? 0;
+    final weight = (_extendedData['weight'] as num?)?.toDouble() ?? 0;
+    if (height <= 0) return 0;
+    final heightInMeters = height / 100;
+    return weight / (heightInMeters * heightInMeters);
   }
 
   String get _bmiCategory {
+    if (_bmi <= 0) return '-';
     if (_bmi < 18.5) return 'Kurus';
     if (_bmi < 25) return 'Normal';
     if (_bmi < 30) return 'Gemuk';
     return 'Obesitas';
   }
 
-  // Mock BP history
-  final List<Map<String, dynamic>> _bpHistory = [
-    {
-      'systolic': 140,
-      'diastolic': 90,
-      'status': 'attention',
-      'statusLabel': 'Perlu Pemantauan',
-      'date': '12 Okt 2023',
-    },
-    {
-      'systolic': 130,
-      'diastolic': 85,
-      'status': 'normal',
-      'statusLabel': 'Normal',
-      'date': '10 Sep 2023',
-    },
-    {
-      'systolic': 150,
-      'diastolic': 95,
-      'status': 'high',
-      'statusLabel': 'Bahaya - Segera Periksa',
-      'date': '14 Agu 2023',
-    },
-  ];
+  List<Map<String, dynamic>> get _bpHistory {
+    if (_screenings.isEmpty) {
+      return [
+        {
+          'systolic': _extendedData['systolic'] ?? 0,
+          'diastolic': _extendedData['diastolic'] ?? 0,
+          'status': 'normal',
+          'statusLabel': 'Belum ada data screening',
+          'date': '-',
+        }
+      ];
+    }
+    return _screenings.map((s) {
+      final sys = (s['systolic'] ?? 0) as num;
+      final dia = (s['diastolic'] ?? 0) as num;
+      String status;
+      if (sys >= 180 || dia >= 120) {
+        status = 'high';
+      } else if (sys >= 140 || dia >= 90) {
+        status = 'attention';
+      } else {
+        status = 'normal';
+      }
+      String statusLabel;
+      switch (status) {
+        case 'high':
+          statusLabel = 'Bahaya - Segera Periksa';
+        case 'attention':
+          statusLabel = 'Perlu Pemantauan';
+        default:
+          statusLabel = 'Normal';
+      }
+      final dateStr = s['screeningAt'] ?? '';
+      String formattedDate;
+      try {
+        final date = DateTime.parse(dateStr.toString());
+        final months = [
+          'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+          'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+        ];
+        formattedDate =
+            '${date.day} ${months[date.month - 1]} ${date.year}';
+      } catch (_) {
+        formattedDate = dateStr.toString();
+      }
+      return {
+        'systolic': sys,
+        'diastolic': dia,
+        'status': status,
+        'statusLabel': statusLabel,
+        'date': formattedDate,
+      };
+    }).toList()
+      ..sort((a, b) {
+        if (a['date'] == '-' || a['date'] == '-') return 0;
+        return -(a['date'] as String).compareTo(b['date'] as String);
+      });
+  }
 
   Color _getStatusColor(String status) {
     switch (status) {
@@ -90,6 +170,30 @@ class AdminPatientDetailScreen extends StatelessWidget {
     final responsive = ResponsiveSize();
     responsive.init(context);
 
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            'Detail Pasien',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final data = _extendedData;
 
     return Scaffold(
@@ -116,13 +220,10 @@ class AdminPatientDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Profile Section
             _buildProfileSection(data),
             SizedBox(height: ResponsiveSize.spacingXLarge),
-            // Vital Stats Cards
             _buildVitalStatsRow(data),
             SizedBox(height: ResponsiveSize.spacingXLarge),
-            // BP History Section
             _buildBPHistorySection(),
           ],
         ),
@@ -133,7 +234,6 @@ class AdminPatientDetailScreen extends StatelessWidget {
   Widget _buildProfileSection(Map<String, dynamic> data) {
     return Column(
       children: [
-        // Avatar with status dot
         Stack(
           children: [
             Container(
@@ -150,7 +250,6 @@ class AdminPatientDetailScreen extends StatelessWidget {
                 color: AppColors.textSecondary,
               ),
             ),
-            // Green status dot
             Positioned(
               bottom: 4,
               right: 4,
@@ -167,7 +266,6 @@ class AdminPatientDetailScreen extends StatelessWidget {
           ],
         ),
         SizedBox(height: ResponsiveSize.spacingMedium),
-        // Patient Name
         Text(
           data['name'],
           style: const TextStyle(
@@ -177,7 +275,6 @@ class AdminPatientDetailScreen extends StatelessWidget {
           ),
         ),
         SizedBox(height: ResponsiveSize.spacingSmall),
-        // Age and Gender
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -200,7 +297,6 @@ class AdminPatientDetailScreen extends StatelessWidget {
   Widget _buildVitalStatsRow(Map<String, dynamic> data) {
     return Column(
       children: [
-        // Row 1: Tensi, Gula, Berat
         Row(
           children: [
             Expanded(
@@ -237,7 +333,6 @@ class AdminPatientDetailScreen extends StatelessWidget {
           ],
         ),
         SizedBox(height: ResponsiveSize.paddingSmall),
-        // Row 2: Tinggi, BMI, Asam Urat
         Row(
           children: [
             Expanded(
@@ -295,7 +390,6 @@ class AdminPatientDetailScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Label
           Text(
             label,
             style: TextStyle(
@@ -306,7 +400,6 @@ class AdminPatientDetailScreen extends StatelessWidget {
             ),
           ),
           SizedBox(height: 6),
-          // Value
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Row(
@@ -335,7 +428,6 @@ class AdminPatientDetailScreen extends StatelessWidget {
             ),
           ),
           SizedBox(height: 6),
-          // Status badge
           Container(
             padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
@@ -362,7 +454,6 @@ class AdminPatientDetailScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Title
         Text(
           'Riwayat Screening',
           style: TextStyle(
@@ -372,7 +463,6 @@ class AdminPatientDetailScreen extends StatelessWidget {
           ),
         ),
         SizedBox(height: ResponsiveSize.spacingMedium),
-        // History List
         ..._bpHistory.map((record) => _buildBPHistoryItem(record)),
       ],
     );
@@ -392,7 +482,6 @@ class AdminPatientDetailScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Status Icon
           Container(
             width: 40,
             height: 40,
@@ -403,7 +492,6 @@ class AdminPatientDetailScreen extends StatelessWidget {
             child: Icon(statusIcon, color: statusColor, size: 22),
           ),
           SizedBox(width: ResponsiveSize.paddingMedium),
-          // BP Value and Status
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -428,7 +516,6 @@ class AdminPatientDetailScreen extends StatelessWidget {
               ],
             ),
           ),
-          // Date
           Text(
             record['date'],
             style: TextStyle(fontSize: 13, color: AppColors.textSecondary),

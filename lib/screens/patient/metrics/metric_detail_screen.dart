@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/health_metric.dart';
 import '../../../widgets/metric_chart.dart';
+import '../../../services/api_service.dart';
+import '../../../services/profile_service.dart';
 
 class MetricDetailScreen extends StatefulWidget {
   final HealthMetric metric;
@@ -22,33 +24,79 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
   late Animation<double> _contentFadeAnimation;
   late Animation<double> _chartFadeAnimation;
   bool _isClosing = false;
-  late List<MetricReading> _readings;
+  List<MetricReading> _readings = [];
+  bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _readings = HealthMetricData.getMockHistoryForType(widget.metric.type);
+    _loadHistory();
 
-    // Content fade animation synchronized with route animation
-    // Content appears after hero is 75% complete (prevents flicker at boundaries)
     _contentFadeAnimation = CurvedAnimation(
       parent: widget.routeAnimation,
       curve: const Interval(0.75, 1.0, curve: Curves.easeOutCubic),
     );
 
-    // Chart fades in slightly later for staggered effect
     _chartFadeAnimation = CurvedAnimation(
       parent: widget.routeAnimation,
       curve: const Interval(0.80, 1.0, curve: Curves.easeOutCubic),
     );
   }
 
+  Future<void> _loadHistory() async {
+    try {
+      final profileId = ProfileService.instance.activeProfile?.id;
+      if (profileId == null) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Tidak ada profil aktif';
+        });
+        return;
+      }
+
+      final typePath = _metricTypeToPath(widget.metric.type);
+      final response = await ApiService.get(
+        '/metrics/$typePath/history',
+        queryParameters: {'profileId': profileId},
+      );
+
+      final data = response.data['data'] as List? ?? [];
+      setState(() {
+        _readings = data.map((json) {
+          final map = json as Map<String, dynamic>;
+          return MetricReading(
+            date: DateTime.parse(map['date'] as String),
+            value: (map['value'] as num).toDouble(),
+            secondaryValue: map['secondaryValue'] != null
+                ? (map['secondaryValue'] as num).toDouble()
+                : null,
+            notes: map['notes'] as String?,
+          );
+        }).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _error = 'Gagal memuat riwayat. Periksa koneksi Anda.';
+      });
+    }
+  }
+
+  String _metricTypeToPath(MetricType type) {
+    switch (type) {
+      case MetricType.bloodPressure: return 'blood_pressure';
+      case MetricType.cholesterol: return 'cholesterol';
+      case MetricType.bloodSugar: return 'blood_sugar';
+      case MetricType.uricAcid: return 'uric_acid';
+    }
+  }
+
   Future<void> _closeScreen() async {
     if (_isClosing) return;
     setState(() => _isClosing = true);
 
-    // Pop immediately - the route's reverse animation will handle content fade
-    // Content fades out during first 25% of reverse animation
     Navigator.of(context).pop();
   }
 
@@ -56,7 +104,6 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
   Widget build(BuildContext context) {
     final metricId = widget.metric.type.name;
 
-    // Use our custom SmoothAspectRatioRectTween for linear, predictable movement
     RectTween createTween(Rect? begin, Rect? end) {
       return _SmoothAspectRatioRectTween(begin: begin, end: end);
     }
@@ -66,35 +113,30 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Hero 1: Background surface
           Hero(
             tag: 'metric_bg_$metricId',
             transitionOnUserGestures: false,
             createRectTween: createTween,
             child: Container(
               decoration: BoxDecoration(
-                color: widget.metric.primaryColor,
-                // These will interpolate from the card's radius/shadow
+                color: Color.lerp(Colors.white, widget.metric.primaryColor, 0.15),
                 borderRadius: BorderRadius.zero,
                 boxShadow: const [],
               ),
             ),
           ),
 
-          // Content layer
           SafeArea(
             bottom: false,
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Header section with Heros - positioned at top
                 Positioned(
                   top: 0,
                   left: 0,
                   right: 0,
                   child: _buildHeader(createTween),
                 ),
-                // Chart section - positioned at bottom, shrink-to-fit
                 Positioned(
                   bottom: 0,
                   left: 0,
@@ -112,7 +154,6 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Drag handle
                           Container(
                             margin: const EdgeInsets.only(top: 12),
                             width: 40,
@@ -122,7 +163,6 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
-                          // Chart title
                           Padding(
                             padding: const EdgeInsets.all(16),
                             child: Row(
@@ -144,26 +184,50 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                               ],
                             ),
                           ),
-                          // Chart content - fades in with chart animation
-                          // Adaptive height: 450px for taller screens, 280px for standard
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              final chartHeight = constraints.maxHeight > 750
-                                  ? 450.0
-                                  : 280.0;
-                              return SizedBox(
-                                height: chartHeight,
-                                child: FadeTransition(
-                                  opacity: _chartFadeAnimation,
-                                  child: MetricChart(
-                                    type: widget.metric.type,
-                                    readings: _readings,
-                                    primaryColor: widget.metric.primaryColor,
+                          if (_isLoading)
+                            const Padding(
+                              padding: EdgeInsets.all(32),
+                              child: CircularProgressIndicator(),
+                            )
+                          else if (_error != null)
+                            Padding(
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
+                                children: [
+                                  Icon(Icons.cloud_off, size: 40, color: AppColors.textSecondary),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    _error!,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: AppColors.textSecondary),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
+                                  const SizedBox(height: 12),
+                                  ElevatedButton(
+                                    onPressed: _loadHistory,
+                                    child: const Text('Coba Lagi'),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final chartHeight = constraints.maxHeight > 750
+                                    ? 450.0
+                                    : 280.0;
+                                return SizedBox(
+                                  height: chartHeight,
+                                  child: FadeTransition(
+                                    opacity: _chartFadeAnimation,
+                                    child: MetricChart(
+                                      type: widget.metric.type,
+                                      readings: _readings,
+                                      primaryColor: widget.metric.primaryColor,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                         ],
                       ),
                     ),
@@ -186,7 +250,6 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
         children: [
           Row(
             children: [
-              // Back button (fades in) - always clickable
               AnimatedBuilder(
                 animation: _contentFadeAnimation,
                 builder: (context, child) {
@@ -203,12 +266,19 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: AppColors.card,
                       borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: const Icon(
                       Icons.close,
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       size: 24,
                     ),
                   ),
@@ -219,7 +289,6 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title - fades in with content
                     FadeTransition(
                       opacity: _contentFadeAnimation,
                       child: Text(
@@ -229,26 +298,24 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
                     const SizedBox(height: 4),
-                    // Subtitle (fades in)
                     FadeTransition(
                       opacity: _contentFadeAnimation,
                       child: Text(
                         widget.metric.name,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              // Hero 5: Icon (always visible to destination)
               Hero(
                 tag: 'metric_icon_$metricId',
                 transitionOnUserGestures: false,
@@ -256,12 +323,19 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: AppColors.card,
                     borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 4,
+                        offset: const Offset(-2, 2),
+                      ),
+                    ],
                   ),
                   child: Icon(
                     widget.metric.icon,
-                    color: Colors.white,
+                    color: widget.metric.primaryColor,
                     size: 28,
                   ),
                 ),
@@ -269,13 +343,11 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
             ],
           ),
           const SizedBox(height: 24),
-          // Value display with Heros
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Value - fades in with content
               FadeTransition(
                 opacity: _contentFadeAnimation,
                 child: Text(
@@ -286,12 +358,11 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                   style: const TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              // Unit - fades in with content
               FadeTransition(
                 opacity: _contentFadeAnimation,
                 child: Text(
@@ -299,9 +370,9 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                   maxLines: 1,
                   softWrap: false,
                   overflow: TextOverflow.visible,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 20,
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: AppColors.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -309,28 +380,34 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
             ],
           ),
           const SizedBox(height: 12),
-          // Status badge (fades in)
           FadeTransition(
             opacity: _contentFadeAnimation,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: AppColors.card,
                 borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     HealthMetricData.getStatusIcon(widget.metric.status),
-                    color: Colors.white,
+                    color: widget.metric.primaryColor,
                     size: 16,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     HealthMetricData.getStatusLabel(widget.metric.status),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: widget.metric.primaryColor,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
@@ -345,10 +422,8 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
   }
 }
 
-// Custom RectTween that provides a smooth, linear expansion of the rect.
 class _SmoothAspectRatioRectTween extends RectTween {
-  _SmoothAspectRatioRectTween({required Rect? begin, required Rect? end})
-    : super(begin: begin, end: end);
+  _SmoothAspectRatioRectTween({required super.begin, required super.end});
 
   @override
   Rect lerp(double t) {

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:async';
 import '../constants/app_colors.dart';
-import '../utils/asset_helper.dart';
-import 'patient/patient_main_screen.dart';
-import 'admin/admin_main_screen.dart';
-import 'superadmin/superadmin_main_screen.dart';
-import 'register_screen.dart';
+import '../screens/patient/patient_main_screen.dart';
+import '../screens/admin/admin_main_screen.dart';
+import '../screens/superadmin/superadmin_main_screen.dart';
+import '../screens/register_screen.dart';
 import '../services/auth_service.dart';
 
 class WelcomeScreen extends StatefulWidget {

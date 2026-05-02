@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../constants/app_colors.dart';
 import '../../../utils/asset_helper.dart';
 import '../../../utils/responsive_size.dart';
@@ -8,10 +9,9 @@ import '../../../screens/patient/metrics/metric_detail_screen.dart';
 import '../../../models/health_metric.dart';
 import '../../../models/family_profile.dart';
 import '../../../services/profile_service.dart';
-// Profile selector is now integrated as dropdown in greeting section
+import '../../../services/api_service.dart';
 import 'dart:math' as math;
 
-// Bar Chart Widget
 class MiniBarChart extends StatelessWidget {
   final Color primaryColor;
   final int barCount;
@@ -24,14 +24,12 @@ class MiniBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final random = math.Random(42); // Fixed seed for consistency
+    final random = math.Random(42);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(barCount, (index) {
-        // Random height between 0.3 and 1.0
         final height = 0.3 + random.nextDouble() * 0.7;
-        // Every 3rd bar is highlighted
         final isHighlighted = index % 3 == 0;
 
         return Container(
@@ -45,8 +43,8 @@ class MiniBarChart extends StatelessWidget {
               height: 48 * height,
               decoration: BoxDecoration(
                 color: isHighlighted
-                    ? Colors.white
-                    : Colors.black.withValues(alpha: 0.3),
+                    ? primaryColor
+                    : primaryColor.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -57,15 +55,145 @@ class MiniBarChart extends StatelessWidget {
   }
 }
 
-class HomeTab extends StatelessWidget {
+class HomeTab extends StatefulWidget {
   HomeTab({super.key});
 
-  // Mock appointment data
-  final Map<String, dynamic> _nextAppointment = {
-    'title': 'Medical Screening',
-    'date': DateTime.now().add(const Duration(days: 5)),
-    'location': 'Balai Desa Sukamaju',
-  };
+  @override
+  State<HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<HomeTab> {
+  List<HealthMetric> _metrics = [];
+  Map<String, dynamic>? _nextAppointment;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final profileId = ProfileService.instance.activeProfile?.id;
+      if (profileId == null) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Tidak ada profil aktif';
+        });
+        return;
+      }
+
+      final results = await Future.wait([
+        ApiService.get('/metrics/latest', queryParameters: {'profileId': profileId}),
+        ApiService.get('/appointments', queryParameters: {'profileId': profileId}),
+      ]);
+
+      final metricsResponse = results[0];
+      final appointmentsResponse = results[1];
+
+      final metricsData = metricsResponse.data['data'] as List? ?? [];
+      final appointmentsData = appointmentsResponse.data['data'] as List? ?? [];
+
+      final profile = ProfileService.instance.activeProfile;
+      final age = profile?.age ?? 0;
+      final gender = profile?.gender ?? 'Pria';
+
+      setState(() {
+        _metrics = metricsData.map((json) => _parseMetric(json as Map<String, dynamic>, age, gender)).toList();
+        if (appointmentsData.isNotEmpty) {
+          _nextAppointment = Map<String, dynamic>.from(appointmentsData.first as Map<String, dynamic>);
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _error = 'Gagal memuat data. Periksa koneksi Anda.';
+      });
+    }
+  }
+
+  HealthMetric _parseMetric(Map<String, dynamic> json, int age, String gender) {
+    final type = _parseMetricType(json['type'] as String? ?? '');
+    switch (type) {
+      case MetricType.bloodPressure:
+        final systolic = (json['systolic'] as num?)?.toInt() ?? 120;
+        final diastolic = (json['diastolic'] as num?)?.toInt() ?? 80;
+        return HealthMetric(
+          type: type,
+          name: 'Blood Pressure',
+          nameId: 'Tekanan Darah',
+          unit: 'mmHg',
+          displayValue: '$systolic/$diastolic',
+          lastUpdated: _parseDate(json['lastUpdated']),
+          status: HealthMetricData.getBloodPressureStatus(systolic, diastolic, age),
+          icon: PhosphorIcons.heart(PhosphorIconsStyle.fill),
+          primaryColor: const Color(0xFFE53935),
+        );
+      case MetricType.cholesterol:
+        final value = (json['value'] as num?)?.toDouble() ?? 0;
+        return HealthMetric(
+          type: type,
+          name: 'Cholesterol',
+          nameId: 'Kolesterol',
+          unit: 'mg/dL',
+          displayValue: value.toStringAsFixed(0),
+          lastUpdated: _parseDate(json['lastUpdated']),
+          status: HealthMetricData.getCholesterolStatus(value, age),
+          icon: PhosphorIcons.drop(PhosphorIconsStyle.fill),
+          primaryColor: const Color(0xFFFB8C00),
+        );
+      case MetricType.bloodSugar:
+        final value = (json['value'] as num?)?.toDouble() ?? 0;
+        return HealthMetric(
+          type: type,
+          name: 'Blood Sugar',
+          nameId: 'Gula Darah',
+          unit: 'mg/dL',
+          displayValue: value.toStringAsFixed(0),
+          lastUpdated: _parseDate(json['lastUpdated']),
+          status: HealthMetricData.getBloodSugarStatus(value, age),
+          icon: PhosphorIcons.testTube(PhosphorIconsStyle.fill),
+          primaryColor: const Color(0xFF43A047),
+        );
+      case MetricType.uricAcid:
+        final value = (json['value'] as num?)?.toDouble() ?? 0;
+        return HealthMetric(
+          type: type,
+          name: 'Uric Acid',
+          nameId: 'Asam Urat',
+          unit: 'mg/dL',
+          displayValue: value.toStringAsFixed(1),
+          lastUpdated: _parseDate(json['lastUpdated']),
+          status: HealthMetricData.getUricAcidStatus(value, age, gender),
+          icon: PhosphorIcons.flask(PhosphorIconsStyle.fill),
+          primaryColor: const Color(0xFF5E35B1),
+        );
+    }
+  }
+
+  MetricType _parseMetricType(String type) {
+    switch (type) {
+      case 'blood_pressure': return MetricType.bloodPressure;
+      case 'cholesterol': return MetricType.cholesterol;
+      case 'blood_sugar': return MetricType.bloodSugar;
+      case 'uric_acid': return MetricType.uricAcid;
+      default: return MetricType.bloodPressure;
+    }
+  }
+
+  DateTime _parseDate(dynamic date) {
+    if (date == null) return DateTime.now();
+    if (date is String) return DateTime.parse(date);
+    return DateTime.now();
+  }
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -76,14 +204,24 @@ class HomeTab extends StatelessWidget {
   }
 
   int _getDaysUntilAppointment() {
-    final appointmentDate = _nextAppointment['date'] as DateTime;
+    if (_nextAppointment == null) return -1;
+    final dateStr = _nextAppointment!['date'];
+    DateTime appointmentDate;
+    if (dateStr is DateTime) {
+      appointmentDate = dateStr;
+    } else if (dateStr is String) {
+      appointmentDate = DateTime.parse(dateStr);
+    } else {
+      return -1;
+    }
     final now = DateTime.now();
-    final difference = appointmentDate.difference(now);
-    return difference.inDays;
+    return appointmentDate.difference(now).inDays;
   }
 
   bool _shouldShowAppointmentBanner() {
-    return _getDaysUntilAppointment() <= 7 && _getDaysUntilAppointment() >= 0;
+    if (_nextAppointment == null) return false;
+    final days = _getDaysUntilAppointment();
+    return days <= 7 && days >= 0;
   }
 
   @override
@@ -91,15 +229,37 @@ class HomeTab extends StatelessWidget {
     final responsive = ResponsiveSize();
     responsive.init(context);
 
-    // Mock user data - in real app, this comes from user profile
-    const userAge = 45;
-    const userGender = 'Pria';
-    const userName = 'Pak Budi';
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-    final metrics = HealthMetricData.getMockMetrics(
-      age: userAge,
-      gender: userGender,
-    );
+    if (_error != null && _metrics.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.cloud_off, size: 48, color: AppColors.textSecondary),
+              const SizedBox(height: 16),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadData,
+                child: const Text('Coba Lagi'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final profile = ProfileService.instance.activeProfile;
+    final userGender = profile?.gender ?? 'Pria';
 
     final daysUntilAppointment = _getDaysUntilAppointment();
     final showAppointmentBanner = _shouldShowAppointmentBanner();
@@ -126,78 +286,117 @@ class HomeTab extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        // Left side: Greeting and Profile
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _getGreeting(),
-                                textAlign: TextAlign.left,
-                                style: TextStyle(
-                                  fontSize: math.min(
-                                    ResponsiveSize.fontMedium,
-                                    16,
-                                  ),
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              // Profile Dropdown Button
-                              StreamBuilder<List<FamilyProfile>>(
-                                stream: ProfileService.instance.profilesStream,
-                                initialData: ProfileService.instance.profiles,
-                                builder: (context, profilesSnapshot) {
-                                  final profiles = profilesSnapshot.data ?? [];
-                                  return StreamBuilder<FamilyProfile?>(
-                                    stream: ProfileService
-                                        .instance
-                                        .activeProfileStream,
-                                    initialData:
-                                        ProfileService.instance.activeProfile,
-                                    builder: (context, activeSnapshot) {
-                                      final activeProfile = activeSnapshot.data;
-                                      if (activeProfile == null)
-                                        return const SizedBox.shrink();
+                          child: StreamBuilder<List<FamilyProfile>>(
+                            stream: ProfileService.instance.profilesStream,
+                            initialData: ProfileService.instance.profiles,
+                            builder: (context, profilesSnapshot) {
+                              final profiles = profilesSnapshot.data ?? [];
+                              return StreamBuilder<FamilyProfile?>(
+                                stream: ProfileService
+                                    .instance
+                                    .activeProfileStream,
+                                initialData:
+                                    ProfileService.instance.activeProfile,
+                                builder: (context, activeSnapshot) {
+                                  final activeProfile = activeSnapshot.data;
 
-                                      return GestureDetector(
-                                        onTap: () => _showProfileDropdown(
-                                          context,
-                                          activeProfile,
-                                          profiles,
+                                  return Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        width: 44,
+                                        height: 44,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primarySurface
+                                              .withValues(alpha: 0.3),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: AppColors.primary
+                                                .withValues(alpha: 0.2),
+                                            width: 2,
+                                          ),
                                         ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
+                                        child: Center(
+                                          child: Icon(
+                                            activeProfile != null
+                                                ? _getGenderIcon(
+                                                  activeProfile.gender,
+                                                )
+                                                : Icons.person_outline,
+                                            color: AppColors.primary,
+                                            size: 24,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              activeProfile.name,
+                                              _getGreeting(),
+                                              textAlign: TextAlign.left,
                                               style: TextStyle(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.w600,
-                                                color: AppColors.textPrimary,
+                                                fontSize: math.min(
+                                                  ResponsiveSize.fontMedium,
+                                                  16,
+                                                ),
+                                                color: AppColors.textSecondary,
                                               ),
                                             ),
-                                            const SizedBox(width: 4),
-                                            Icon(
-                                              Icons.keyboard_arrow_down,
-                                              color: AppColors.primary,
-                                              size: 24,
+                                            const SizedBox(height: 4),
+                                            GestureDetector(
+                                              onTap:
+                                                  activeProfile != null &&
+                                                          profiles.length > 1
+                                                      ? () =>
+                                                          _showProfileDropdown(
+                                                            context,
+                                                            activeProfile,
+                                                            profiles,
+                                                          )
+                                                      : null,
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    activeProfile?.name ??
+                                                        'Pengguna',
+                                                    style: TextStyle(
+                                                      fontSize: 20,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color:
+                                                          AppColors.textPrimary,
+                                                    ),
+                                                  ),
+                                                  if (activeProfile != null &&
+                                                      profiles.length > 1) ...[
+                                                    const SizedBox(width: 4),
+                                                    Icon(
+                                                      Icons.keyboard_arrow_down,
+                                                      color: AppColors.primary,
+                                                      size: 24,
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
                                             ),
                                           ],
                                         ),
-                                      );
-                                    },
+                                      ),
+                                    ],
                                   );
                                 },
-                              ),
-                            ],
+                              );
+                            },
                           ),
                         ),
-                        // Right side: Notification Icon
                         GestureDetector(
-                          onTap: () {
-                            // TODO: Navigate to notifications screen or show dropdown
-                          },
+                          onTap: () {},
                           child: Container(
                             width: 44,
                             height: 44,
@@ -220,19 +419,6 @@ class HomeTab extends StatelessWidget {
                                     color: AppColors.primary,
                                     size: 24,
                                   ),
-                                  // Notification badge (uncomment when needed)
-                                  // Positioned(
-                                  //   right: 0,
-                                  //   top: 0,
-                                  //   child: Container(
-                                  //     width: 8,
-                                  //     height: 8,
-                                  //     decoration: BoxDecoration(
-                                  //       color: Colors.red,
-                                  //       shape: BoxShape.circle,
-                                  //     ),
-                                  //   ),
-                                  // ),
                                 ],
                               ),
                             ),
@@ -280,7 +466,7 @@ class HomeTab extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    _nextAppointment['title'] as String,
+                                    _nextAppointment?['title'] as String? ?? 'Janji Temu',
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
@@ -291,10 +477,10 @@ class HomeTab extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            SvgPicture.asset(
-                              AssetHelper.getSvgPath('medical-research-v2.svg'),
-                              height: 86,
-                              width: 86,
+                            Image.asset(
+                              AssetHelper.getIllustrationPath('Mediana-banner.webp'),
+                              height: math.min(screenWidth * 0.22, 120),
+                              width: math.min(screenWidth * 0.22, 120),
                               fit: BoxFit.contain,
                             ),
                           ],
@@ -313,38 +499,53 @@ class HomeTab extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 2x2 Metrics Grid - Fixed 2 columns with square cards
-                        // Calculate exact height: 2 rows of cards + 1 spacing
-                        // Card width = (availableWidth - crossAxisSpacing) / 2
-                        // Since aspect ratio is 1:1, card height = card width
-                        // Grid height = (cardHeight * 2) + mainAxisSpacing
-                        LayoutBuilder(
-                          builder: (context, gridConstraints) {
-                            final gridWidth = gridConstraints.maxWidth;
-                            final cardWidth = (gridWidth - 16) / 2;
-                            final cardHeight = cardWidth; // 1:1 aspect ratio
-                            final gridHeight = (cardHeight * 2) + 16;
-
-                            return Container(
-                              height: gridHeight,
-                              child: GridView.count(
-                                crossAxisCount: 2,
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
-                                childAspectRatio: 1.0, // Perfect square 1:1
-                                children: metrics.map((metric) {
-                                  return _buildMetricCard(
-                                    context: context,
-                                    metric: metric,
-                                    screenWidth: screenWidth,
-                                  );
-                                }).toList(),
+                        if (_metrics.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 32),
+                            child: Center(
+                              child: Column(
+                                children: [
+                                  Icon(Icons.bar_chart, size: 48, color: AppColors.textSecondary),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Belum ada data',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          )
+                        else
+                          LayoutBuilder(
+                            builder: (context, gridConstraints) {
+                              final gridWidth = gridConstraints.maxWidth;
+                              final cardWidth = (gridWidth - 16) / 2;
+                              final cardHeight = cardWidth;
+                              final gridHeight = (cardHeight * 2) + 16;
+
+                              return Container(
+                                height: gridHeight,
+                                child: GridView.count(
+                                  crossAxisCount: 2,
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
+                                  childAspectRatio: 1.0,
+                                  children: _metrics.map((metric) {
+                                    return _buildMetricCard(
+                                      context: context,
+                                      metric: metric,
+                                      screenWidth: screenWidth,
+                                    );
+                                  }).toList(),
+                                ),
+                              );
+                            },
+                          ),
 
                         const SizedBox(height: 10),
 
@@ -356,7 +557,8 @@ class HomeTab extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const LaporanSayaScreen(),
+                                builder: (context) =>
+                                    LaporanSayaScreen(gender: userGender),
                               ),
                             );
                           },
@@ -387,7 +589,6 @@ class HomeTab extends StatelessWidget {
     required HealthMetric metric,
     required double screenWidth,
   }) {
-    // Dynamic icon size based on screen width
     final iconSize = screenWidth < 360
         ? 18.0
         : (screenWidth < 400 ? 20.0 : 22.0);
@@ -406,7 +607,6 @@ class HomeTab extends StatelessWidget {
     required VoidCallback onTap,
     required double screenWidth,
   }) {
-    // Adaptive sizes
     final iconSize = math.min(
       ResponsiveSize.iconLarge * 0.8,
       screenWidth * 0.08,
@@ -547,36 +747,19 @@ class HomeTab extends StatelessWidget {
     });
   }
 
-  String _formatTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inMinutes < 1) {
-      return 'Baru saja';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} menit lalu';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours} jam lalu';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} hari lalu';
-    } else {
-      return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
-    }
+  IconData _getGenderIcon(String gender) {
+    return gender == 'Pria' ? Icons.male : Icons.female;
   }
+
 }
 
-// Custom RectTween that provides a smooth, linear expansion of the rect.
-// We remove the internal curve transform to avoid the 'bounce' effect caused by double-curving.
 class _SmoothAspectRatioRectTween extends RectTween {
-  _SmoothAspectRatioRectTween({required Rect? begin, required Rect? end})
-    : super(begin: begin, end: end);
+  _SmoothAspectRatioRectTween({required super.begin, required super.end});
 
   @override
   Rect lerp(double t) {
     if (begin == null || end == null) return super.lerp(t) ?? Rect.zero;
 
-    // Linear interpolation of all properties. The PageRoute's animation curve
-    // already provides the necessary easing (e.g., easeInOut).
     return Rect.fromCenter(
       center: Offset(
         begin!.center.dx + (end!.center.dx - begin!.center.dx) * t,
@@ -588,7 +771,6 @@ class _SmoothAspectRatioRectTween extends RectTween {
   }
 }
 
-// Separate widget for animated metric card with pre-flight animation
 class _MetricCardWrapper extends StatefulWidget {
   final HealthMetric metric;
   final double iconSize;
@@ -609,7 +791,6 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
   Widget build(BuildContext context) {
     final metricId = widget.metric.type.name;
 
-    // Use our custom SmoothAspectRatioRectTween for linear, predictable movement
     RectTween createTween(Rect? begin, Rect? end) {
       return _SmoothAspectRatioRectTween(begin: begin, end: end);
     }
@@ -619,28 +800,29 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // 1. Background Hero
           Positioned.fill(
             child: Hero(
               tag: 'metric_bg_$metricId',
               createRectTween: createTween,
               child: Container(
                 decoration: BoxDecoration(
-                  color: widget.metric.primaryColor,
+                  color: Color.lerp(
+                    Colors.white,
+                    widget.metric.primaryColor,
+                    0.15,
+                  ),
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
               ),
             ),
           ),
-
-          // 2. Mini Chart (NOT a hero - just static)
           Positioned(
             bottom: 16,
             left: 12,
@@ -650,8 +832,6 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
               barCount: 9,
             ),
           ),
-
-          // 3. Content: Title, Value, Unit (NOT heroes - just text)
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -666,7 +846,7 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.card,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -682,7 +862,7 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
                       style: TextStyle(
                         fontSize: 21,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.card,
+                        color: AppColors.textPrimary,
                         height: 1,
                       ),
                     ),
@@ -694,7 +874,7 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
                       overflow: TextOverflow.visible,
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.card,
+                        color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -703,8 +883,6 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
               ],
             ),
           ),
-
-          // 4. Icon Hero
           Positioned(
             top: 0,
             right: 0,
@@ -714,17 +892,10 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
               child: Container(
                 width: widget.chipSize,
                 height: widget.chipSize,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(20),
-                    topRight: Radius.circular(24),
-                  ),
-                ),
-                padding: EdgeInsets.all(widget.chipSize * 0.2),
+                alignment: Alignment.center,
                 child: Icon(
                   widget.metric.icon,
-                  color: AppColors.card,
+                  color: widget.metric.primaryColor,
                   size: widget.iconSize,
                 ),
               ),
@@ -736,10 +907,9 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
   }
 
   void _onCardTap() {
-    // Navigate with custom transparent route to keep home screen visible during animation
     Navigator.of(context).push(
       PageRouteBuilder(
-        opaque: false, // Allow home screen to show through
+        opaque: false,
         barrierColor: Colors.transparent,
         transitionDuration: const Duration(milliseconds: 400),
         reverseTransitionDuration: const Duration(milliseconds: 350),
@@ -750,8 +920,6 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
           );
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          // No fade transition - let hero animation be the only animation
-          // This prevents compositing issues at animation boundaries
           return child;
         },
       ),

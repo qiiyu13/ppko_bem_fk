@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'package:uuid/uuid.dart';
 import '../models/family_profile.dart';
-import 'database_helper.dart';
+import 'api_service.dart';
+import 'auth_service.dart';
+import 'cache_service.dart';
 
 class ProfileService {
   static final ProfileService instance = ProfileService._internal();
   ProfileService._internal();
 
-  final _uuid = const Uuid();
   FamilyProfile? _activeProfile;
   List<FamilyProfile> _profiles = [];
 
@@ -22,41 +23,31 @@ class ProfileService {
   List<FamilyProfile> get profiles => List.unmodifiable(_profiles);
 
   Future<void> initialize() async {
-    await _loadProfiles();
-    await _loadActiveProfile();
+    try {
+      await _loadProfiles();
+    } catch (e) {
+      final cached = await CacheService.getProfiles();
+      _profiles = cached.map((row) => FamilyProfile.fromJson(row['data'] as String)).toList();
+      _profilesController.add(List.unmodifiable(_profiles));
+      if (_activeProfile == null && _profiles.isNotEmpty) {
+        _activeProfile = _profiles.first;
+        _activeProfileController.add(_activeProfile);
+      }
+    }
   }
 
   Future<bool> isLoggedIn() async {
-    final result = await DatabaseHelper.instance.query(
-      'app_state',
-      where: 'key = ?',
-      whereArgs: ['is_logged_in'],
-    );
-    if (result.isNotEmpty) {
-      return result.first['value'] == 'true';
-    }
-    return false;
+    return AuthService.isLoggedIn();
   }
 
   Future<void> setLoggedIn(bool value) async {
-    final existing = await DatabaseHelper.instance.query(
-      'app_state',
-      where: 'key = ?',
-      whereArgs: ['is_logged_in'],
-    );
-
-    if (existing.isNotEmpty) {
-      await DatabaseHelper.instance.update(
-        'app_state',
-        {'value': value.toString()},
-        where: 'key = ?',
-        whereArgs: ['is_logged_in'],
-      );
-    } else {
-      await DatabaseHelper.instance.insert('app_state', {
-        'key': 'is_logged_in',
-        'value': value.toString(),
-      });
+    if (!value) {
+      await AuthService.logout();
+      _profiles = [];
+      _activeProfile = null;
+      _profilesController.add(List.unmodifiable(_profiles));
+      _activeProfileController.add(null);
+      await CacheService.clearAll();
     }
   }
 
@@ -65,58 +56,24 @@ class ProfileService {
   }
 
   Future<void> _loadProfiles() async {
-    final maps = await DatabaseHelper.instance.query(
-      'family_profiles',
-      orderBy: 'created_at DESC',
-    );
-    _profiles = maps.map((map) => FamilyProfile.fromMap(map)).toList();
-    _profilesController.add(_profiles);
-  }
+    try {
+      final response = await ApiService.get('/profiles');
+      final data = response.data['data'] as List;
+      _profiles = data.map((json) => FamilyProfile.fromMap(json as Map<String, dynamic>)).toList();
+      _profilesController.add(List.unmodifiable(_profiles));
 
-  Future<void> _loadActiveProfile() async {
-    final result = await DatabaseHelper.instance.query(
-      'app_state',
-      where: 'key = ?',
-      whereArgs: ['active_profile_id'],
-    );
-
-    if (result.isNotEmpty) {
-      final activeId = result.first['value'] as String;
-      try {
-        _activeProfile = _profiles.firstWhere((p) => p.id == activeId);
-      } catch (e) {
-        // Profile not found, use first available
-        if (_profiles.isNotEmpty) {
-          _activeProfile = _profiles.first;
-        }
+      for (final profile in _profiles) {
+        await CacheService.saveProfile(profile.id, profile.toJson());
       }
-    } else if (_profiles.isNotEmpty) {
-      _activeProfile = _profiles.first;
-      await _saveActiveProfileId(_activeProfile!.id);
-    }
 
-    _activeProfileController.add(_activeProfile);
-  }
-
-  Future<void> _saveActiveProfileId(String profileId) async {
-    final existing = await DatabaseHelper.instance.query(
-      'app_state',
-      where: 'key = ?',
-      whereArgs: ['active_profile_id'],
-    );
-
-    if (existing.isNotEmpty) {
-      await DatabaseHelper.instance.update(
-        'app_state',
-        {'value': profileId},
-        where: 'key = ?',
-        whereArgs: ['active_profile_id'],
-      );
-    } else {
-      await DatabaseHelper.instance.insert('app_state', {
-        'key': 'active_profile_id',
-        'value': profileId,
-      });
+      if (_activeProfile == null && _profiles.isNotEmpty) {
+        _activeProfile = _profiles.first;
+        _activeProfileController.add(_activeProfile);
+      }
+    } catch (e) {
+      final cached = await CacheService.getProfiles();
+      _profiles = cached.map((row) => FamilyProfile.fromJson(row['data'] as String)).toList();
+      _profilesController.add(List.unmodifiable(_profiles));
     }
   }
 
@@ -125,9 +82,7 @@ class ProfileService {
       (p) => p.id == profileId,
       orElse: () => throw Exception('Profile not found'),
     );
-
     _activeProfile = profile;
-    await _saveActiveProfileId(profileId);
     _activeProfileController.add(_activeProfile);
   }
 
@@ -140,73 +95,84 @@ class ProfileService {
     String? address,
     String? phone,
   }) async {
-    final profile = FamilyProfile(
-      id: _uuid.v4(),
-      nik: nik,
-      name: name,
-      gender: gender,
-      birthDate: birthDate,
-      bloodType: bloodType,
-      address: address,
-      phone: phone,
-    );
+    final data = {
+      'nik': nik,
+      'name': name,
+      'gender': gender,
+      'birthDate': birthDate.toIso8601String(),
+      'bloodType': bloodType,
+      'address': address,
+      'phone': phone,
+    };
 
-    await DatabaseHelper.instance.insert('family_profiles', profile.toMap());
-    await _loadProfiles();
-
-    // If this is the first profile, set it as active
-    if (_profiles.length == 1) {
-      await setActiveProfile(profile.id);
+    try {
+      final response = await ApiService.post('/profiles', data: data);
+      final profile = FamilyProfile.fromMap(response.data['data'] as Map<String, dynamic>);
+      _profiles.add(profile);
+      _profilesController.add(List.unmodifiable(_profiles));
+      if (_profiles.length == 1) {
+        _activeProfile = profile;
+        _activeProfileController.add(_activeProfile);
+      }
+      await CacheService.saveProfile(profile.id, profile.toJson());
+      return profile;
+    } catch (e) {
+      final tempId = const Uuid().v4();
+      final profile = FamilyProfile(
+        id: tempId,
+        nik: nik,
+        name: name,
+        gender: gender,
+        birthDate: birthDate,
+        bloodType: bloodType,
+        address: address,
+        phone: phone,
+      );
+      await CacheService.queueSync('/profiles', 'POST', data);
+      _profiles.add(profile);
+      _profilesController.add(List.unmodifiable(_profiles));
+      if (_profiles.length == 1) {
+        _activeProfile = profile;
+        _activeProfileController.add(_activeProfile);
+      }
+      return profile;
     }
-
-    return profile;
   }
 
   Future<void> updateProfile(FamilyProfile profile) async {
-    await DatabaseHelper.instance.update(
-      'family_profiles',
-      profile.toMap(),
-      where: 'id = ?',
-      whereArgs: [profile.id],
-    );
-
-    await _loadProfiles();
-
-    // Update active profile if it was changed
-    if (_activeProfile?.id == profile.id) {
-      _activeProfile = profile;
-      _activeProfileController.add(_activeProfile);
+    try {
+      await ApiService.put('/profiles/${profile.id}', data: profile.toMap());
+      final index = _profiles.indexWhere((p) => p.id == profile.id);
+      if (index != -1) {
+        _profiles[index] = profile;
+        _profilesController.add(List.unmodifiable(_profiles));
+      }
+      if (_activeProfile?.id == profile.id) {
+        _activeProfile = profile;
+        _activeProfileController.add(_activeProfile);
+      }
+      await CacheService.saveProfile(profile.id, profile.toJson());
+    } catch (e) {
+      final index = _profiles.indexWhere((p) => p.id == profile.id);
+      if (index != -1) {
+        _profiles[index] = profile;
+        _profilesController.add(List.unmodifiable(_profiles));
+      }
+      await CacheService.queueSync('/profiles/${profile.id}', 'PUT', profile.toMap());
     }
   }
 
-  Future<void> deleteProfile(String profileId) async {
-    // Delete related data first
-    await DatabaseHelper.instance.delete(
-      'health_metrics',
-      where: 'profile_id = ?',
-      whereArgs: [profileId],
-    );
-    await DatabaseHelper.instance.delete(
-      'appointments',
-      where: 'profile_id = ?',
-      whereArgs: [profileId],
-    );
-    await DatabaseHelper.instance.delete(
-      'family_profiles',
-      where: 'id = ?',
-      whereArgs: [profileId],
-    );
-
-    await _loadProfiles();
-
-    // If we deleted the active profile, switch to another one
-    if (_activeProfile?.id == profileId) {
-      if (_profiles.isNotEmpty) {
-        await setActiveProfile(_profiles.first.id);
-      } else {
-        _activeProfile = null;
-        _activeProfileController.add(null);
-      }
+  Future<void> deleteProfile(String id) async {
+    try {
+      await ApiService.delete('/profiles/$id');
+    } catch (e) {
+      await CacheService.queueSync('/profiles/$id', 'DELETE', {});
+    }
+    _profiles.removeWhere((p) => p.id == id);
+    _profilesController.add(List.unmodifiable(_profiles));
+    if (_activeProfile?.id == id) {
+      _activeProfile = _profiles.isNotEmpty ? _profiles.first : null;
+      _activeProfileController.add(_activeProfile);
     }
   }
 
@@ -215,40 +181,6 @@ class ProfileService {
       await _loadProfiles();
     }
     return _profiles.isNotEmpty;
-  }
-
-  Future<void> createDefaultProfile() async {
-    // Create a default profile from the current hardcoded data
-    await createProfile(
-      nik: '3375011234567890',
-      name: 'Pak Budi Santoso',
-      gender: 'Pria',
-      birthDate: DateTime(1959, 1, 1), // Age 65
-      bloodType: 'O+',
-      address: 'Desa Ngemplak, Kecamatan Simokerto',
-      phone: '081234567890',
-    );
-
-    // Add 2 more dummy family members
-    await createProfile(
-      nik: '3375011234567891',
-      name: 'Ibu Siti Aminah',
-      gender: 'Wanita',
-      birthDate: DateTime(1962, 5, 15), // Age 62
-      bloodType: 'A+',
-      address: 'Desa Ngemplak, Kecamatan Simokerto',
-      phone: '081234567891',
-    );
-
-    await createProfile(
-      nik: '3375011234567892',
-      name: 'Anak Rina',
-      gender: 'Wanita',
-      birthDate: DateTime(1990, 8, 20), // Age 34
-      bloodType: 'B+',
-      address: 'Desa Ngemplak, Kecamatan Simokerto',
-      phone: '081234567892',
-    );
   }
 
   void dispose() {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
+import '../../../services/api_service.dart';
 import '../../../utils/responsive_size.dart';
 
 class MedicalScreeningScreen extends StatefulWidget {
@@ -11,33 +12,101 @@ class MedicalScreeningScreen extends StatefulWidget {
 
 class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
   final TextEditingController _searchController = TextEditingController();
-  Map<String, dynamic>? _selectedPatient;
+  final TextEditingController _systolicController = TextEditingController();
+  final TextEditingController _diastolicController = TextEditingController();
+  final TextEditingController _weightController = TextEditingController();
+  final TextEditingController _heightController = TextEditingController();
+  final TextEditingController _bloodSugarController = TextEditingController();
+  final TextEditingController _uricAcidController = TextEditingController();
+  final TextEditingController _cholesterolController = TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
 
-  final List<Map<String, dynamic>> _patients = [
-    {
-      'name': 'Budi Santoso',
-      'nik': '320123199812220001',
-      'village': 'Sukamaju',
-      'lastScreening': '2023-10-15',
-    },
-    {
-      'name': 'Sari Wulandari',
-      'nik': '320123199908880004',
-      'village': 'Cibadak',
-      'lastScreening': '2023-10-10',
-    },
-    {
-      'name': 'Ahmad Dahlan',
-      'nik': '320123199217770002',
-      'village': 'Sukamaju',
-      'lastScreening': '2023-09-28',
-    },
-  ];
+  Map<String, dynamic>? _selectedPatient;
+  bool _isLoading = false;
+  List<Map<String, dynamic>> _patients = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPatients();
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _systolicController.dispose();
+    _diastolicController.dispose();
+    _weightController.dispose();
+    _heightController.dispose();
+    _bloodSugarController.dispose();
+    _uricAcidController.dispose();
+    _cholesterolController.dispose();
+    _notesController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchPatients() async {
+    setState(() => _isLoading = true);
+    try {
+      final queryParams = <String, dynamic>{};
+      if (_searchController.text.isNotEmpty) {
+        queryParams['search'] = _searchController.text;
+      }
+      final response = await ApiService.get(
+        '/admin/patients',
+        queryParameters: queryParams,
+      );
+      final List<dynamic> data = response.data['data'] ?? [];
+      setState(() {
+        _patients = data.cast<Map<String, dynamic>>();
+      });
+    } catch (e) {
+      setState(() => _patients = []);
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _submitScreening() async {
+    if (_selectedPatient == null) return;
+
+    final profileId = _selectedPatient!['profileId'] ?? _selectedPatient!['id'];
+    if (profileId == null) return;
+
+    final body = {
+      'profileId': profileId,
+      'systolic': int.tryParse(_systolicController.text) ?? 0,
+      'diastolic': int.tryParse(_diastolicController.text) ?? 0,
+      'bloodSugar': int.tryParse(_bloodSugarController.text) ?? 0,
+      'cholesterol': int.tryParse(_cholesterolController.text) ?? 0,
+      'uricAcid': int.tryParse(_uricAcidController.text) ?? 0,
+      'height': int.tryParse(_heightController.text) ?? 0,
+      'weight': double.tryParse(_weightController.text) ?? 0,
+      'notes': _notesController.text,
+      'screeningAt': DateTime.now().toIso8601String(),
+    };
+
+    try {
+      await ApiService.post('/screenings', data: body);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Data screening berhasil disimpan!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menyimpan: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -79,6 +148,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
           padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
           child: TextField(
             controller: _searchController,
+            onChanged: (_) => _fetchPatients(),
             decoration: InputDecoration(
               hintText: 'Cari pasien (NIK atau Nama)...',
               hintStyle: TextStyle(color: AppColors.textSecondary),
@@ -98,16 +168,17 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
             ),
           ),
         ),
-
         Expanded(
-          child: ListView.builder(
-            padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-            itemCount: _patients.length,
-            itemBuilder: (context, index) {
-              final patient = _patients[index];
-              return _buildPatientCard(patient);
-            },
-          ),
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ListView.builder(
+                  padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+                  itemCount: _patients.length,
+                  itemBuilder: (context, index) {
+                    final patient = _patients[index];
+                    return _buildPatientCard(patient);
+                  },
+                ),
         ),
       ],
     );
@@ -160,14 +231,16 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
-                  Text(
-                    'Desa: ${patient['village']}',
-                    style: TextStyle(
-                      fontSize: ResponsiveSize.fontSmall,
-                      color: AppColors.textSecondary,
+                  if (patient['village'] != null) ...[
+                    SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
+                    Text(
+                      'Desa: ${patient['village']}',
+                      style: TextStyle(
+                        fontSize: ResponsiveSize.fontSmall,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -258,6 +331,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                 child: _buildTextField(
                   label: 'Sistolik',
                   hint: 'mmHg',
+                  controller: _systolicController,
                   keyboardType: TextInputType.number,
                 ),
               ),
@@ -271,6 +345,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                 child: _buildTextField(
                   label: 'Diastolik',
                   hint: 'mmHg',
+                  controller: _diastolicController,
                   keyboardType: TextInputType.number,
                 ),
               ),
@@ -286,6 +361,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                 child: _buildTextField(
                   label: 'Berat Badan',
                   hint: 'kg',
+                  controller: _weightController,
                   keyboardType: TextInputType.number,
                 ),
               ),
@@ -294,6 +370,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                 child: _buildTextField(
                   label: 'Tinggi Badan',
                   hint: 'cm',
+                  controller: _heightController,
                   keyboardType: TextInputType.number,
                 ),
               ),
@@ -306,19 +383,31 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
           _buildTextField(
             label: 'Gula Darah',
             hint: 'mg/dL',
+            controller: _bloodSugarController,
             keyboardType: TextInputType.number,
           ),
           SizedBox(height: ResponsiveSize.spacingMedium),
           _buildTextField(
             label: 'Asam Urat',
             hint: 'mg/dL',
+            controller: _uricAcidController,
             keyboardType: TextInputType.number,
           ),
           SizedBox(height: ResponsiveSize.spacingMedium),
           _buildTextField(
             label: 'Kolesterol',
             hint: 'mg/dL',
+            controller: _cholesterolController,
             keyboardType: TextInputType.number,
+          ),
+
+          SizedBox(height: ResponsiveSize.spacingMedium),
+
+          _buildFormSection('Catatan'),
+          _buildTextField(
+            label: 'Catatan',
+            hint: 'Opsional',
+            controller: _notesController,
           ),
 
           SizedBox(height: ResponsiveSize.spacingXLarge * 2),
@@ -326,15 +415,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Data screening berhasil disimpan!'),
-                    backgroundColor: AppColors.success,
-                  ),
-                );
-                Navigator.pop(context);
-              },
+              onPressed: _submitScreening,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.background,
@@ -378,6 +459,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
   Widget _buildTextField({
     required String label,
     required String hint,
+    required TextEditingController controller,
     TextInputType? keyboardType,
   }) {
     return Column(
@@ -392,6 +474,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
         ),
         SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
         TextField(
+          controller: controller,
           keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hint,

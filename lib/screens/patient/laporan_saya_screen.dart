@@ -3,101 +3,80 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/app_colors.dart';
 import '../../utils/asset_helper.dart';
 import '../../utils/responsive_size.dart';
+import '../../services/api_service.dart';
+import '../../services/profile_service.dart';
 
-class LaporanSayaScreen extends StatelessWidget {
-  const LaporanSayaScreen({super.key});
+class LaporanSayaScreen extends StatefulWidget {
+  final String gender;
 
-  // Mock screening data - all historical screenings are kept
-  List<BPScreeningData> get _mockScreeningData {
-    return [
-      BPScreeningData(
-        date: DateTime(2023, 9, 15),
-        systolic: 125,
-        diastolic: 82,
-        weight: 72.5,
-        height: 168,
-        bloodSugar: 95,
-        uricAcid: 5.8,
-        cholesterol: 185,
-      ),
-      BPScreeningData(
-        date: DateTime(2023, 9, 28),
-        systolic: 122,
-        diastolic: 79,
-        weight: 72.0,
-        height: 168,
-        bloodSugar: 92,
-        uricAcid: 5.5,
-        cholesterol: 178,
-      ),
-      BPScreeningData(
-        date: DateTime(2023, 10, 5),
-        systolic: 118,
-        diastolic: 76,
-        weight: 71.5,
-        height: 168,
-        bloodSugar: 90,
-        uricAcid: 5.2,
-        cholesterol: 172,
-      ),
-      BPScreeningData(
-        date: DateTime(2023, 10, 12),
-        systolic: 120,
-        diastolic: 80,
-        weight: 70.8,
-        height: 168,
-        bloodSugar: 88,
-        uricAcid: 5.0,
-        cholesterol: 168,
-      ),
-      BPScreeningData(
-        date: DateTime(2023, 10, 19),
-        systolic: 117,
-        diastolic: 75,
-        weight: 70.5,
-        height: 168,
-        bloodSugar: 86,
-        uricAcid: 4.8,
-        cholesterol: 165,
-      ),
-      BPScreeningData(
-        date: DateTime(2023, 10, 26),
-        systolic: 119,
-        diastolic: 77,
-        weight: 70.2,
-        height: 168,
-        bloodSugar: 89,
-        uricAcid: 4.9,
-        cholesterol: 170,
-      ),
-      BPScreeningData(
-        date: DateTime(2023, 11, 2),
-        systolic: 121,
-        diastolic: 78,
-        weight: 69.8,
-        height: 168,
-        bloodSugar: 91,
-        uricAcid: 5.1,
-        cholesterol: 175,
-      ),
-      BPScreeningData(
-        date: DateTime(2023, 11, 9),
-        systolic: 118,
-        diastolic: 76,
-        weight: 69.5,
-        height: 168,
-        bloodSugar: 87,
-        uricAcid: 4.7,
-        cholesterol: 162,
-      ),
-    ];
+  const LaporanSayaScreen({super.key, required this.gender});
+
+  @override
+  State<LaporanSayaScreen> createState() => _LaporanSayaScreenState();
+}
+
+class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
+  List<BPScreeningData> _screeningData = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadScreenings();
+  }
+
+  Future<void> _loadScreenings() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final profileId = ProfileService.instance.activeProfile?.id;
+      if (profileId == null) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Tidak ada profil aktif';
+        });
+        return;
+      }
+
+      final response = await ApiService.get(
+        '/screenings',
+        queryParameters: {'profileId': profileId},
+      );
+
+      final data = response.data['data'] as List? ?? [];
+      setState(() {
+        _screeningData = data.map((json) {
+          final map = json as Map<String, dynamic>;
+          return BPScreeningData(
+            date: DateTime.parse(map['date'] as String),
+            systolic: (map['systolic'] as num).toInt(),
+            diastolic: (map['diastolic'] as num).toInt(),
+            weight: (map['weight'] as num).toDouble(),
+            height: (map['height'] as num).toDouble(),
+            bloodSugar: (map['bloodSugar'] as num).toDouble(),
+            uricAcid: (map['uricAcid'] as num).toDouble(),
+            cholesterol: (map['cholesterol'] as num).toDouble(),
+            gender: widget.gender,
+          );
+        }).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _error = 'Gagal memuat data screening. Periksa koneksi Anda.';
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveSize();
     responsive.init(context);
-    final screeningData = _mockScreeningData;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -121,6 +100,54 @@ class LaporanSayaScreen extends StatelessWidget {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
+            if (_isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (_error != null) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.cloud_off, size: 48, color: AppColors.textSecondary),
+                      const SizedBox(height: 16),
+                      Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadScreenings,
+                        child: const Text('Coba Lagi'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            if (_screeningData.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.inbox, size: 48, color: AppColors.textSecondary),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Belum ada data screening',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
             return SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               child: ConstrainedBox(
@@ -153,7 +180,7 @@ class LaporanSayaScreen extends StatelessWidget {
                             ],
                           ),
                           Text(
-                            '${screeningData.length} screening',
+                            '${_screeningData.length} screening',
                             style: TextStyle(
                               fontSize: ResponsiveSize.fontSmall,
                               color: AppColors.textSecondary,
@@ -163,7 +190,7 @@ class LaporanSayaScreen extends StatelessWidget {
                       ),
                       SizedBox(height: ResponsiveSize.spacingMedium),
                       // Expandable Screening Cards
-                      ...screeningData.reversed.take(5).map((data) {
+                      ..._screeningData.reversed.take(5).map((data) {
                         return _buildExpandableScreeningCard(
                           data: data,
                           isInitiallyExpanded: false,
@@ -264,6 +291,7 @@ class BPScreeningData {
   final double bloodSugar;
   final double uricAcid;
   final double cholesterol;
+  final String gender;
 
   BPScreeningData({
     required this.date,
@@ -274,6 +302,7 @@ class BPScreeningData {
     required this.bloodSugar,
     required this.uricAcid,
     required this.cholesterol,
+    required this.gender,
   });
 
   double get bmi {
@@ -286,6 +315,26 @@ class BPScreeningData {
     if (bmi < 25) return 'Normal';
     if (bmi < 30) return 'Gemuk';
     return 'Obesitas';
+  }
+
+  double get ird {
+    final auDenominator = gender.toLowerCase() == 'pria' ? 7.0 : 6.0;
+    final gdsComponent = 0.3 * (bloodSugar / 200);
+    final bpComponent = 0.2 * ((systolic / 140 + diastolic / 90) / 2);
+    final kolComponent = 0.2 * (cholesterol / 240);
+    final auComponent = 0.15 * (uricAcid / auDenominator);
+    final bmiComponent = 0.15 * (bmi / 25);
+    return gdsComponent +
+        bpComponent +
+        kolComponent +
+        auComponent +
+        bmiComponent;
+  }
+
+  String get irdCategory {
+    if (ird < 0.75) return 'Rendah';
+    if (ird <= 1.0) return 'Sedang';
+    return 'Berat';
   }
 }
 
@@ -353,6 +402,19 @@ class _ExpandableScreeningCardWidgetState
       case 'RENDAH':
       case 'TINGGI STAGE 1':
       case 'TINGGI STAGE 2':
+        return const Color(0xFFEF5350);
+      default:
+        return AppColors.success;
+    }
+  }
+
+  Color _getIRDStatusColor(String category) {
+    switch (category) {
+      case 'Rendah':
+        return AppColors.success;
+      case 'Sedang':
+        return const Color(0xFFFF9800);
+      case 'Berat':
         return const Color(0xFFEF5350);
       default:
         return AppColors.success;
@@ -516,6 +578,12 @@ class _ExpandableScreeningCardWidgetState
                         'Kolesterol',
                         '${widget.data.cholesterol.toStringAsFixed(0)} mg/dL',
                       ),
+                      SizedBox(height: ResponsiveSize.spacingSmall),
+                      _buildDetailRow(
+                        'IRD (Index Ratio Diabetes)',
+                        '${widget.data.ird.toStringAsFixed(2)} (${widget.data.irdCategory})',
+                        isIrd: true,
+                      ),
                     ],
                   ),
                 ],
@@ -570,22 +638,27 @@ class _ExpandableScreeningCardWidgetState
     String value, {
     bool isHighlighted = false,
     bool isStatus = false,
+    bool isIrd = false,
   }) {
     final bpStatus = isStatus
         ? _getBPStatus(widget.data.systolic, widget.data.diastolic)
         : '';
-    final statusColor = _getBPStatusColor(bpStatus);
+    final statusColor = isIrd
+        ? _getIRDStatusColor(widget.data.irdCategory)
+        : _getBPStatusColor(bpStatus);
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: ResponsiveSize.fontSmall,
-              color: AppColors.textSecondary,
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: ResponsiveSize.fontSmall,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
           if (isStatus)
@@ -609,10 +682,12 @@ class _ExpandableScreeningCardWidgetState
               value,
               style: TextStyle(
                 fontSize: ResponsiveSize.fontSmall,
-                fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: isHighlighted || isIrd
+                    ? FontWeight.w600
+                    : FontWeight.normal,
                 color: isHighlighted
                     ? AppColors.primary
-                    : AppColors.textPrimary,
+                    : (isIrd ? statusColor : AppColors.textPrimary),
               ),
             ),
         ],
