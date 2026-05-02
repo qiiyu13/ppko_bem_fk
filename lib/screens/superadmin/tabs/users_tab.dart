@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
+import '../../../services/admin_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../screens/rw_list_screen.dart';
 import '../screens/user_form_screen.dart';
@@ -15,41 +16,28 @@ class _UsersTabState extends State<UsersTab>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  final List<Map<String, dynamic>> _admins = [
-    {
-      'name': 'Dr. Windah Basudara',
-      'id': '1312',
-      'role': 'Dokter perut',
-      'status': 'Active',
-      'phone': '081234567890',
-    },
-    {
-      'name': 'Dr. Sarah Wijaya',
-      'id': '1423',
-      'role': 'Dokter Umum',
-      'status': 'Active',
-      'phone': '081234567891',
-    },
-    {
-      'name': 'Admin Desa',
-      'id': 'SUPER-001',
-      'role': 'Super Administrator',
-      'status': 'Active',
-      'phone': '081234567892',
-    },
-    {
-      'name': 'Budi Santoso',
-      'id': '1524',
-      'role': 'Petugas Kesehatan',
-      'status': 'Inactive',
-      'phone': '081234567893',
-    },
-  ];
+  List<Map<String, dynamic>> _admins = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadUsers();
+  }
+
+  Future<void> _loadUsers() async {
+    try {
+      final users = await AdminService.getUsers();
+      setState(() {
+        _admins = users;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -96,6 +84,10 @@ class _UsersTabState extends State<UsersTab>
   }
 
   Widget _buildTimMedisTab() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+    }
+
     return Column(
       children: [
         Container(
@@ -110,7 +102,7 @@ class _UsersTabState extends State<UsersTab>
                   MaterialPageRoute(
                     builder: (context) => const UserFormScreen(),
                   ),
-                );
+                ).then((_) => _loadUsers());
               },
               icon: Icon(Icons.add, color: AppColors.textOnPrimary),
               label: Text(
@@ -130,13 +122,32 @@ class _UsersTabState extends State<UsersTab>
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-            itemCount: _admins.length,
-            itemBuilder: (context, index) {
-              final admin = _admins[index];
-              return _buildAdminCard(admin);
-            },
+          child: RefreshIndicator(
+            onRefresh: _loadUsers,
+            color: AppColors.primary,
+            child: _admins.isEmpty
+                ? ListView(
+                    children: const [
+                      SizedBox(height: 100),
+                      Center(
+                        child: Text(
+                          'Belum ada admin',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : ListView.builder(
+                    padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+                    itemCount: _admins.length,
+                    itemBuilder: (context, index) {
+                      final admin = _admins[index];
+                      return _buildAdminCard(admin);
+                    },
+                  ),
           ),
         ),
       ],
@@ -144,7 +155,10 @@ class _UsersTabState extends State<UsersTab>
   }
 
   Widget _buildAdminCard(Map<String, dynamic> admin) {
-    final isActive = admin['status'] == 'Active';
+    final isActive = admin['isActive'] == true;
+    final name = admin['responsibleName'] ?? admin['name'] ?? 'Unknown';
+    final role = admin['role'] ?? 'ADMIN';
+    final id = admin['id'] ?? '';
 
     return Container(
       margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
@@ -173,7 +187,7 @@ class _UsersTabState extends State<UsersTab>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      admin['name'],
+                      name,
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontLarge,
                         fontWeight: FontWeight.bold,
@@ -182,7 +196,7 @@ class _UsersTabState extends State<UsersTab>
                     ),
                     SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
                     Text(
-                      admin['role'],
+                      role,
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontMedium,
                         color: AppColors.textSecondary,
@@ -205,7 +219,7 @@ class _UsersTabState extends State<UsersTab>
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            admin['status'],
+                            isActive ? 'Aktif' : 'Nonaktif',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -217,7 +231,7 @@ class _UsersTabState extends State<UsersTab>
                         ),
                         SizedBox(width: ResponsiveSize.paddingSmall),
                         Text(
-                          'ID: ${admin['id']}',
+                          'ID: ${id.length > 8 ? id.substring(0, 8) : id}...',
                           style: TextStyle(
                             fontSize: ResponsiveSize.fontSmall,
                             color: AppColors.textSecondary,
@@ -238,43 +252,60 @@ class _UsersTabState extends State<UsersTab>
                         MaterialPageRoute(
                           builder: (context) => UserFormScreen(admin: admin),
                         ),
-                      );
+                      ).then((_) => _loadUsers());
                     },
                   ),
                   IconButton(
                     icon: Icon(Icons.delete, color: AppColors.textSecondary),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text('Hapus Admin'),
-                          content: Text(
-                            'Apakah Anda yakin ingin menghapus ${admin['name']}?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: Text('Batal'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                              ),
-                              child: Text('Hapus'),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                    onPressed: () => _deleteAdmin(admin),
                   ),
                 ],
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _deleteAdmin(Map<String, dynamic> admin) async {
+    final name = admin['responsibleName'] ?? admin['name'] ?? 'Unknown';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Admin'),
+        content: Text('Apakah Anda yakin ingin menghapus $name?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await AdminService.deleteUser(admin['id'] as String);
+        _showSnackBar('Admin berhasil dihapus');
+        _loadUsers();
+      } catch (e) {
+        _showSnackBar('Gagal menghapus admin');
+      }
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
