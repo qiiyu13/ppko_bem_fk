@@ -1,0 +1,79 @@
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
+
+// Public
+const getPublishedArticles = async () => {
+  return prisma.article.findMany({
+    where: { isPublished: true, isDraft: false },
+    orderBy: { publishDate: 'desc' },
+    select: { id: true, title: true, content: true, imagePath: true, tags: true, publishDate: true, author: { select: { name: true } } },
+  });
+};
+
+const getPublishedArticle = async (id) => {
+  const article = await prisma.article.findFirst({
+    where: { id, isPublished: true, isDraft: false },
+    select: { id: true, title: true, content: true, imagePath: true, tags: true, publishDate: true, createdAt: true, author: { select: { name: true } } },
+  });
+  if (!article) throw Object.assign(new Error('Article not found'), { statusCode: 404 });
+  return article;
+};
+
+// Admin
+const getAllArticles = async () => {
+  return prisma.article.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: { author: { select: { name: true } } },
+  });
+};
+
+const createArticle = async (data, authorId) => {
+  const isDraft = data.isDraft !== undefined ? data.isDraft : true;
+  const isPublished = data.isPublished !== undefined ? data.isPublished : false;
+
+  return prisma.article.create({
+    data: {
+      authorId,
+      title: data.title,
+      content: data.content,
+      imagePath: data.imagePath || null,
+      tags: data.tags || [],
+      isPublished,
+      isDraft,
+      publishDate: isPublished ? new Date() : null,
+    },
+  });
+};
+
+const updateArticle = async (id, data) => {
+  const updateData = {};
+  if (data.title !== undefined) updateData.title = data.title;
+  if (data.content !== undefined) updateData.content = data.content;
+  if (data.imagePath !== undefined) updateData.imagePath = data.imagePath || null;
+  if (data.tags !== undefined) updateData.tags = data.tags;
+  if (data.isDraft !== undefined) updateData.isDraft = data.isDraft;
+  if (data.isPublished !== undefined) updateData.isPublished = data.isPublished;
+
+  return prisma.article.update({
+    where: { id },
+    data: updateData,
+  });
+};
+
+const deleteArticle = async (id) => {
+  await prisma.article.delete({ where: { id } });
+  return { message: 'Article deleted successfully' };
+};
+
+const publishArticle = async (id) => {
+  return prisma.article.update({
+    where: { id },
+    data: { isPublished: true, isDraft: false, publishDate: new Date() },
+  });
+};
+
+module.exports = {
+  getPublishedArticles, getPublishedArticle,
+  getAllArticles, createArticle, updateArticle, deleteArticle, publishArticle,
+};

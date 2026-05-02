@@ -1,0 +1,58 @@
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
+
+const getAppointments = async (userId, profileId) => {
+  const where = { userId };
+  if (profileId) where.profileId = profileId;
+
+  return prisma.appointment.findMany({
+    where,
+    orderBy: { date: 'asc' },
+  });
+};
+
+const createAppointment = async (data, userId) => {
+  return prisma.appointment.create({
+    data: {
+      userId,
+      profileId: data.profileId || null,
+      title: data.title,
+      date: new Date(data.date),
+      location: data.location || null,
+      notes: data.notes || null,
+      type: data.type || 'GENERAL',
+    },
+  });
+};
+
+const updateAppointment = async (id, data, userId) => {
+  const appointment = await prisma.appointment.findFirst({
+    where: { id, userId },
+  });
+  if (!appointment) throw Object.assign(new Error('Appointment not found'), { statusCode: 404 });
+
+  const updateData = {};
+  if (data.title !== undefined) updateData.title = data.title;
+  if (data.date !== undefined) updateData.date = new Date(data.date);
+  if (data.location !== undefined) updateData.location = data.location || null;
+  if (data.notes !== undefined) updateData.notes = data.notes || null;
+  if (data.type !== undefined) updateData.type = data.type;
+
+  return prisma.appointment.update({
+    where: { id },
+    data: updateData,
+  });
+};
+
+const deleteAppointment = async (id, userId) => {
+  const appointment = await prisma.appointment.findFirst({
+    where: { id, userId },
+  });
+  if (!appointment) throw Object.assign(new Error('Appointment not found'), { statusCode: 404 });
+
+  await prisma.appointment.delete({ where: { id } });
+  return { message: 'Appointment deleted successfully' };
+};
+
+module.exports = { getAppointments, createAppointment, updateAppointment, deleteAppointment };
