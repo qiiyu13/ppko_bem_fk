@@ -19,7 +19,12 @@ app.use(cors({
   origin: config.corsOrigin,
   credentials: true,
 }));
-app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+}));
 
 // Body parsing
 app.use(express.json());

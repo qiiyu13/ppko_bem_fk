@@ -11,14 +11,20 @@ const forgotPasswordLimiter = rateLimit({
   message: { success: false, error: { code: 'RATE_LIMIT', message: 'Too many reset requests. Try again later.' } },
 });
 
-router.post('/register', [
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { success: false, error: { code: 'RATE_LIMIT', message: 'Too many attempts. Try again later.' } },
+});
+
+router.post('/register', [authLimiter,
   body('kkNumber').isString().matches(/^\d{16}$/).withMessage('KK number must be 16 digits'),
   body('responsibleName').isString().notEmpty(),
   body('password').isString().isLength({ min: 6 }),
   validate,
 ], controller.register);
 
-router.post('/login', [
+router.post('/login', [authLimiter,
   body('kkNumber').isString().matches(/^\d{16}$/).withMessage('KK number must be 16 digits'),
   body('password').isString().notEmpty(),
   validate,
