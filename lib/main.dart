@@ -6,6 +6,7 @@ import 'constants/app_theme.dart';
 import 'screens/splash_screen.dart';
 import 'services/api_service.dart';
 import 'services/cache_service.dart';
+import 'services/connectivity_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +16,9 @@ void main() async {
 
   // Initialize local cache for offline support
   await CacheService.init();
+
+  // Initialize connectivity monitoring and auto-sync
+  await ConnectivityService.instance.initialize();
 
   runApp(
     DevicePreview(

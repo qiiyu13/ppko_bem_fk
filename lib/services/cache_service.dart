@@ -146,12 +146,13 @@ class CacheService {
     });
   }
 
-  static Future<void> processSyncQueue() async {
-    if (!await isOnline()) return;
+  static Future<int> processSyncQueue() async {
+    if (!await isOnline()) return 0;
 
     final pending = await _db?.query('pending_sync', orderBy: 'created_at ASC');
-    if (pending == null || pending.isEmpty) return;
+    if (pending == null || pending.isEmpty) return 0;
 
+    int synced = 0;
     for (final item in pending) {
       try {
         final String dataStr = item['data'] as String? ?? '{}';
@@ -162,10 +163,13 @@ class CacheService {
           data: data.isNotEmpty ? data : null,
         );
         await _db?.delete('pending_sync', where: 'id = ?', whereArgs: [item['id']]);
-      } catch (_) {
-        break;
+        synced++;
+      } catch (e) {
+        // Skip failed items (e.g., 409 conflict, 404 deleted) to avoid blocking queue
+        await _db?.delete('pending_sync', where: 'id = ?', whereArgs: [item['id']]);
       }
     }
+    return synced;
   }
 
   static Future<int> getPendingSyncCount() async {
