@@ -1,5 +1,6 @@
 const { broadcastToUsers, broadcastToAll, events } = require('../../websocket');
 const { calculateIrd } = require('../../utils/ird');
+const { parsePagination } = require('../../utils/pagination');
 
 const prisma = require('../../utils/prisma');
 
@@ -54,15 +55,21 @@ const createScreening = async (data, userId) => {
   return result;
 };
 
-const getScreenings = async (profileId) => {
-  return prisma.medicalScreening.findMany({
-    where: profileId ? { profileId } : {},
-    orderBy: { screeningAt: 'desc' },
-    include: {
-      profile: { select: { name: true, nik: true, gender: true } },
-      screener: { select: { responsibleName: true } },
-    },
-  });
+const getScreenings = async (profileId, query) => {
+  const { page, limit, skip } = parsePagination(query);
+  const where = profileId ? { profileId } : {};
+  const [data, total] = await Promise.all([
+    prisma.medicalScreening.findMany({
+      where, skip, take: limit,
+      orderBy: { screeningAt: 'desc' },
+      include: {
+        profile: { select: { name: true, nik: true, gender: true } },
+        screener: { select: { responsibleName: true } },
+      },
+    }),
+    prisma.medicalScreening.count({ where }),
+  ]);
+  return { data, total, page, limit };
 };
 
 const getStats = async () => {

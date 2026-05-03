@@ -1,13 +1,13 @@
 const metricsService = require('./metrics.service');
-const { success, error } = require('../../utils/response');
+const { success, error, paginated } = require('../../utils/response');
 
 const getMetrics = async (req, res, next) => {
   try {
     const { profileId } = req.query;
     if (!profileId) return error(res, 'profileId is required', 400, 'VALIDATION_ERROR');
 
-    const metrics = await metricsService.getMetrics(profileId, req.user.id);
-    return success(res, metrics);
+    const result = await metricsService.getMetrics(profileId, req.user.id, req.query);
+    return paginated(res, result.data, result.total, result.page, result.limit);
   } catch (err) {
     if (err.message === 'Profile not found') return error(res, err.message, 404, 'NOT_FOUND');
     next(err);

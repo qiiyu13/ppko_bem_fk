@@ -1,5 +1,5 @@
 const screeningsService = require('./screenings.service');
-const { success, error } = require('../../utils/response');
+const { success, error, paginated } = require('../../utils/response');
 
 const createScreening = async (req, res, next) => {
   try {
@@ -15,8 +15,8 @@ const createScreening = async (req, res, next) => {
 const getScreenings = async (req, res, next) => {
   try {
     const { profileId } = req.query;
-    const screenings = await screeningsService.getScreenings(profileId);
-    return success(res, screenings);
+    const result = await screeningsService.getScreenings(profileId, req.query);
+    return paginated(res, result.data, result.total, result.page, result.limit);
   } catch (err) {
     next(err);
   }

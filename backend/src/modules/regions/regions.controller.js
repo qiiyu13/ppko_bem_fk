@@ -1,10 +1,10 @@
 const regionsService = require('./regions.service');
-const { success, error } = require('../../utils/response');
+const { success, error, paginated } = require('../../utils/response');
 
 const getRegions = async (req, res, next) => {
   try {
-    const regions = await regionsService.getRegions();
-    return success(res, regions);
+    const result = await regionsService.getRegions(req.query);
+    return paginated(res, result.data, result.total, result.page, result.limit);
   } catch (err) {
     next(err);
   }
@@ -22,8 +22,8 @@ const createRegion = async (req, res, next) => {
 const getResidents = async (req, res, next) => {
   try {
     const { regionId } = req.query;
-    const residents = await regionsService.getResidents(regionId);
-    return success(res, residents);
+    const result = await regionsService.getResidents(regionId, req.query);
+    return paginated(res, result.data, result.total, result.page, result.limit);
   } catch (err) {
     next(err);
   }

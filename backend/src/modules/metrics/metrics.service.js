@@ -1,16 +1,20 @@
 const prisma = require('../../utils/prisma');
+const { parsePagination } = require('../../utils/pagination');
 
-const getMetrics = async (profileId, userId) => {
+const getMetrics = async (profileId, userId, query) => {
   // Verify profile belongs to user
   const profile = await prisma.familyProfile.findFirst({
     where: { id: profileId, userId },
   });
   if (!profile) throw Object.assign(new Error('Profile not found'), { statusCode: 404 });
 
-  return prisma.healthMetric.findMany({
-    where: { profileId },
-    orderBy: { recordedAt: 'desc' },
-  });
+  const { page, limit, skip } = parsePagination(query);
+  const where = { profileId };
+  const [data, total] = await Promise.all([
+    prisma.healthMetric.findMany({ where, skip, take: limit, orderBy: { recordedAt: 'desc' } }),
+    prisma.healthMetric.count({ where }),
+  ]);
+  return { data, total, page, limit };
 };
 
 const createMetric = async (data, userId) => {

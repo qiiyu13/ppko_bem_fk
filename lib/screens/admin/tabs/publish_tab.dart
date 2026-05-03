@@ -85,6 +85,7 @@ class _PublishTabState extends State<PublishTab> {
           tags: result.tags,
           isDraft: result.isDraft,
           isPublished: result.isPublished,
+          updatedAt: result.updatedAt,
         );
         setState(() {
           final index = _articles.indexWhere((a) => a.id == updated.id);
@@ -124,6 +125,7 @@ class _PublishTabState extends State<PublishTab> {
                   article.id,
                   isDraft: true,
                   isPublished: false,
+                  updatedAt: article.updatedAt,
                 );
                 setState(() {
                   final index = _articles.indexWhere((a) => a.id == article.id);
@@ -145,7 +147,7 @@ class _PublishTabState extends State<PublishTab> {
 
   void _publishArticle(TanamanArticle article) async {
     try {
-      await ArticleService.publishArticle(article.id);
+      await ArticleService.publishArticle(article.id, article.updatedAt);
       final updated = article.copyWith(isPublished: true, isDraft: false);
       setState(() {
         final index = _articles.indexWhere((a) => a.id == article.id);
@@ -174,7 +176,7 @@ class _PublishTabState extends State<PublishTab> {
             onPressed: () async {
               Navigator.pop(context);
               try {
-                await ArticleService.deleteArticle(article.id);
+                await ArticleService.deleteArticle(article.id, article.updatedAt);
                 setState(() {
                   _articles.removeWhere((a) => a.id == article.id);
                 });

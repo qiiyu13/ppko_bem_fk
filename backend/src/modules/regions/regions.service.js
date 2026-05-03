@@ -1,14 +1,21 @@
 const prisma = require('../../utils/prisma');
+const { parsePagination } = require('../../utils/pagination');
 
-const getRegions = async () => {
-  return prisma.region.findMany({
-    include: {
-      parent: { select: { id: true, name: true, type: true } },
-      children: { select: { id: true, name: true, type: true } },
-      _count: { select: { residents: true } },
-    },
-    orderBy: { createdAt: 'asc' },
-  });
+const getRegions = async (query) => {
+  const { page, limit, skip } = parsePagination(query);
+  const [data, total] = await Promise.all([
+    prisma.region.findMany({
+      skip, take: limit,
+      include: {
+        parent: { select: { id: true, name: true, type: true } },
+        children: { select: { id: true, name: true, type: true } },
+        _count: { select: { residents: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.region.count(),
+  ]);
+  return { data, total, page, limit };
 };
 
 const createRegion = async (data) => {
@@ -21,13 +28,18 @@ const createRegion = async (data) => {
   });
 };
 
-const getResidents = async (regionId) => {
+const getResidents = async (regionId, query) => {
+  const { page, limit, skip } = parsePagination(query);
   const where = regionId ? { regionId } : {};
-  return prisma.resident.findMany({
-    where,
-    include: { region: { select: { name: true, type: true } } },
-    orderBy: { createdAt: 'desc' },
-  });
+  const [data, total] = await Promise.all([
+    prisma.resident.findMany({
+      where, skip, take: limit,
+      include: { region: { select: { name: true, type: true } } },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.resident.count({ where }),
+  ]);
+  return { data, total, page, limit };
 };
 
 const createResident = async (data) => {
