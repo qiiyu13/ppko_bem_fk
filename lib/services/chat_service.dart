@@ -1,4 +1,5 @@
 import 'api_service.dart';
+import 'websocket_service.dart';
 
 class ChatService {
   static Future<List<Map<String, dynamic>>> getConversations() async {
@@ -18,7 +19,21 @@ class ChatService {
     return data.cast<Map<String, dynamic>>();
   }
 
+  static void sendMessageViaWebSocket(String conversationId, String content) {
+    if (WebSocketService.instance.isConnected) {
+      WebSocketService.instance.sendChatMessage(conversationId, content);
+    } else {
+      // Fall back to REST (fire and forget)
+      sendMessage(conversationId, content);
+    }
+  }
+
   static Future<Map<String, dynamic>> sendMessage(String conversationId, String content, {String role = 'user'}) async {
+    if (WebSocketService.instance.isConnected) {
+      WebSocketService.instance.sendChatMessage(conversationId, content);
+      return {'pending': true, 'conversationId': conversationId};
+    }
+
     final response = await ApiService.post('/chat/conversations/$conversationId/messages', data: {
       'content': content,
       'role': role,

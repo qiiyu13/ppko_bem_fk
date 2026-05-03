@@ -5,6 +5,7 @@ import '../models/family_profile.dart';
 import 'api_service.dart';
 import 'auth_service.dart';
 import 'cache_service.dart';
+import 'websocket_service.dart';
 
 class ProfileService {
   static final ProfileService instance = ProfileService._internal();
@@ -23,6 +24,8 @@ class ProfileService {
   FamilyProfile? get activeProfile => _activeProfile;
   List<FamilyProfile> get profiles => List.unmodifiable(_profiles);
 
+  StreamSubscription<Map<String, dynamic>>? _dataUpdateSubscription;
+
   Future<void> initialize() async {
     try {
       await _loadProfiles();
@@ -35,6 +38,13 @@ class ProfileService {
         _activeProfileController.add(_activeProfile);
       }
     }
+
+    _dataUpdateSubscription?.cancel();
+    _dataUpdateSubscription = WebSocketService.instance.dataUpdateStream.listen((event) {
+      if (event['type'] == 'profiles') {
+        _loadProfiles();
+      }
+    });
   }
 
   Future<bool> isLoggedIn() async {
@@ -49,6 +59,7 @@ class ProfileService {
       _profilesController.add(List.unmodifiable(_profiles));
       _activeProfileController.add(null);
       await CacheService.clearAll();
+      WebSocketService.instance.disconnect();
     }
   }
 
@@ -199,6 +210,7 @@ class ProfileService {
   }
 
   void dispose() {
+    _dataUpdateSubscription?.cancel();
     _activeProfileController.close();
     _profilesController.close();
   }

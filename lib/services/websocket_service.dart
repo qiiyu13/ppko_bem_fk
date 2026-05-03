@@ -1,0 +1,120 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import 'api_service.dart';
+import 'token_service.dart';
+
+class WebSocketService {
+  static final WebSocketService instance = WebSocketService._internal();
+  WebSocketService._internal();
+
+  WebSocketChannel? _channel;
+  bool _isConnected = false;
+  bool get isConnected => _isConnected;
+
+  final _dataUpdateController = StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get dataUpdateStream => _dataUpdateController.stream;
+
+  final _chatMessageController = StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get chatMessageStream => _chatMessageController.stream;
+
+  final _connectionStatusController = StreamController<bool>.broadcast();
+  Stream<bool> get connectionStatusStream => _connectionStatusController.stream;
+
+  Timer? _reconnectTimer;
+  Timer? _heartbeatTimer;
+  int _reconnectAttempts = 0;
+  static const int _maxReconnectAttempts = 10;
+  static const Duration _baseReconnectDelay = Duration(seconds: 2);
+
+  Future<void> connect() async {
+    if (_isConnected) return;
+
+    final token = await TokenService.getToken();
+    if (token == null) return;
+
+    try {
+      final wsUrl = ApiService.baseUrl
+          .replaceFirst('http://', 'ws://')
+          .replaceFirst('https://', 'wss://')
+          .replaceFirst('/api/v1', '/ws');
+
+      _channel = WebSocketChannel.connect(
+        Uri.parse('$wsUrl?token=$token'),
+      );
+
+      _channel!.stream.listen(
+        (data) {
+          _reconnectAttempts = 0;
+          _handleMessage(data);
+        },
+        onError: (error) {
+          _handleDisconnect();
+        },
+        onDone: () {
+          _handleDisconnect();
+        },
+      );
+
+      _isConnected = true;
+      _connectionStatusController.add(true);
+    } catch (e) {
+      _handleDisconnect();
+    }
+  }
+
+  void _handleMessage(dynamic data) {
+    try {
+      final message = jsonDecode(data.toString());
+      final event = message['event'] as String?;
+      final payload = message['data'] as Map<String, dynamic>?;
+
+      if (event == 'data:update' && payload != null) {
+        _dataUpdateController.add(payload);
+      } else if (event == 'chat:message:new' && payload != null) {
+        _chatMessageController.add(payload);
+      }
+    } catch (e) {
+      // Ignore malformed messages
+    }
+  }
+
+  void _handleDisconnect() {
+    _isConnected = false;
+    _connectionStatusController.add(false);
+    _heartbeatTimer?.cancel();
+    _channel?.sink.close();
+
+    if (_reconnectAttempts < _maxReconnectAttempts) {
+      final delay = _baseReconnectDelay * (1 << _reconnectAttempts.clamp(0, 5));
+      _reconnectTimer = Timer(delay, () {
+        _reconnectAttempts++;
+        connect();
+      });
+    }
+  }
+
+  void sendChatMessage(String conversationId, String content) {
+    if (_isConnected && _channel != null) {
+      _channel!.sink.add(jsonEncode({
+        'event': 'chat:message',
+        'data': {'conversationId': conversationId, 'content': content},
+      }));
+    }
+  }
+
+  void disconnect() {
+    _reconnectTimer?.cancel();
+    _heartbeatTimer?.cancel();
+    _channel?.sink.close();
+    _isConnected = false;
+    _connectionStatusController.add(false);
+  }
+
+  void dispose() {
+    disconnect();
+    _dataUpdateController.close();
+    _chatMessageController.close();
+    _connectionStatusController.close();
+  }
+}

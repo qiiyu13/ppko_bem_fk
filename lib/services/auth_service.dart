@@ -1,5 +1,6 @@
 import 'api_service.dart';
 import 'token_service.dart';
+import 'websocket_service.dart';
 
 class AuthService {
   static Future<Map<String, dynamic>> register({
@@ -37,6 +38,8 @@ class AuthService {
     await TokenService.setToken(data['token']);
     await TokenService.setKKNumber(kkNumber);
     await TokenService.setResponsibleName(user['responsibleName']);
+
+    WebSocketService.instance.connect();
 
     return data;
   }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/app_colors.dart';
 import '../../services/chat_service.dart';
+import '../../services/websocket_service.dart';
 import '../../utils/asset_helper.dart';
 import '../../utils/responsive_size.dart';
 import '../../services/chat_storage_service.dart';
@@ -22,16 +23,37 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
   static const Color userBubbleColor = AppColors.primary;
 
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   final ChatStorageService _storageService = ChatStorageService();
   bool _isTyping = false;
   bool _isLoading = true;
   Timer? _saveTimer;
+  StreamSubscription<Map<String, dynamic>>? _chatSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadConversation();
+    _chatSubscription = WebSocketService.instance.chatMessageStream.listen((event) {
+      final convId = event['conversationId'] as String?;
+      if (convId == widget.conversationId) {
+        final messageData = event['message'] as Map<String, dynamic>;
+        final role = messageData['role'] as String?;
+        if (role == 'assistant') {
+          setState(() {
+            _isTyping = false;
+            _messages.add(ChatMessage(
+              text: messageData['content'] as String,
+              isUser: false,
+              timestamp: DateTime.parse(messageData['createdAt'] as String),
+            ));
+          });
+          _scrollToBottom();
+          _saveConversation();
+        }
+      }
+    });
   }
 
   Future<void> _loadConversation() async {
@@ -122,20 +144,12 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
 
     // Send to API if conversationId is available
     if (widget.conversationId != null) {
-      _sendMessageToApi(text);
+      ChatService.sendMessageViaWebSocket(widget.conversationId!, text);
+      if (!WebSocketService.instance.isConnected) {
+        _simulateAssistantResponse();
+      }
     } else {
       // Simulate assistant response for local-only mode
-      _simulateAssistantResponse();
-    }
-  }
-
-  Future<void> _sendMessageToApi(String text) async {
-    try {
-      await ChatService.sendMessage(widget.conversationId!, text);
-      // Simulate assistant response after API send
-      _simulateAssistantResponse();
-    } catch (e) {
-      // If API fails, just simulate locally
       _simulateAssistantResponse();
     }
   }
@@ -155,6 +169,18 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
           );
         });
         _saveConversation();
+      }
+    });
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
     });
   }
@@ -203,6 +229,7 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
           // Chat messages
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               padding: EdgeInsets.symmetric(
                 horizontal: ResponsiveSize.paddingMedium,
                 vertical: ResponsiveSize.paddingSmall,
@@ -676,7 +703,9 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
   @override
   void dispose() {
     _saveTimer?.cancel();
+    _chatSubscription?.cancel();
     _messageController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 }
