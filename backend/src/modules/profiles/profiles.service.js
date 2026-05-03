@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const { broadcastToUsers, broadcastToAll, events } = require('../../websocket');
 
 const prisma = new PrismaClient();
 
@@ -18,7 +19,7 @@ const getProfile = async (id, userId) => {
 };
 
 const createProfile = async (data, userId) => {
-  return prisma.familyProfile.create({
+  const result = await prisma.familyProfile.create({
     data: {
       userId,
       name: data.name,
@@ -31,6 +32,8 @@ const createProfile = async (data, userId) => {
       phone: data.phone || null,
     },
   });
+  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'profiles', action: 'create', id: result.id }); } catch (e) {}
+  return result;
 };
 
 const updateProfile = async (id, data, userId) => {
@@ -46,10 +49,12 @@ const updateProfile = async (id, data, userId) => {
   if (data.bloodType !== undefined) updateData.bloodType = data.bloodType || null;
   if (data.phone !== undefined) updateData.phone = data.phone || null;
 
-  return prisma.familyProfile.update({
+  const result = await prisma.familyProfile.update({
     where: { id },
     data: updateData,
   });
+  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'profiles', action: 'update', id }); } catch (e) {}
+  return result;
 };
 
 const deleteProfile = async (id, userId) => {
@@ -59,6 +64,7 @@ const deleteProfile = async (id, userId) => {
   // Delete associated screenings
   await prisma.medicalScreening.deleteMany({ where: { profileId: id } });
   await prisma.familyProfile.delete({ where: { id } });
+  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'profiles', action: 'delete', id }); } catch (e) {}
   return { message: 'Profile deleted successfully' };
 };
 

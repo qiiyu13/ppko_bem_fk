@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const { broadcastToUsers, broadcastToAll, events } = require('../../websocket');
 
 const prisma = new PrismaClient();
 
@@ -32,7 +33,7 @@ const createArticle = async (data, authorId) => {
   const isDraft = data.isDraft !== undefined ? data.isDraft : true;
   const isPublished = data.isPublished !== undefined ? data.isPublished : false;
 
-  return prisma.article.create({
+  const result = await prisma.article.create({
     data: {
       authorId,
       title: data.title,
@@ -44,6 +45,8 @@ const createArticle = async (data, authorId) => {
       publishDate: isPublished ? new Date() : null,
     },
   });
+  try { broadcastToAll(events.DATA_UPDATE, { type: 'articles', action: 'create', id: result.id }); } catch (e) {}
+  return result;
 };
 
 const updateArticle = async (id, data) => {
@@ -55,22 +58,27 @@ const updateArticle = async (id, data) => {
   if (data.isDraft !== undefined) updateData.isDraft = data.isDraft;
   if (data.isPublished !== undefined) updateData.isPublished = data.isPublished;
 
-  return prisma.article.update({
+  const result = await prisma.article.update({
     where: { id },
     data: updateData,
   });
+  try { broadcastToAll(events.DATA_UPDATE, { type: 'articles', action: 'update', id }); } catch (e) {}
+  return result;
 };
 
 const deleteArticle = async (id) => {
   await prisma.article.delete({ where: { id } });
+  try { broadcastToAll(events.DATA_UPDATE, { type: 'articles', action: 'delete', id }); } catch (e) {}
   return { message: 'Article deleted successfully' };
 };
 
 const publishArticle = async (id) => {
-  return prisma.article.update({
+  const result = await prisma.article.update({
     where: { id },
     data: { isPublished: true, isDraft: false, publishDate: new Date() },
   });
+  try { broadcastToAll(events.DATA_UPDATE, { type: 'articles', action: 'publish', id }); } catch (e) {}
+  return result;
 };
 
 module.exports = {

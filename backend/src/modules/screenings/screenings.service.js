@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const { broadcastToUsers, broadcastToAll, events } = require('../../websocket');
 const { calculateIrd } = require('../../utils/ird');
 
 const prisma = new PrismaClient();
@@ -29,7 +30,7 @@ const createScreening = async (data, userId) => {
     gender,
   });
 
-  return prisma.medicalScreening.create({
+  const result = await prisma.medicalScreening.create({
     data: {
       profileId: data.profileId,
       screenedBy: userId,
@@ -46,6 +47,8 @@ const createScreening = async (data, userId) => {
       screeningAt: data.screeningAt ? new Date(data.screeningAt) : new Date(),
     },
   });
+  try { broadcastToUsers([profile.userId], events.DATA_UPDATE, { type: 'screenings', action: 'create', profileId: result.profileId }); } catch (e) {}
+  return result;
 };
 
 const getScreenings = async (profileId) => {
