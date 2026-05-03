@@ -4,11 +4,15 @@ const { calculateIrd } = require('../../utils/ird');
 const prisma = require('../../utils/prisma');
 
 const createScreening = async (data, userId) => {
-  // Fetch profile to get gender/height/weight for IRD
   const profile = await prisma.familyProfile.findUnique({
     where: { id: data.profileId },
   });
   if (!profile) throw Object.assign(new Error('Profile not found'), { statusCode: 404 });
+
+  const screener = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+  if (profile.userId !== userId && screener.role === 'PATIENT') {
+    throw Object.assign(new Error('Not authorized to screen this profile'), { statusCode: 403 });
+  }
 
   const height = data.height || profile.height;
   const weight = data.weight || profile.weight;
