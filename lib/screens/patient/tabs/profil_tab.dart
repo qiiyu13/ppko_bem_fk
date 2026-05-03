@@ -634,7 +634,7 @@ class ProfilTab extends StatelessWidget {
           ),
           TextButton(
             onPressed: () async {
-              await ProfileService.instance.deleteProfile(profile.id);
+              await ProfileService.instance.deleteProfile(profile.id, profile.updatedAt);
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Profil ${profile.name} telah dihapus')),

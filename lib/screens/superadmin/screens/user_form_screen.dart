@@ -49,8 +49,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveSize();
-    responsive.init(context);
+    ResponsiveSize.init(context);
     final isEdit = widget.admin != null;
 
     return Scaffold(

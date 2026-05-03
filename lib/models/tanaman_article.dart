@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class TanamanArticle {
@@ -106,6 +107,7 @@ class TanamanArticle {
   }
 
   static List<TanamanArticle> getMockArticles() {
+    assert(kDebugMode, 'getMockArticles should only be called in debug mode');
     final now = DateTime.now();
     return [
       TanamanArticle(

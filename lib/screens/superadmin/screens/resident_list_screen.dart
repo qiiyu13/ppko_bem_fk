@@ -58,8 +58,7 @@ class _ResidentListScreenState extends State<ResidentListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveSize();
-    responsive.init(context);
+    ResponsiveSize.init(context);
 
     return Scaffold(
       backgroundColor: AppColors.background,

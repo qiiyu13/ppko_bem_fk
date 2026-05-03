@@ -48,8 +48,7 @@ class _UsersTabState extends State<UsersTab>
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveSize();
-    responsive.init(context);
+    ResponsiveSize.init(context);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -291,7 +290,10 @@ class _UsersTabState extends State<UsersTab>
 
     if (confirmed == true) {
       try {
-        await AdminService.deleteUser(admin['id'] as String);
+        await AdminService.deleteUser(
+          admin['id'] as String,
+          DateTime.parse(admin['updatedAt'] as String),
+        );
         _showSnackBar('Admin berhasil dihapus');
         _loadUsers();
       } catch (e) {

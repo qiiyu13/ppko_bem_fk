@@ -120,8 +120,7 @@ class PatientDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveSize();
-    responsive.init(context);
+    ResponsiveSize.init(context);
 
     final riskColor = _getRiskColor(patient['riskLevel']);
     final latestData = _medicalHistory.first;

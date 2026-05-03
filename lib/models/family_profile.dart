@@ -56,6 +56,21 @@ class FamilyProfile {
     );
   }
 
+  factory FamilyProfile.fromApi(Map<String, dynamic> map) {
+    return FamilyProfile(
+      id: map['id'] as String,
+      nik: map['nik'] as String,
+      name: map['name'] as String,
+      gender: map['gender'] as String,
+      birthDate: DateTime.parse(map['birthDate'] as String),
+      bloodType: map['bloodType'] as String?,
+      address: map['address'] as String?,
+      phone: map['phone'] as String?,
+      createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt']) : null,
+      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : null,
+    );
+  }
+
   String toJson() => json.encode(toMap());
 
   factory FamilyProfile.fromJson(String source) =>

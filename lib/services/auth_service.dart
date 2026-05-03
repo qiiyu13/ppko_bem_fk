@@ -61,6 +61,12 @@ class AuthService {
   }
 
   static Future<void> logout() async {
+    try {
+      await ApiService.post('/auth/logout');
+    } catch (_) {
+      // Ignore errors - still clear local data
+    }
+    WebSocketService.instance.disconnect();
     await TokenService.clearAll();
   }
 
@@ -81,13 +87,13 @@ class AuthService {
 
   static Future<bool> resetPassword({
     required String kkNumber,
-    required String resetCode,
+    required String firebaseToken,
     required String newPassword,
   }) async {
     try {
       await ApiService.post('/auth/reset-password', data: {
         'kkNumber': kkNumber,
-        'resetCode': resetCode,
+        'firebaseToken': firebaseToken,
         'newPassword': newPassword,
       });
       return true;

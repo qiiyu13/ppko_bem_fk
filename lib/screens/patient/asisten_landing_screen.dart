@@ -15,6 +15,7 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
   final ChatStorageService _storageService = ChatStorageService();
   List<Conversation> _conversations = [];
   bool _isLoading = true;
+  bool _dependenciesLoaded = false;
 
   @override
   void initState() {
@@ -25,8 +26,10 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Refresh when returning to this screen
-    _loadConversations();
+    if (!_dependenciesLoaded) {
+      _dependenciesLoaded = true;
+      _loadConversations();
+    }
   }
 
   Future<void> _loadConversations() async {

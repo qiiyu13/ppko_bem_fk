@@ -60,6 +60,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    if (password.length < 6) {
+      _showErrorDialog('Password minimal 6 karakter');
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {

@@ -167,8 +167,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveSize();
-    responsive.init(context);
+    ResponsiveSize.init(context);
 
     if (_isLoading) {
       return Scaffold(

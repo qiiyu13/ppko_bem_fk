@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../utils/responsive_size.dart';
@@ -23,11 +24,18 @@ class _DashboardTabState extends State<DashboardTab> {
   int _totalCount = 0;
   int _currentPage = 1;
   int _totalPages = 1;
+  Timer? _searchDebounce;
 
   @override
   void initState() {
     super.initState();
     _fetchPatients();
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchPatients({bool loadMore = false}) async {
@@ -296,8 +304,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveSize();
-    responsive.init(context);
+    ResponsiveSize.init(context);
 
     final riskCounts = _riskCounts;
     final highRiskCount = riskCounts['High Risk'] ?? 0;
@@ -399,10 +406,13 @@ class _DashboardTabState extends State<DashboardTab> {
                             ),
                             child: TextField(
                               onChanged: (value) {
-                                setState(() {
-                                  _searchQuery = value;
+                                _searchDebounce?.cancel();
+                                _searchDebounce = Timer(const Duration(milliseconds: 500), () {
+                                  setState(() {
+                                    _searchQuery = value;
+                                  });
+                                  _fetchPatients();
                                 });
-                                _fetchPatients();
                               },
                               decoration: InputDecoration(
                                 hintText: 'Search NIK or Name...',

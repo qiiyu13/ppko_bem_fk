@@ -226,8 +226,7 @@ class _HomeTabState extends State<HomeTab> {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveSize();
-    responsive.init(context);
+    ResponsiveSize.init(context);
 
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());

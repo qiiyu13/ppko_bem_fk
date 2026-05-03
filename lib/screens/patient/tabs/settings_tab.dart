@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../screens/welcome_screen.dart';
+import '../../../services/profile_service.dart';
 
 class SettingsTab extends StatelessWidget {
   const SettingsTab({super.key});
@@ -116,14 +117,17 @@ class SettingsTab extends StatelessWidget {
                             ),
                           ),
                           ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute(
-                                  builder: (context) => const WelcomeScreen(),
-                                ),
-                                (route) => false,
-                              );
+                            onPressed: () async {
+                              await ProfileService.instance.logout();
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                    builder: (context) => const WelcomeScreen(),
+                                  ),
+                                  (route) => false,
+                                );
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,

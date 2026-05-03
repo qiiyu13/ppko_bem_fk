@@ -32,6 +32,15 @@ class AssetHelper {
     return 'assets/icon/$assetName';
   }
 
+  /// Returns the correct illustration asset path based on platform.
+  /// For use with Image.asset() for illustration images
+  static String getIllustrationPath(String assetName) {
+    if (kIsWeb) {
+      return 'packages/mediku/assets/illustration/$assetName';
+    }
+    return 'assets/illustration/$assetName';
+  }
+
   /// Returns the correct font family name based on platform.
   /// On web when imported as a package, fonts are prefixed with 'packages/<package>/'
   static String getFontFamily(String fontFamily) {
@@ -45,15 +54,8 @@ class AssetHelper {
   /// Falls back to original if web version doesn't exist
   /// Only applies to web platform - mobile uses original high-res
   static String getWebImagePath(String filename) {
-    if (kIsWeb) {
-      // Convert to webp extension
-      final webpFilename = filename
-          .replaceAll('.jpg', '.webp')
-          .replaceAll('.jpeg', '.webp')
-          .replaceAll('.png', '.webp');
-      return 'packages/mediku/assets/images/web/$webpFilename';
-    }
-    // Mobile uses original high-res
-    return 'assets/images/$filename';
+    // NOTE: WebP compression was too aggressive causing poor quality.
+    // Using original images for better visual quality.
+    return getImagePath(filename);
   }
 }

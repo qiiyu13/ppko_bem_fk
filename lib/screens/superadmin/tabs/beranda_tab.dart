@@ -53,8 +53,7 @@ class _BerandaTabState extends State<BerandaTab> {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveSize();
-    responsive.init(context);
+    ResponsiveSize.init(context);
 
     if (_isLoading) {
       return const Scaffold(

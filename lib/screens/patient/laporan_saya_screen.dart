@@ -75,8 +75,7 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveSize();
-    responsive.init(context);
+    ResponsiveSize.init(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),

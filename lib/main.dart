@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:device_preview/device_preview.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'constants/app_theme.dart';
 import 'screens/splash_screen.dart';
 import 'services/api_service.dart';
@@ -10,6 +12,7 @@ import 'services/connectivity_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
 
   // Initialize API service with interceptors
   ApiService.setupInterceptors();
@@ -21,10 +24,9 @@ void main() async {
   await ConnectivityService.instance.initialize();
 
   runApp(
-    DevicePreview(
-      enabled: true,
-      builder: (context) => const MyApp(),
-    ),
+    kDebugMode
+        ? DevicePreview(enabled: true, builder: (context) => const MyApp())
+        : const MyApp(),
   );
 }
 
@@ -38,7 +40,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: const SplashScreen(),
-      builder: DevicePreview.appBuilder,
+      builder: kDebugMode ? DevicePreview.appBuilder : null,
       localizationsDelegates: const [
         ...GlobalMaterialLocalizations.delegates,
         FlutterQuillLocalizations.delegate,

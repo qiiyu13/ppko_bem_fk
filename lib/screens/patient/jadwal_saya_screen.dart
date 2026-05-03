@@ -130,8 +130,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveSize();
-    responsive.init(context);
+    ResponsiveSize.init(context);
 
     final content = Column(
       children: [

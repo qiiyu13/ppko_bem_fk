@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import '../config/env.dart';
 import '../exceptions/sync_conflict_exception.dart';
@@ -6,6 +8,8 @@ import 'token_service.dart';
 class ApiService {
   static const String baseUrl = Env.apiBaseUrl;
   static bool _interceptorsSetup = false;
+  static Completer<bool>? _refreshCompleter;
+  static bool _isRefreshing = false;
 
   static final Dio dio = Dio(
     BaseOptions(
@@ -32,21 +36,46 @@ class ApiService {
         onError: (error, handler) async {
           if (error.response?.statusCode == 401) {
             try {
-              final currentToken = await TokenService.getToken();
-              if (currentToken != null) {
-                final refreshResponse = await Dio().post(
-                  '$baseUrl/auth/refresh',
-                  options: Options(headers: {'Authorization': 'Bearer $currentToken'}),
-                );
-                final newToken = refreshResponse.data['data']['token'];
-                await TokenService.setToken(newToken);
-                final opts = error.requestOptions;
-                opts.headers['Authorization'] = 'Bearer $newToken';
-                final retryResponse = await Dio().fetch(opts);
-                handler.resolve(retryResponse);
-                return;
+              if (_isRefreshing && _refreshCompleter != null) {
+                final success = await _refreshCompleter!.future;
+                if (success) {
+                  final newToken = await TokenService.getToken();
+                  if (newToken != null) {
+                    final opts = error.requestOptions;
+                    opts.headers['Authorization'] = 'Bearer $newToken';
+                    final retryResponse = await Dio().fetch(opts);
+                    handler.resolve(retryResponse);
+                    return;
+                  }
+                }
+              } else {
+                _isRefreshing = true;
+                _refreshCompleter = Completer<bool>();
+                try {
+                  final currentToken = await TokenService.getToken();
+                  if (currentToken != null) {
+                    final refreshResponse = await Dio().post(
+                      '$baseUrl/auth/refresh',
+                      options: Options(headers: {'Authorization': 'Bearer $currentToken'}),
+                    );
+                    final newToken = refreshResponse.data['data']['token'];
+                    await TokenService.setToken(newToken);
+                    _refreshCompleter!.complete(true);
+                    final opts = error.requestOptions;
+                    opts.headers['Authorization'] = 'Bearer $newToken';
+                    final retryResponse = await Dio().fetch(opts);
+                    handler.resolve(retryResponse);
+                    return;
+                  }
+                } catch (e) {
+                  _refreshCompleter!.complete(false);
+                  await TokenService.clearAll();
+                } finally {
+                  _isRefreshing = false;
+                  _refreshCompleter = null;
+                }
               }
-            } catch (refreshError) {
+            } catch (e) {
               await TokenService.clearAll();
             }
           }

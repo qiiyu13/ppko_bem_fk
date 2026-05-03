@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../constants/app_colors.dart';
 import '../utils/asset_helper.dart';
 
 /// Icon-only floating pill navigation bar with sliding active indicator.
 /// Features: 5 evenly-spaced icons, animated sliding circular indicator.
-/// Supports both IconData (Flutter icons) and image assets.
+/// Supports both IconData (Flutter icons), image assets, and SVG assets.
 class CustomBottomNav extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
@@ -89,7 +90,7 @@ class CustomBottomNav extends StatelessWidget {
                       icon: Icons.home_outlined,
                       activeIcon: Icons.home,
                       index: 0,
-                      iconSize: iconSize,
+                      iconSize: iconSize * 1.15, // Scaled up slightly for visual balance
                     ),
                     _buildNavItem(
                       icon: Icons.calendar_today_outlined,
@@ -98,7 +99,7 @@ class CustomBottomNav extends StatelessWidget {
                       iconSize: iconSize,
                     ),
                     _buildNavItem(
-                      imagePath: AssetHelper.getIconPath('leaf_icon.png'),
+                      svgPath: AssetHelper.getIconPath('Tanaman-toga.svg'),
                       index: 2,
                       iconSize: iconSize,
                     ),
@@ -108,8 +109,7 @@ class CustomBottomNav extends StatelessWidget {
                       iconSize: iconSize,
                     ),
                     _buildNavItem(
-                      icon: Icons.person_outline,
-                      activeIcon: Icons.person,
+                      svgPath: AssetHelper.getIconPath('profile-patient.svg'),
                       index: 4,
                       iconSize: iconSize,
                     ),
@@ -129,6 +129,7 @@ class CustomBottomNav extends StatelessWidget {
     required int index,
     required double iconSize,
     String? imagePath,
+    String? svgPath,
   }) {
     final bool isSelected = currentIndex == index;
 
@@ -138,14 +139,16 @@ class CustomBottomNav extends StatelessWidget {
         child: Center(
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
-            child: imagePath != null
-                ? _buildImageIcon(imagePath, isSelected, iconSize, index)
-                : _buildMaterialIcon(
-                    icon: isSelected ? activeIcon! : icon!,
-                    isSelected: isSelected,
-                    iconSize: iconSize,
-                    index: index,
-                  ),
+            child: svgPath != null
+                ? _buildSvgIcon(svgPath, isSelected, iconSize, index)
+                : imagePath != null
+                    ? _buildImageIcon(imagePath, isSelected, iconSize, index)
+                    : _buildMaterialIcon(
+                        icon: isSelected ? activeIcon! : icon!,
+                        isSelected: isSelected,
+                        iconSize: iconSize,
+                        index: index,
+                      ),
           ),
         ),
       ),
@@ -165,6 +168,28 @@ class CustomBottomNav extends StatelessWidget {
           ? AppColors.primary
           : AppColors.textOnPrimary.withValues(alpha: 0.6),
       size: iconSize * 1.15,
+    );
+  }
+
+  Widget _buildSvgIcon(
+    String svgPath,
+    bool isSelected,
+    double iconSize,
+    int index,
+  ) {
+    final adjustedSize = iconSize * 1.15;
+    return SvgPicture.asset(
+      svgPath,
+      key: ValueKey<int>(isSelected ? index + 100 : index),
+      width: adjustedSize,
+      height: adjustedSize,
+      fit: BoxFit.contain,
+      colorFilter: ColorFilter.mode(
+        isSelected
+            ? AppColors.primary
+            : AppColors.textOnPrimary.withValues(alpha: 0.6),
+        BlendMode.srcIn,
+      ),
     );
   }
 

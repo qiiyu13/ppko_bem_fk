@@ -254,6 +254,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
           tags: tags,
           isDraft: !publish,
           isPublished: publish,
+          updatedAt: widget.article!.updatedAt,
         );
       } else {
         article = await ArticleService.createArticle(

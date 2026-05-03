@@ -146,31 +146,35 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
     if (widget.conversationId != null) {
       ChatService.sendMessageViaWebSocket(widget.conversationId!, text);
       if (!WebSocketService.instance.isConnected) {
-        _simulateAssistantResponse();
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            setState(() {
+              _isTyping = false;
+              _messages.add(ChatMessage(
+                text: 'Maaf, koneksi ke server terputus. Pesan Anda tersimpan secara lokal dan akan dikirim saat koneksi pulih.',
+                isUser: false,
+                timestamp: DateTime.now(),
+              ));
+            });
+            _saveConversation();
+          }
+        });
       }
     } else {
-      // Simulate assistant response for local-only mode
-      _simulateAssistantResponse();
-    }
-  }
-
-  void _simulateAssistantResponse() {
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _isTyping = false;
-          _messages.add(
-            ChatMessage(
-              text:
-                  'Terima kasih atas pertanyaannya. Saya akan membantu menjelaskan.',
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          setState(() {
+            _isTyping = false;
+            _messages.add(ChatMessage(
+              text: 'Asisten AI membutuhkan koneksi internet. Silakan coba lagi saat online.',
               isUser: false,
               timestamp: DateTime.now(),
-            ),
-          );
-        });
-        _saveConversation();
-      }
-    });
+            ));
+          });
+          _saveConversation();
+        }
+      });
+    }
   }
 
   void _scrollToBottom() {
@@ -205,8 +209,7 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveSize();
-    responsive.init(context);
+    ResponsiveSize.init(context);
 
     if (_isLoading) {
       return Scaffold(

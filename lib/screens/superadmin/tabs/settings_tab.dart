@@ -8,8 +8,7 @@ class SuperadminSettingsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = ResponsiveSize();
-    responsive.init(context);
+    ResponsiveSize.init(context);
 
     return Scaffold(
       appBar: AppBar(
