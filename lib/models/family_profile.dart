@@ -10,6 +10,7 @@ class FamilyProfile {
   final String? address;
   final String? phone;
   final DateTime createdAt;
+  final DateTime updatedAt;
 
   FamilyProfile({
     required this.id,
@@ -21,7 +22,9 @@ class FamilyProfile {
     this.address,
     this.phone,
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+    DateTime? updatedAt,
+  }) : createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
 
   Map<String, dynamic> toMap() {
     return {
@@ -34,6 +37,7 @@ class FamilyProfile {
       'address': address,
       'phone': phone,
       'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 
@@ -48,6 +52,7 @@ class FamilyProfile {
       address: map['address'] as String?,
       phone: map['phone'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
+      updatedAt: DateTime.parse(map['updated_at'] as String),
     );
   }
 
@@ -81,6 +86,7 @@ class FamilyProfile {
     String? address,
     String? phone,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return FamilyProfile(
       id: id ?? this.id,
@@ -92,6 +98,7 @@ class FamilyProfile {
       address: address ?? this.address,
       phone: phone ?? this.phone,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }
