@@ -16,7 +16,7 @@ router.post('/', [
   validate,
 ], controller.createMetric);
 
-router.get('/:type/history', controller.getHistory);
 router.get('/latest', controller.getLatest);
+router.get('/:type/history', controller.getHistory);
 
 module.exports = router;
