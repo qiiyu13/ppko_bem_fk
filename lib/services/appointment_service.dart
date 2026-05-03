@@ -34,6 +34,7 @@ class AppointmentService {
     String? location,
     String? notes,
     String? type,
+    required DateTime updatedAt,
   }) async {
     final response = await ApiService.put('/appointments/$id', data: {
       if (title != null) 'title': title,
@@ -41,11 +42,14 @@ class AppointmentService {
       if (location != null) 'location': location,
       if (notes != null) 'notes': notes,
       if (type != null) 'type': type,
+      'updatedAt': updatedAt.toIso8601String(),
     });
     return response.data['data'] as Map<String, dynamic>;
   }
 
-  static Future<void> deleteAppointment(String id) async {
-    await ApiService.delete('/appointments/$id');
+  static Future<void> deleteAppointment(String id, DateTime updatedAt) async {
+    await ApiService.delete('/appointments/$id', data: {
+      'updatedAt': updatedAt.toIso8601String(),
+    });
   }
 }
