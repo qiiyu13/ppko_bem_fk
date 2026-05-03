@@ -13,7 +13,13 @@ const getMetrics = async (profileId, userId) => {
   });
 };
 
-const createMetric = async (data) => {
+const createMetric = async (data, userId) => {
+  // Verify profile belongs to user
+  const profile = await prisma.familyProfile.findFirst({
+    where: { id: data.profileId, userId },
+  });
+  if (!profile) throw Object.assign(new Error('Profile not found'), { statusCode: 404 });
+
   return prisma.healthMetric.create({
     data: {
       profileId: data.profileId,

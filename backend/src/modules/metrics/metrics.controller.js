@@ -16,9 +16,10 @@ const getMetrics = async (req, res, next) => {
 
 const createMetric = async (req, res, next) => {
   try {
-    const metric = await metricsService.createMetric(req.body);
+    const metric = await metricsService.createMetric(req.body, req.user.id);
     return success(res, metric, 'Metric recorded successfully', 201);
   } catch (err) {
+    if (err.message === 'Profile not found') return error(res, err.message, 404, 'NOT_FOUND');
     next(err);
   }
 };
