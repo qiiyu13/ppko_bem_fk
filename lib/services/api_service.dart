@@ -5,6 +5,7 @@ import 'token_service.dart';
 
 class ApiService {
   static const String baseUrl = Env.apiBaseUrl;
+  static bool _interceptorsSetup = false;
 
   static final Dio dio = Dio(
     BaseOptions(
@@ -16,6 +17,9 @@ class ApiService {
   );
 
   static void setupInterceptors() {
+    if (_interceptorsSetup) return;
+    _interceptorsSetup = true;
+
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
