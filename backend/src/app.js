@@ -31,7 +31,9 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Logging
-if (config.nodeEnv === 'development') {
+if (config.nodeEnv === 'production') {
+  app.use(morgan('combined'));
+} else {
   app.use(morgan('dev'));
 }
 
