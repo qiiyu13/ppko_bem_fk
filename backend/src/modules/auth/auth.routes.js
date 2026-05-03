@@ -3,6 +3,13 @@ const { body } = require('express-validator');
 const controller = require('./auth.controller');
 const authenticate = require('../../middleware/auth');
 const validate = require('../../middleware/validate');
+const rateLimit = require('express-rate-limit');
+
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  message: { success: false, error: { code: 'RATE_LIMIT', message: 'Too many reset requests. Try again later.' } },
+});
 
 router.post('/register', [
   body('kkNumber').isString().matches(/^\d{16}$/).withMessage('KK number must be 16 digits'),
@@ -19,7 +26,7 @@ router.post('/login', [
 
 router.get('/me', authenticate, controller.getMe);
 
-router.post('/forgot-password', [
+router.post('/forgot-password', [forgotPasswordLimiter,
   body('kkNumber').isString().matches(/^\d{16}$/),
   body('phone').isString().notEmpty(),
   validate,

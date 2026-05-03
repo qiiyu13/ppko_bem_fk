@@ -1,5 +1,6 @@
 const { hashPassword, comparePassword } = require('../../utils/password');
 const { generateToken } = require('../../utils/jwt');
+const { setCode, verifyCode, consumeCode } = require('../../utils/resetCodes');
 
 const prisma = require('../../utils/prisma');
 
@@ -40,26 +41,24 @@ const getMe = async (userId) => {
   return user;
 };
 
-const resetCodes = new Map();
-
 const forgotPassword = async ({ kkNumber, phone }) => {
   const user = await prisma.user.findUnique({ where: { kkNumber } });
   if (!user) throw Object.assign(new Error('KK number not found'), { statusCode: 404 });
   if (user.phone !== phone) throw Object.assign(new Error('Phone number does not match'), { statusCode: 400 });
 
   const code = String(Math.floor(100000 + Math.random() * 900000));
-  resetCodes.set(kkNumber, { code, expiresAt: Date.now() + 15 * 60 * 1000 });
+  setCode(kkNumber, code);
 
-  console.log(`\n🔐 Reset code for ${kkNumber}: ${code}\n`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`\n🔐 Reset code for ${kkNumber}: ${code}\n`);
+  }
 
   return { message: 'Reset code sent via SMS' };
 };
 
 const resetPassword = async ({ kkNumber, resetCode, newPassword }) => {
-  const stored = resetCodes.get(kkNumber);
-  if (!stored) throw Object.assign(new Error('No reset code requested'), { statusCode: 400 });
-  if (stored.code !== resetCode) throw Object.assign(new Error('Invalid reset code'), { statusCode: 400 });
-  if (Date.now() > stored.expiresAt) throw Object.assign(new Error('Reset code expired'), { statusCode: 400 });
+  const result = verifyCode(kkNumber, resetCode);
+  if (!result.valid) throw Object.assign(new Error(result.error), { statusCode: 400 });
 
   const hashedPassword = await hashPassword(newPassword);
   await prisma.user.update({
@@ -67,7 +66,7 @@ const resetPassword = async ({ kkNumber, resetCode, newPassword }) => {
     data: { password: hashedPassword },
   });
 
-  resetCodes.delete(kkNumber);
+  consumeCode(kkNumber);
   return { message: 'Password reset successful' };
 };
 
