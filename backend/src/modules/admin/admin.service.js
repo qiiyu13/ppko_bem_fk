@@ -90,15 +90,31 @@ const getPatientDetail = async (id) => {
       phone: true,
       createdAt: true,
       familyProfiles: {
-        include: {
-          metrics: { orderBy: { recordedAt: 'desc' } },
+        select: {
+          id: true,
+          name: true,
+          nik: true,
+          gender: true,
+          birthDate: true,
+          height: true,
+          weight: true,
+          bloodType: true,
+          phone: true,
+          metrics: {
+            orderBy: { recordedAt: 'desc' },
+            take: 50,
+          },
           screenings: {
             orderBy: { screeningAt: 'desc' },
+            take: 20,
             include: { screener: { select: { responsibleName: true } } },
           },
         },
       },
-      appointments: { orderBy: { date: 'desc' } },
+      appointments: {
+        orderBy: { date: 'desc' },
+        take: 20,
+      },
     },
   });
 
