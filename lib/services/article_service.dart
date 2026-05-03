@@ -45,6 +45,7 @@ class ArticleService {
     List<String>? tags,
     bool? isDraft,
     bool? isPublished,
+    required DateTime updatedAt,
   }) async {
     final response = await ApiService.put('/articles/admin/$id', data: {
       if (title != null) 'title': title,
@@ -53,15 +54,20 @@ class ArticleService {
       if (tags != null) 'tags': tags,
       if (isDraft != null) 'isDraft': isDraft,
       if (isPublished != null) 'isPublished': isPublished,
+      'updatedAt': updatedAt.toIso8601String(),
     });
     return TanamanArticle.fromApi(response.data['data'] as Map<String, dynamic>);
   }
 
-  static Future<void> deleteArticle(String id) async {
-    await ApiService.delete('/articles/admin/$id');
+  static Future<void> deleteArticle(String id, DateTime updatedAt) async {
+    await ApiService.delete('/articles/admin/$id', data: {
+      'updatedAt': updatedAt.toIso8601String(),
+    });
   }
 
-  static Future<void> publishArticle(String id) async {
-    await ApiService.post('/articles/admin/$id/publish', data: {});
+  static Future<void> publishArticle(String id, DateTime updatedAt) async {
+    await ApiService.post('/articles/admin/$id/publish', data: {
+      'updatedAt': updatedAt.toIso8601String(),
+    });
   }
 }
