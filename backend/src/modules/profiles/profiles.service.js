@@ -58,11 +58,13 @@ const updateProfile = async (id, data, userId) => {
 
 const deleteProfile = async (id, userId) => {
   await getProfile(id, userId); // verify ownership
-  // Delete associated metrics first to avoid FK constraint
-  await prisma.healthMetric.deleteMany({ where: { profileId: id } });
-  // Delete associated screenings
-  await prisma.medicalScreening.deleteMany({ where: { profileId: id } });
-  await prisma.familyProfile.delete({ where: { id } });
+
+  await prisma.$transaction([
+    prisma.healthMetric.deleteMany({ where: { profileId: id } }),
+    prisma.medicalScreening.deleteMany({ where: { profileId: id } }),
+    prisma.familyProfile.delete({ where: { id } }),
+  ]);
+
   try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'profiles', action: 'delete', id }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
   return { message: 'Profile deleted successfully' };
 };
