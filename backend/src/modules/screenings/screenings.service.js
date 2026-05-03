@@ -1,8 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
 const { broadcastToUsers, broadcastToAll, events } = require('../../websocket');
 const { calculateIrd } = require('../../utils/ird');
 
-const prisma = new PrismaClient();
+const prisma = require('../../utils/prisma');
 
 const createScreening = async (data, userId) => {
   // Fetch profile to get gender/height/weight for IRD

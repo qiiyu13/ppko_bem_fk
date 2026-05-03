@@ -1,8 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
 const { hashPassword, comparePassword } = require('../../utils/password');
 const { generateToken } = require('../../utils/jwt');
 
-const prisma = new PrismaClient();
+const prisma = require('../../utils/prisma');
 
 const register = async ({ kkNumber, responsibleName, password, phone }) => {
   const existing = await prisma.user.findUnique({ where: { kkNumber } });

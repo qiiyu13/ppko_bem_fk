@@ -1,6 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const prisma = require('../../utils/prisma');
 
 const getPatients = async ({ search, irdCategory, page = 1, limit = 10 }) => {
   const skip = (parseInt(page) - 1) * parseInt(limit);

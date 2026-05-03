@@ -1,7 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
 const events = require('./events');
 
-const prisma = new PrismaClient();
+const prisma = require('../utils/prisma');
 
 async function handleChatMessage(ws, data, userId) {
   const { conversationId, content } = data;

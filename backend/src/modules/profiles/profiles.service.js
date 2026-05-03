@@ -1,7 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
 const { broadcastToUsers, broadcastToAll, events } = require('../../websocket');
 
-const prisma = new PrismaClient();
+const prisma = require('../../utils/prisma');
 
 const getProfiles = async (userId) => {
   return prisma.familyProfile.findMany({
