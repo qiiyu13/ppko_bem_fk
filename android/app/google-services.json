@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "591975230006",
+    "project_id": "mediku-a2615",
+    "storage_bucket": "mediku-a2615.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:591975230006:android:c11f4a20b37e3a845c0697",
+        "android_client_info": {
+          "package_name": "com.unnes.desa_sehat.desa_sehat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDp56_7sPIzNWbChEP9HulJb0DEUkL66NY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

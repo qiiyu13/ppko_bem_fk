@@ -1,6 +1,6 @@
 const { hashPassword, comparePassword } = require('../../utils/password');
 const { generateToken } = require('../../utils/jwt');
-const { setCode, verifyCode, consumeCode } = require('../../utils/resetCodes');
+const { verifyFirebaseToken } = require('../../utils/firebase');
 
 const prisma = require('../../utils/prisma');
 
@@ -46,19 +46,23 @@ const forgotPassword = async ({ kkNumber, phone }) => {
   if (!user) throw Object.assign(new Error('KK number not found'), { statusCode: 404 });
   if (user.phone !== phone) throw Object.assign(new Error('Phone number does not match'), { statusCode: 400 });
 
-  const code = String(Math.floor(100000 + Math.random() * 900000));
-  setCode(kkNumber, code);
-
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`\n🔐 Reset code for ${kkNumber}: ${code}\n`);
-  }
-
-  return { message: 'Reset code sent via SMS' };
+  return { message: 'OTP sent to your phone number' };
 };
 
-const resetPassword = async ({ kkNumber, resetCode, newPassword }) => {
-  const result = verifyCode(kkNumber, resetCode);
-  if (!result.valid) throw Object.assign(new Error(result.error), { statusCode: 400 });
+const resetPassword = async ({ kkNumber, firebaseToken, newPassword }) => {
+  const decoded = await verifyFirebaseToken(firebaseToken);
+  if (!decoded.phone_number) {
+    throw Object.assign(new Error('Invalid verification token'), { statusCode: 400 });
+  }
+
+  const user = await prisma.user.findUnique({ where: { kkNumber } });
+  if (!user) throw Object.assign(new Error('KK number not found'), { statusCode: 404 });
+
+  const normalizedStored = user.phone?.replace(/^0/, '+62');
+  const normalizedFirebase = decoded.phone_number;
+  if (normalizedStored !== normalizedFirebase) {
+    throw Object.assign(new Error('Phone number mismatch'), { statusCode: 400 });
+  }
 
   const hashedPassword = await hashPassword(newPassword);
   await prisma.user.update({
@@ -66,7 +70,6 @@ const resetPassword = async ({ kkNumber, resetCode, newPassword }) => {
     data: { password: hashedPassword },
   });
 
-  consumeCode(kkNumber);
   return { message: 'Password reset successful' };
 };
 
