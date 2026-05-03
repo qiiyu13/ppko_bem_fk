@@ -51,4 +51,15 @@ const resetPassword = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, getMe, forgotPassword, resetPassword };
+const refreshToken = async (req, res, next) => {
+  try {
+    const { generateToken } = require('../../utils/jwt');
+    const user = await authService.getMe(req.user.id);
+    const token = generateToken({ userId: user.id, role: user.role });
+    return success(res, { token });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { register, login, getMe, forgotPassword, resetPassword, refreshToken };

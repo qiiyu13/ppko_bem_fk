@@ -27,7 +27,24 @@ class ApiService {
         },
         onError: (error, handler) async {
           if (error.response?.statusCode == 401) {
-            await TokenService.clearAll();
+            try {
+              final currentToken = await TokenService.getToken();
+              if (currentToken != null) {
+                final refreshResponse = await Dio().post(
+                  '$baseUrl/auth/refresh',
+                  options: Options(headers: {'Authorization': 'Bearer $currentToken'}),
+                );
+                final newToken = refreshResponse.data['data']['token'];
+                await TokenService.setToken(newToken);
+                final opts = error.requestOptions;
+                opts.headers['Authorization'] = 'Bearer $newToken';
+                final retryResponse = await Dio().fetch(opts);
+                handler.resolve(retryResponse);
+                return;
+              }
+            } catch (refreshError) {
+              await TokenService.clearAll();
+            }
           }
           if (error.response?.statusCode == 409) {
             final serverData =

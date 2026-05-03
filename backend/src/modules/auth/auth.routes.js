@@ -31,6 +31,7 @@ router.post('/login', [authLimiter,
 ], controller.login);
 
 router.get('/me', authenticate, controller.getMe);
+router.post('/refresh', authenticate, controller.refreshToken);
 
 router.post('/forgot-password', [forgotPasswordLimiter,
   body('kkNumber').isString().matches(/^\d{16}$/),
