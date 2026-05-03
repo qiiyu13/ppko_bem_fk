@@ -61,6 +61,7 @@ class AdminService {
     String? role,
     bool? isActive,
     String? password,
+    required DateTime updatedAt,
   }) async {
     final response = await ApiService.put('/admin/users/$id', data: {
       if (name != null) 'name': name,
@@ -70,11 +71,14 @@ class AdminService {
       if (role != null) 'role': role,
       if (isActive != null) 'isActive': isActive,
       if (password != null) 'password': password,
+      'updatedAt': updatedAt.toIso8601String(),
     });
     return response.data['data'] as Map<String, dynamic>;
   }
 
-  static Future<void> deleteUser(String id) async {
-    await ApiService.delete('/admin/users/$id');
+  static Future<void> deleteUser(String id, DateTime updatedAt) async {
+    await ApiService.delete('/admin/users/$id', data: {
+      'updatedAt': updatedAt.toIso8601String(),
+    });
   }
 }
