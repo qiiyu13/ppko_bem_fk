@@ -12,7 +12,13 @@ const app = express();
 
 // Security
 app.use(helmet());
-app.use(cors({ origin: config.corsOrigin }));
+if (config.nodeEnv === 'production' && config.corsOrigin === '*') {
+  console.warn('WARNING: CORS_ORIGIN is set to "*" in production. Restrict this to your app domain.');
+}
+app.use(cors({
+  origin: config.corsOrigin,
+  credentials: true,
+}));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 
 // Body parsing
