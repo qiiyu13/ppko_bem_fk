@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../components/animated_line_navbar.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/sync_status_banner.dart';
 import 'tabs/settings_tab.dart';
 import 'tabs/beranda_tab.dart';
 import 'tabs/medical_tab.dart';
@@ -58,7 +59,9 @@ class _SuperadminMainScreenState extends State<SuperadminMainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(child: _screens[_currentIndex]),
+      body: SyncStatusBanner(
+        child: SafeArea(child: _screens[_currentIndex]),
+      ),
       bottomNavigationBar: AnimatedLineNavBar(
         currentIndex: _currentIndex,
         onTap: _onTabChanged,

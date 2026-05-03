@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../components/animated_line_navbar.dart';
 import '../../constants/app_colors.dart';
 import '../../utils/responsive_size.dart';
+import '../../widgets/sync_status_banner.dart';
 import '../patient/tabs/settings_tab.dart';
 import 'tabs/dashboard_tab.dart';
 import 'tabs/profil_tab.dart';
@@ -64,7 +65,9 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(child: _screens[_currentIndex]),
+      body: SyncStatusBanner(
+        child: SafeArea(child: _screens[_currentIndex]),
+      ),
       bottomNavigationBar: AnimatedLineNavBar(
         currentIndex: _currentIndex,
         onTap: _onTabChanged,

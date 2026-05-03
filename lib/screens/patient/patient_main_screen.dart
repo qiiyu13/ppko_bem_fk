@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/custom_bottom_nav.dart';
+import '../../widgets/sync_status_banner.dart';
 import 'tabs/home_tab.dart';
 import 'tabs/profil_tab.dart';
 import 'tabs/settings_tab.dart';
@@ -68,36 +69,38 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
                   : null,
             )
           : null,
-      body: Stack(
-        children: [
-          // Main content area - fills entire screen
-          Positioned.fill(
-            child: IndexedStack(
-              index: _currentIndex,
-              children: [
-                _buildTab(HomeTab()),
-                _buildTab(JadwalSayaScreen(onBack: () {}, isEmbedded: true)),
-                _buildTab(const TanamanTogaTab()),
-                _buildTab(const AsistenLandingScreen()),
-                _buildTab(const ProfilTab()),
-              ],
+      body: SyncStatusBanner(
+        child: Stack(
+          children: [
+            // Main content area - fills entire screen
+            Positioned.fill(
+              child: IndexedStack(
+                index: _currentIndex,
+                children: [
+                  _buildTab(HomeTab()),
+                  _buildTab(JadwalSayaScreen(onBack: () {}, isEmbedded: true)),
+                  _buildTab(const TanamanTogaTab()),
+                  _buildTab(const AsistenLandingScreen()),
+                  _buildTab(const ProfilTab()),
+                ],
+              ),
             ),
-          ),
-          // Floating navbar positioned at bottom
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: bottomPadding,
-            child: CustomBottomNav(
-              currentIndex: _currentIndex,
-              onTap: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
+            // Floating navbar positioned at bottom
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: bottomPadding,
+              child: CustomBottomNav(
+                currentIndex: _currentIndex,
+                onTap: (index) {
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
