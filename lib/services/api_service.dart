@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../exceptions/sync_conflict_exception.dart';
 import 'token_service.dart';
 
 class ApiService {
@@ -24,6 +25,15 @@ class ApiService {
         if (error.response?.statusCode == 401) {
           await TokenService.clearAll();
         }
+        if (error.response?.statusCode == 409) {
+          final serverData = error.response?.data['data'] as Map<String, dynamic>? ?? {};
+          final localData = error.requestOptions.data as Map<String, dynamic>? ?? {};
+          throw SyncConflictException(
+            message: error.response?.data['error']?['message'] ?? 'Data conflict detected',
+            serverData: serverData,
+            localData: localData,
+          );
+        }
         handler.next(error);
       },
     ));
@@ -38,15 +48,15 @@ class ApiService {
   static Future<Response> put(String path, {dynamic data}) =>
       dio.put(path, data: data);
 
-  static Future<Response> delete(String path) =>
-      dio.delete(path);
+  static Future<Response> delete(String path, {dynamic data}) =>
+      dio.delete(path, data: data);
 
   static Future<Response> request(String method, String path, {dynamic data}) async {
     switch (method.toUpperCase()) {
       case 'GET': return get(path);
       case 'POST': return post(path, data: data);
       case 'PUT': return put(path, data: data);
-      case 'DELETE': return delete(path);
+      case 'DELETE': return delete(path, data: data);
       default: throw Exception('Unsupported method: $method');
     }
   }
