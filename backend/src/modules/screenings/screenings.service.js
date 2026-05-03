@@ -56,7 +56,7 @@ const getScreenings = async (profileId) => {
     orderBy: { screeningAt: 'desc' },
     include: {
       profile: { select: { name: true, nik: true, gender: true } },
-      screener: { select: { name: true } },
+      screener: { select: { responsibleName: true } },
     },
   });
 };

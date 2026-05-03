@@ -6,12 +6,12 @@ const authorize = require('../../middleware/roleGuard');
 const validate = require('../../middleware/validate');
 const conflictDetection = require('../../middleware/conflictDetection');
 
+// Admin routes (must be before /:id to avoid matching "admin" as an id)
+router.get('/admin/all', authenticate, authorize('ADMIN', 'SUPERADMIN'), controller.getAllArticles);
+
 // Public routes
 router.get('/', controller.getPublishedArticles);
 router.get('/:id', controller.getPublishedArticle);
-
-// Admin routes
-router.get('/admin/all', authenticate, authorize('ADMIN', 'SUPERADMIN'), controller.getAllArticles);
 
 router.post('/admin', authenticate, authorize('ADMIN', 'SUPERADMIN'), [
   body('title').isString().notEmpty(),

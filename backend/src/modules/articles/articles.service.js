@@ -7,14 +7,14 @@ const getPublishedArticles = async () => {
   return prisma.article.findMany({
     where: { isPublished: true, isDraft: false },
     orderBy: { publishDate: 'desc' },
-    select: { id: true, title: true, content: true, imagePath: true, tags: true, publishDate: true, author: { select: { name: true } } },
+    select: { id: true, title: true, content: true, imagePath: true, tags: true, publishDate: true, author: { select: { responsibleName: true } } },
   });
 };
 
 const getPublishedArticle = async (id) => {
   const article = await prisma.article.findFirst({
     where: { id, isPublished: true, isDraft: false },
-    select: { id: true, title: true, content: true, imagePath: true, tags: true, publishDate: true, createdAt: true, author: { select: { name: true } } },
+    select: { id: true, title: true, content: true, imagePath: true, tags: true, publishDate: true, createdAt: true, author: { select: { responsibleName: true } } },
   });
   if (!article) throw Object.assign(new Error('Article not found'), { statusCode: 404 });
   return article;
@@ -24,7 +24,7 @@ const getPublishedArticle = async (id) => {
 const getAllArticles = async () => {
   return prisma.article.findMany({
     orderBy: { createdAt: 'desc' },
-    include: { author: { select: { name: true } } },
+    include: { author: { select: { responsibleName: true } } },
   });
 };
 
