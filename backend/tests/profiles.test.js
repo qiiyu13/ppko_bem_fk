@@ -55,10 +55,16 @@ describe('Profiles Endpoints', () => {
   });
 
   it('should update profile', async () => {
+    // First fetch the profile to get current updatedAt
+    const getRes = await request(app)
+      .get(`/api/v1/profiles/${profileId}`)
+      .set('Authorization', `Bearer ${authToken}`);
+    const updatedAt = getRes.body.data.updatedAt;
+
     const res = await request(app)
       .put(`/api/v1/profiles/${profileId}`)
       .set('Authorization', `Bearer ${authToken}`)
-      .send({ name: 'Budi Updated', weight: 78 });
+      .send({ name: 'Budi Updated', weight: 78, updatedAt });
     expect(res.status).toBe(200);
     expect(res.body.data.name).toBe('Budi Updated');
     expect(res.body.data.weight).toBe(78);
@@ -79,9 +85,16 @@ describe('Profiles Endpoints', () => {
   });
 
   it('should delete profile', async () => {
+    // First fetch the profile to get current updatedAt
+    const getRes = await request(app)
+      .get(`/api/v1/profiles/${profileId}`)
+      .set('Authorization', `Bearer ${authToken}`);
+    const updatedAt = getRes.body.data.updatedAt;
+
     const res = await request(app)
       .delete(`/api/v1/profiles/${profileId}`)
-      .set('Authorization', `Bearer ${authToken}`);
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ updatedAt });
     expect(res.status).toBe(200);
     expect(res.body.data.message).toBe('Profile deleted successfully');
   });
