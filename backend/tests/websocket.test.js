@@ -29,7 +29,11 @@ afterAll(async () => {
 });
 
 test('WebSocket connects and authenticates with token', (done) => {
-  const ws = new WebSocket(`${wsUrl}?token=${authToken}`);
+  const ws = new WebSocket(wsUrl);
+
+  ws.on('open', () => {
+    ws.send(JSON.stringify({ event: 'auth', data: { token: authToken } }));
+  });
 
   ws.on('message', (data) => {
     const message = JSON.parse(data.toString());
@@ -42,7 +46,11 @@ test('WebSocket connects and authenticates with token', (done) => {
 });
 
 test('WebSocket rejects invalid token', (done) => {
-  const ws = new WebSocket(`${wsUrl}?token=invalid`);
+  const ws = new WebSocket(wsUrl);
+
+  ws.on('open', () => {
+    ws.send(JSON.stringify({ event: 'auth', data: { token: 'invalid' } }));
+  });
 
   ws.on('message', (data) => {
     const message = JSON.parse(data.toString());

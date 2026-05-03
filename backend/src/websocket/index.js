@@ -11,13 +11,48 @@ function initWebSocketServer(server) {
   wss.on('connection', (ws, req) => {
     let userId = null;
     let userRole = null;
+    let authenticated = false;
 
     ws.isAlive = true;
+    ws.isAuthenticated = false;
     ws.on('pong', () => { ws.isAlive = true; });
+
+    // Auth timeout: close if not authenticated within 10 seconds
+    const authTimeout = setTimeout(() => {
+      if (!authenticated) {
+        ws.send(JSON.stringify({ event: events.ERROR, data: { message: 'Authentication timeout' } }));
+        ws.close(4001, 'Authentication timeout');
+      }
+    }, 10000);
 
     ws.on('message', (data) => {
       try {
         const message = JSON.parse(data.toString());
+
+        // Handle authentication as first message
+        if (!authenticated) {
+          if (message.event === 'auth' && message.data?.token) {
+            try {
+              const decoded = verifyToken(message.data.token);
+              userId = decoded.userId;
+              userRole = decoded.role;
+              authenticated = true;
+              ws.isAuthenticated = true;
+              clearTimeout(authTimeout);
+              if (!clients.has(userId)) clients.set(userId, new Set());
+              clients.get(userId).add(ws);
+              ws.send(JSON.stringify({ event: events.AUTHENTICATED, data: { userId, role: userRole } }));
+            } catch (e) {
+              ws.send(JSON.stringify({ event: events.ERROR, data: { message: 'Authentication failed' } }), () => {
+                ws.close(4002, 'Authentication failed');
+              });
+            }
+          } else {
+            ws.send(JSON.stringify({ event: events.ERROR, data: { message: 'Authentication required' } }));
+          }
+          return;
+        }
+
         const { handleChatMessage } = require('./chat.handler');
         switch (message.event) {
           case events.CHAT_MESSAGE:
@@ -32,27 +67,12 @@ function initWebSocketServer(server) {
     });
 
     ws.on('close', () => {
+      clearTimeout(authTimeout);
       if (userId && clients.has(userId)) {
         clients.get(userId).delete(ws);
         if (clients.get(userId).size === 0) clients.delete(userId);
       }
     });
-
-    // Auto-authenticate from query token
-    try {
-      const url = new URL(req.url, 'http://localhost');
-      const token = url.searchParams.get('token');
-      if (token) {
-        const decoded = verifyToken(token);
-        userId = decoded.userId;
-        userRole = decoded.role;
-        if (!clients.has(userId)) clients.set(userId, new Set());
-        clients.get(userId).add(ws);
-        ws.send(JSON.stringify({ event: events.AUTHENTICATED, data: { userId, role: userRole } }));
-      }
-    } catch (e) {
-      ws.send(JSON.stringify({ event: events.ERROR, data: { message: 'Authentication failed' } }));
-    }
   });
 
   // Heartbeat to detect dead connections
@@ -82,7 +102,7 @@ function broadcastToUsers(userIds, event, data) {
 function broadcastToAll(event, data) {
   const payload = JSON.stringify({ event, data });
   wss?.clients.forEach((ws) => {
-    if (ws.readyState === 1) ws.send(payload);
+    if (ws.readyState === 1 && ws.isAuthenticated) ws.send(payload);
   });
 }
 

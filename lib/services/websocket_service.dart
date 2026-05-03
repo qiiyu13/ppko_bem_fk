@@ -40,7 +40,7 @@ class WebSocketService {
     try {
       final wsUrl = Env.wsBaseUrl;
 
-      _channel = WebSocketChannel.connect(Uri.parse('$wsUrl?token=$token'));
+      _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
 
       _channel!.stream.listen(
         (data) {
@@ -54,6 +54,12 @@ class WebSocketService {
           _handleDisconnect();
         },
       );
+
+      // Send auth as first message
+      _channel!.sink.add(jsonEncode({
+        'event': 'auth',
+        'data': {'token': token},
+      }));
 
       _isConnected = true;
       _connectionStatusController.add(true);
