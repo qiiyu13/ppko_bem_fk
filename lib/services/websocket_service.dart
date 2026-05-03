@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'api_service.dart';
+import '../config/env.dart';
 import 'token_service.dart';
 
 class WebSocketService {
@@ -12,11 +12,15 @@ class WebSocketService {
   bool _isConnected = false;
   bool get isConnected => _isConnected;
 
-  final _dataUpdateController = StreamController<Map<String, dynamic>>.broadcast();
-  Stream<Map<String, dynamic>> get dataUpdateStream => _dataUpdateController.stream;
+  final _dataUpdateController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get dataUpdateStream =>
+      _dataUpdateController.stream;
 
-  final _chatMessageController = StreamController<Map<String, dynamic>>.broadcast();
-  Stream<Map<String, dynamic>> get chatMessageStream => _chatMessageController.stream;
+  final _chatMessageController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get chatMessageStream =>
+      _chatMessageController.stream;
 
   final _connectionStatusController = StreamController<bool>.broadcast();
   Stream<bool> get connectionStatusStream => _connectionStatusController.stream;
@@ -34,14 +38,9 @@ class WebSocketService {
     if (token == null) return;
 
     try {
-      final wsUrl = ApiService.baseUrl
-          .replaceFirst('http://', 'ws://')
-          .replaceFirst('https://', 'wss://')
-          .replaceFirst('/api/v1', '/ws');
+      final wsUrl = Env.wsBaseUrl;
 
-      _channel = WebSocketChannel.connect(
-        Uri.parse('$wsUrl?token=$token'),
-      );
+      _channel = WebSocketChannel.connect(Uri.parse('$wsUrl?token=$token'));
 
       _channel!.stream.listen(
         (data) {
@@ -96,10 +95,12 @@ class WebSocketService {
 
   void sendChatMessage(String conversationId, String content) {
     if (_isConnected && _channel != null) {
-      _channel!.sink.add(jsonEncode({
-        'event': 'chat:message',
-        'data': {'conversationId': conversationId, 'content': content},
-      }));
+      _channel!.sink.add(
+        jsonEncode({
+          'event': 'chat:message',
+          'data': {'conversationId': conversationId, 'content': content},
+        }),
+      );
     }
   }
 
