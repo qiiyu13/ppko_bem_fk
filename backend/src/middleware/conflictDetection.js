@@ -14,7 +14,7 @@ const conflictDetection = (modelName, idParam = 'id') => async (req, res, next) 
     return next();
   }
 
-  const clientUpdatedAt = req.body?.updatedAt;
+  const clientUpdatedAt = req.body?.updatedAt || req.query?.updatedAt;
   if (!clientUpdatedAt) {
     return res.status(400).json({
       success: false,

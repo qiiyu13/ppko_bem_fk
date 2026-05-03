@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const controller = require('./profiles.controller');
 const authenticate = require('../../middleware/auth');
 const validate = require('../../middleware/validate');
+const conflictDetection = require('../../middleware/conflictDetection');
 
 router.use(authenticate);
 
@@ -22,9 +23,13 @@ router.put('/:id', [
   body('nik').optional().isString().notEmpty(),
   body('gender').optional().isIn(['pria', 'wanita']),
   body('birthDate').optional().isISO8601(),
+  body('updatedAt').isISO8601().withMessage('updatedAt is required for conflict detection'),
   validate,
-], controller.updateProfile);
+], conflictDetection('familyProfile'), controller.updateProfile);
 
-router.delete('/:id', controller.deleteProfile);
+router.delete('/:id', [
+  body('updatedAt').isISO8601().withMessage('updatedAt is required for conflict detection'),
+  validate,
+], conflictDetection('familyProfile'), controller.deleteProfile);
 
 module.exports = router;
