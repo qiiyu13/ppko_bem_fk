@@ -130,6 +130,37 @@ All endpoints are prefixed with `/api/v1`.
 
 ---
 
+## Conflict Detection
+
+All `PUT` and `DELETE` endpoints now require an `updatedAt` field in the request body (ISO 8601 format). This enables **optimistic locking** — if the record was modified by another user since you last fetched it, the server returns HTTP `409 CONFLICT` with the current server data.
+
+### How It Works
+1. Client fetches a record → receives data + `updatedAt` timestamp
+2. Client modifies and sends `PUT /resource/:id` with `{ ..., updatedAt: "2026-05-03T10:00:00Z" }`
+3. Server compares client's `updatedAt` with the current database value
+4. If they match → update succeeds (200)
+5. If they differ → returns 409 with the current server data
+
+### Conflict Response
+```json
+{
+  "success": false,
+  "error": {
+    "code": "CONFLICT",
+    "message": "This record was modified by another user or device. Please review the current version."
+  },
+  "data": { /* current server record */ }
+}
+```
+
+### Client Handling
+The Flutter app intercepts 409 responses and shows a conflict resolution dialog allowing users to:
+- **Use Server** — discard local changes, reload server data
+- **Overwrite** — force local changes (sends current `updatedAt`)
+- **Cancel** — keep both versions for manual review
+
+---
+
 ## Default Credentials (after seed)
 
 | Role | KK Number | Password |
