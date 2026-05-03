@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const controller = require('./appointments.controller');
 const authenticate = require('../../middleware/auth');
 const validate = require('../../middleware/validate');
+const conflictDetection = require('../../middleware/conflictDetection');
 
 router.use(authenticate);
 
@@ -17,9 +18,13 @@ router.post('/', [
 router.put('/:id', [
   body('title').optional().isString().notEmpty(),
   body('date').optional().isISO8601(),
+  body('updatedAt').isISO8601().withMessage('updatedAt is required for conflict detection'),
   validate,
-], controller.updateAppointment);
+], conflictDetection('appointment'), controller.updateAppointment);
 
-router.delete('/:id', controller.deleteAppointment);
+router.delete('/:id', [
+  body('updatedAt').isISO8601().withMessage('updatedAt is required for conflict detection'),
+  validate,
+], conflictDetection('appointment'), controller.deleteAppointment);
 
 module.exports = router;

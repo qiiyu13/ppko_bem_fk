@@ -5,6 +5,7 @@ const usersController = require('./users.controller');
 const authenticate = require('../../middleware/auth');
 const authorize = require('../../middleware/roleGuard');
 const validate = require('../../middleware/validate');
+const conflictDetection = require('../../middleware/conflictDetection');
 
 router.use(authenticate, authorize('ADMIN', 'SUPERADMIN'));
 
@@ -21,7 +22,15 @@ router.post('/users', [
   body('role').optional().isIn(['ADMIN', 'SUPERADMIN', 'PATIENT']),
   validate,
 ], usersController.createUser);
-router.put('/users/:id', usersController.updateUser);
-router.delete('/users/:id', usersController.deleteUser);
+
+router.put('/users/:id', [
+  body('updatedAt').isISO8601().withMessage('updatedAt is required for conflict detection'),
+  validate,
+], conflictDetection('user'), usersController.updateUser);
+
+router.delete('/users/:id', [
+  body('updatedAt').isISO8601().withMessage('updatedAt is required for conflict detection'),
+  validate,
+], conflictDetection('user'), usersController.deleteUser);
 
 module.exports = router;

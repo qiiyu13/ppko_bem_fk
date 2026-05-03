@@ -4,6 +4,7 @@ const controller = require('./articles.controller');
 const authenticate = require('../../middleware/auth');
 const authorize = require('../../middleware/roleGuard');
 const validate = require('../../middleware/validate');
+const conflictDetection = require('../../middleware/conflictDetection');
 
 // Public routes
 router.get('/', controller.getPublishedArticles);
@@ -18,8 +19,19 @@ router.post('/admin', authenticate, authorize('ADMIN', 'SUPERADMIN'), [
   validate,
 ], controller.createArticle);
 
-router.put('/admin/:id', authenticate, authorize('ADMIN', 'SUPERADMIN'), controller.updateArticle);
-router.delete('/admin/:id', authenticate, authorize('ADMIN', 'SUPERADMIN'), controller.deleteArticle);
-router.patch('/admin/:id/publish', authenticate, authorize('ADMIN', 'SUPERADMIN'), controller.publishArticle);
+router.put('/admin/:id', authenticate, authorize('ADMIN', 'SUPERADMIN'), [
+  body('updatedAt').isISO8601().withMessage('updatedAt is required for conflict detection'),
+  validate,
+], conflictDetection('article'), controller.updateArticle);
+
+router.delete('/admin/:id', authenticate, authorize('ADMIN', 'SUPERADMIN'), [
+  body('updatedAt').isISO8601().withMessage('updatedAt is required for conflict detection'),
+  validate,
+], conflictDetection('article'), controller.deleteArticle);
+
+router.patch('/admin/:id/publish', authenticate, authorize('ADMIN', 'SUPERADMIN'), [
+  body('updatedAt').isISO8601().withMessage('updatedAt is required for conflict detection'),
+  validate,
+], conflictDetection('article'), controller.publishArticle);
 
 module.exports = router;
