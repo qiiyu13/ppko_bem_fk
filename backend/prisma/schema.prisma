@@ -52,6 +52,7 @@ model FamilyProfile {
   screenings MedicalScreening[] @relation("PatientProfile")
   appointments Appointment[]
 
+  @@index([userId])
   @@map("family_profiles")
 }
 
@@ -69,6 +70,9 @@ model HealthMetric {
 
   profile FamilyProfile @relation(fields: [profileId], references: [id])
 
+  @@index([profileId])
+  @@index([type])
+  @@index([recordedAt])
   @@map("health_metrics")
 }
 
@@ -93,6 +97,10 @@ model MedicalScreening {
   profile  FamilyProfile @relation("PatientProfile", fields: [profileId], references: [id])
   screener User          @relation("Screener", fields: [screenedBy], references: [id])
 
+  @@index([profileId])
+  @@index([screenedBy])
+  @@index([irdCategory])
+  @@index([screeningAt])
   @@map("medical_screenings")
 }
 
@@ -111,6 +119,9 @@ model Appointment {
   user    User           @relation(fields: [userId], references: [id])
   profile FamilyProfile? @relation(fields: [profileId], references: [id])
 
+  @@index([userId])
+  @@index([profileId])
+  @@index([date])
   @@map("appointments")
 }
 
@@ -129,6 +140,9 @@ model Article {
 
   author User @relation("Author", fields: [authorId], references: [id])
 
+  @@index([authorId])
+  @@index([isPublished])
+  @@index([publishDate])
   @@map("articles")
 }
 
@@ -161,6 +175,7 @@ model Resident {
 
   region Region @relation(fields: [regionId], references: [id])
 
+  @@index([regionId])
   @@map("residents")
 }
 
@@ -173,6 +188,8 @@ model ChatConversation {
   user     User          @relation(fields: [userId], references: [id])
   messages ChatMessage[]
 
+  @@index([userId])
+  @@index([lastActivityAt])
   @@map("chat_conversations")
 }
 
@@ -186,5 +203,7 @@ model ChatMessage {
 
   conversation ChatConversation @relation(fields: [conversationId], references: [id])
 
+  @@index([conversationId])
+  @@index([createdAt])
   @@map("chat_messages")
 }
