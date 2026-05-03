@@ -44,7 +44,7 @@ const createArticle = async (data, authorId) => {
       publishDate: isPublished ? new Date() : null,
     },
   });
-  try { broadcastToAll(events.DATA_UPDATE, { type: 'articles', action: 'create', id: result.id }); } catch (e) {}
+  try { broadcastToAll(events.DATA_UPDATE, { type: 'articles', action: 'create', id: result.id }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
   return result;
 };
 
@@ -61,13 +61,13 @@ const updateArticle = async (id, data) => {
     where: { id },
     data: updateData,
   });
-  try { broadcastToAll(events.DATA_UPDATE, { type: 'articles', action: 'update', id }); } catch (e) {}
+  try { broadcastToAll(events.DATA_UPDATE, { type: 'articles', action: 'update', id }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
   return result;
 };
 
 const deleteArticle = async (id) => {
   await prisma.article.delete({ where: { id } });
-  try { broadcastToAll(events.DATA_UPDATE, { type: 'articles', action: 'delete', id }); } catch (e) {}
+  try { broadcastToAll(events.DATA_UPDATE, { type: 'articles', action: 'delete', id }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
   return { message: 'Article deleted successfully' };
 };
 
@@ -76,7 +76,7 @@ const publishArticle = async (id) => {
     where: { id },
     data: { isPublished: true, isDraft: false, publishDate: new Date() },
   });
-  try { broadcastToAll(events.DATA_UPDATE, { type: 'articles', action: 'publish', id }); } catch (e) {}
+  try { broadcastToAll(events.DATA_UPDATE, { type: 'articles', action: 'publish', id }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
   return result;
 };
 

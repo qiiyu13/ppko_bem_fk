@@ -46,7 +46,7 @@ const createScreening = async (data, userId) => {
       screeningAt: data.screeningAt ? new Date(data.screeningAt) : new Date(),
     },
   });
-  try { broadcastToUsers([profile.userId], events.DATA_UPDATE, { type: 'screenings', action: 'create', profileId: result.profileId }); } catch (e) {}
+  try { broadcastToUsers([profile.userId], events.DATA_UPDATE, { type: 'screenings', action: 'create', profileId: result.profileId }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
   return result;
 };
 

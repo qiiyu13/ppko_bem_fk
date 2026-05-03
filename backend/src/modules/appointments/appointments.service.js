@@ -24,7 +24,7 @@ const createAppointment = async (data, userId) => {
       type: data.type || 'GENERAL',
     },
   });
-  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'appointments', action: 'create', id: result.id }); } catch (e) {}
+  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'appointments', action: 'create', id: result.id }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
   return result;
 };
 
@@ -45,7 +45,7 @@ const updateAppointment = async (id, data, userId) => {
     where: { id },
     data: updateData,
   });
-  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'appointments', action: 'update', id }); } catch (e) {}
+  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'appointments', action: 'update', id }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
   return result;
 };
 
@@ -56,7 +56,7 @@ const deleteAppointment = async (id, userId) => {
   if (!appointment) throw Object.assign(new Error('Appointment not found'), { statusCode: 404 });
 
   await prisma.appointment.delete({ where: { id } });
-  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'appointments', action: 'delete', id }); } catch (e) {}
+  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'appointments', action: 'delete', id }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
   return { message: 'Appointment deleted successfully' };
 };
 

@@ -31,7 +31,7 @@ const createProfile = async (data, userId) => {
       phone: data.phone || null,
     },
   });
-  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'profiles', action: 'create', id: result.id }); } catch (e) {}
+  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'profiles', action: 'create', id: result.id }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
   return result;
 };
 
@@ -52,7 +52,7 @@ const updateProfile = async (id, data, userId) => {
     where: { id },
     data: updateData,
   });
-  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'profiles', action: 'update', id }); } catch (e) {}
+  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'profiles', action: 'update', id }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
   return result;
 };
 
@@ -63,7 +63,7 @@ const deleteProfile = async (id, userId) => {
   // Delete associated screenings
   await prisma.medicalScreening.deleteMany({ where: { profileId: id } });
   await prisma.familyProfile.delete({ where: { id } });
-  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'profiles', action: 'delete', id }); } catch (e) {}
+  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'profiles', action: 'delete', id }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
   return { message: 'Profile deleted successfully' };
 };
 
