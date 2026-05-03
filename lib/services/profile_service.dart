@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:uuid/uuid.dart';
+import '../exceptions/sync_conflict_exception.dart';
 import '../models/family_profile.dart';
 import 'api_service.dart';
 import 'auth_service.dart';
@@ -141,7 +142,10 @@ class ProfileService {
 
   Future<void> updateProfile(FamilyProfile profile) async {
     try {
-      await ApiService.put('/profiles/${profile.id}', data: profile.toMap());
+      await ApiService.put('/profiles/${profile.id}', data: {
+        ...profile.toMap(),
+        'updatedAt': profile.updatedAt.toIso8601String(),
+      });
       final index = _profiles.indexWhere((p) => p.id == profile.id);
       if (index != -1) {
         _profiles[index] = profile;
@@ -152,21 +156,32 @@ class ProfileService {
         _activeProfileController.add(_activeProfile);
       }
       await CacheService.saveProfile(profile.id, profile.toJson());
+    } on SyncConflictException catch (e) {
+      rethrow;
     } catch (e) {
       final index = _profiles.indexWhere((p) => p.id == profile.id);
       if (index != -1) {
         _profiles[index] = profile;
         _profilesController.add(List.unmodifiable(_profiles));
       }
-      await CacheService.queueSync('/profiles/${profile.id}', 'PUT', profile.toMap());
+      await CacheService.queueSync('/profiles/${profile.id}', 'PUT', {
+        ...profile.toMap(),
+        'updatedAt': profile.updatedAt.toIso8601String(),
+      });
     }
   }
 
-  Future<void> deleteProfile(String id) async {
+  Future<void> deleteProfile(String id, DateTime updatedAt) async {
     try {
-      await ApiService.delete('/profiles/$id');
+      await ApiService.delete('/profiles/$id', data: {
+        'updatedAt': updatedAt.toIso8601String(),
+      });
+    } on SyncConflictException catch (e) {
+      rethrow;
     } catch (e) {
-      await CacheService.queueSync('/profiles/$id', 'DELETE', {});
+      await CacheService.queueSync('/profiles/$id', 'DELETE', {
+        'updatedAt': updatedAt.toIso8601String(),
+      });
     }
     _profiles.removeWhere((p) => p.id == id);
     _profilesController.add(List.unmodifiable(_profiles));
