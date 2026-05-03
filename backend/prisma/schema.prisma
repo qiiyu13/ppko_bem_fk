@@ -45,6 +45,7 @@ model FamilyProfile {
   bloodType String?  @map("blood_type")
   phone     String?
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   user    User              @relation(fields: [userId], references: [id])
   metrics HealthMetric[]
@@ -63,6 +64,7 @@ model HealthMetric {
   notes          String?
   recordedAt     DateTime @map("recorded_at")
   createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   profile FamilyProfile @relation(fields: [profileId], references: [id])
 
@@ -85,6 +87,7 @@ model MedicalScreening {
   notes       String?
   screeningAt DateTime @map("screening_at")
   createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   profile  FamilyProfile @relation("PatientProfile", fields: [profileId], references: [id])
   screener User          @relation("Screener", fields: [screenedBy], references: [id])
@@ -102,6 +105,7 @@ model Appointment {
   notes     String?
   type      String   @default("GENERAL")
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   user    User           @relation(fields: [userId], references: [id])
 
@@ -132,6 +136,7 @@ model Region {
   name      String
   parentId  String?  @map("parent_id")
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   parent    Region?    @relation("RegionHierarchy", fields: [parentId], references: [id])
   children  Region[]   @relation("RegionHierarchy")
@@ -150,6 +155,7 @@ model Resident {
   phone     String?
   address   String?
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   region Region @relation(fields: [regionId], references: [id])
 
@@ -174,6 +180,7 @@ model ChatMessage {
   content        String
   role           String
   createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   conversation ChatConversation @relation(fields: [conversationId], references: [id])
 
