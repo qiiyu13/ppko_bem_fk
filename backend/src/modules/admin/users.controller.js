@@ -16,7 +16,7 @@ const createUser = async (req, res, next) => {
     const user = await usersService.createUser(req.body);
     return success(res, user, 'User created successfully', 201);
   } catch (err) {
-    if (err.code === 'P2002') return error(res, 'NIK already registered', 409, 'CONFLICT');
+    if (err.code === 'P2002') return error(res, 'KK number already registered', 409, 'CONFLICT');
     next(err);
   }
 };

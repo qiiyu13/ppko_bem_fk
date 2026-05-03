@@ -8,8 +8,9 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10 }) => {
 
   if (search) {
     where.OR = [
-      { name: { contains: search, mode: 'insensitive' } },
-      { nik: { contains: search, mode: 'insensitive' } },
+      { responsibleName: { contains: search, mode: 'insensitive' } },
+      { kkNumber: { contains: search, mode: 'insensitive' } },
+      { familyProfiles: { some: { name: { contains: search, mode: 'insensitive' } } } },
     ];
   }
 
@@ -41,9 +42,8 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10 }) => {
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
-        nik: true,
-        name: true,
-        gender: true,
+        kkNumber: true,
+        responsibleName: true,
         phone: true,
         createdAt: true,
         familyProfiles: {
@@ -69,9 +69,8 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10 }) => {
 
     return {
       id: user.id,
-      nik: user.nik,
-      name: user.name,
-      gender: user.gender,
+      kkNumber: user.kkNumber,
+      responsibleName: user.responsibleName,
       phone: user.phone,
       createdAt: user.createdAt,
       latestIrd: latest || null,
@@ -86,12 +85,8 @@ const getPatientDetail = async (id) => {
     where: { id, role: 'PATIENT' },
     select: {
       id: true,
-      nik: true,
-      name: true,
-      gender: true,
-      birthDate: true,
-      bloodType: true,
-      address: true,
+      kkNumber: true,
+      responsibleName: true,
       phone: true,
       createdAt: true,
       familyProfiles: {
@@ -99,7 +94,7 @@ const getPatientDetail = async (id) => {
           metrics: { orderBy: { recordedAt: 'desc' } },
           screenings: {
             orderBy: { screeningAt: 'desc' },
-            include: { screener: { select: { name: true } } },
+            include: { screener: { select: { responsibleName: true } } },
           },
         },
       },
