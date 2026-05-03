@@ -1,6 +1,55 @@
+const prisma = require('../utils/prisma');
+const OpenAI = require('openai');
 const events = require('./events');
 
-const prisma = require('../utils/prisma');
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
+
+const SYSTEM_PROMPT = `Kamu adalah asisten kesehatan digital untuk Posyandu/Puskesmas di Indonesia. 
+Namamu MediBot. Tugasmu adalah memberikan informasi kesehatan umum, tips pola hidup sehat, 
+dan menjawab pertanyaan seputar kesehatan keluarga. 
+Kamu BUKAN pengganti dokter. Selalu sarankan untuk berkonsultasi dengan tenaga medis profesional 
+untuk diagnosis atau pengobatan. Jawab dalam Bahasa Indonesia yang mudah dipahami.`;
+
+async function getChatHistory(conversationId, limit = 20) {
+  const messages = await prisma.chatMessage.findMany({
+    where: { conversationId },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  });
+  return messages.reverse().map((m) => ({
+    role: m.role === 'user' ? 'user' : 'assistant',
+    content: m.content,
+  }));
+}
+
+async function generateAIResponse(conversationId, userContent) {
+  if (!openai) {
+    return 'Maaf, fitur AI belum dikonfigurasi. Silakan hubungi admin untuk mengaktifkan asisten AI.';
+  }
+
+  try {
+    const history = await getChatHistory(conversationId);
+    const messages = [
+      { role: 'system', content: SYSTEM_PROMPT },
+      ...history,
+      { role: 'user', content: userContent },
+    ];
+
+    const completion = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      messages,
+      max_tokens: 500,
+      temperature: 0.7,
+    });
+
+    return completion.choices[0].message.content;
+  } catch (err) {
+    console.error('OpenAI API error:', err.message);
+    return 'Maaf, terjadi kesalahan saat menghubungi asisten AI. Silakan coba lagi nanti.';
+  }
+}
 
 async function handleChatMessage(ws, data, userId) {
   const { conversationId, content } = data;
@@ -38,7 +87,7 @@ async function handleChatMessage(ws, data, userId) {
   }));
 
   // Generate AI response
-  const aiContent = `Terima kasih atas pertanyaan Anda. Saya mencatat: "${content}". Fitur AI akan segera tersedia.`;
+  const aiContent = await generateAIResponse(conversationId, content);
 
   const assistantMessage = await prisma.chatMessage.create({
     data: { conversationId, content: aiContent, role: 'assistant' },
