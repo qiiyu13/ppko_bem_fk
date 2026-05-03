@@ -41,9 +41,11 @@ router.post('/forgot-password', [forgotPasswordLimiter,
 
 router.post('/reset-password', [
   body('kkNumber').isString().matches(/^\d{16}$/),
-  body('resetCode').isString().isLength({ min: 6, max: 6 }),
+  body('firebaseToken').isString().notEmpty(),
   body('newPassword').isString().isLength({ min: 6 }),
   validate,
 ], controller.resetPassword);
+
+router.post('/logout', authenticate, controller.logout);
 
 module.exports = router;

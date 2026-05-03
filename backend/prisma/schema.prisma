@@ -207,3 +207,15 @@ model ChatMessage {
   @@index([createdAt])
   @@map("chat_messages")
 }
+
+model PasswordReset {
+  id          String    @id @default(uuid())
+  kkNumber    String    @unique @map("kk_number") @db.VarChar(16)
+  code        String
+  expiresAt   DateTime  @map("expires_at")
+  attempts    Int       @default(0)
+  lockedUntil DateTime? @map("locked_until")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@map("password_resets")
+}

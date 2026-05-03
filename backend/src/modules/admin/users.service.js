@@ -9,7 +9,7 @@ const getUsers = async (role) => {
   return prisma.user.findMany({
     where,
     orderBy: { createdAt: 'desc' },
-    select: { id: true, kkNumber: true, responsibleName: true, role: true, isActive: true, createdAt: true },
+    select: { id: true, kkNumber: true, responsibleName: true, role: true, isActive: true, createdAt: true, updatedAt: true },
   });
 };
 
@@ -47,7 +47,34 @@ const updateUser = async (id, data) => {
 };
 
 const deleteUser = async (id) => {
-  await prisma.user.delete({ where: { id } });
+  const user = await prisma.user.findUnique({
+    where: { id },
+    include: {
+      conversations: { select: { id: true } },
+      familyProfiles: { select: { id: true } },
+    },
+  });
+  if (!user) throw Object.assign(new Error('User not found'), { code: 'P2025' });
+
+  await prisma.$transaction(async (tx) => {
+    for (const conv of user.conversations) {
+      await tx.chatMessage.deleteMany({ where: { conversationId: conv.id } });
+    }
+    await tx.chatConversation.deleteMany({ where: { userId: id } });
+
+    for (const profile of user.familyProfiles) {
+      await tx.medicalScreening.deleteMany({ where: { profileId: profile.id } });
+      await tx.healthMetric.deleteMany({ where: { profileId: profile.id } });
+    }
+    await tx.familyProfile.deleteMany({ where: { userId: id } });
+
+    await tx.appointment.deleteMany({ where: { userId: id } });
+
+    await tx.article.deleteMany({ where: { authorId: id } });
+
+    await tx.user.delete({ where: { id } });
+  });
+
   return { message: 'User deleted successfully' };
 };
 

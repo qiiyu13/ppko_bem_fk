@@ -1,10 +1,10 @@
 const chatService = require('./chat.service');
-const { success, error } = require('../../utils/response');
+const { success, error, paginated } = require('../../utils/response');
 
 const getConversations = async (req, res, next) => {
   try {
-    const conversations = await chatService.getConversations(req.user.id);
-    return success(res, conversations);
+    const result = await chatService.getConversations(req.user.id, req.query);
+    return paginated(res, result.data, result.total, result.page, result.limit);
   } catch (err) {
     next(err);
   }
@@ -31,7 +31,7 @@ const getMessages = async (req, res, next) => {
 
 const sendMessage = async (req, res, next) => {
   try {
-    const message = await chatService.sendMessage(req.params.id, req.body.content, req.body.role, req.user.id);
+    const message = await chatService.sendMessage(req.params.id, req.body.content, req.user.id);
     return success(res, message, 'Message sent successfully', 201);
   } catch (err) {
     if (err.message === 'Conversation not found') return error(res, err.message, 404, 'NOT_FOUND');

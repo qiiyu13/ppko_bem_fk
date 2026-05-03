@@ -1,17 +1,24 @@
 const prisma = require('../../utils/prisma');
+const { parsePagination } = require('../../utils/pagination');
 
-const getConversations = async (userId) => {
-  return prisma.chatConversation.findMany({
-    where: { userId },
-    orderBy: { lastActivityAt: 'desc' },
-    include: {
-      messages: {
-        orderBy: { createdAt: 'desc' },
-        take: 1,
-        select: { content: true, role: true, createdAt: true },
+const getConversations = async (userId, query) => {
+  const { page, limit, skip } = parsePagination(query);
+  const where = { userId };
+  const [data, total] = await Promise.all([
+    prisma.chatConversation.findMany({
+      where, skip, take: limit,
+      orderBy: { lastActivityAt: 'desc' },
+      include: {
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { content: true, role: true, createdAt: true },
+        },
       },
-    },
-  });
+    }),
+    prisma.chatConversation.count({ where }),
+  ]);
+  return { data, total, page, limit };
 };
 
 const createConversation = async (userId) => {
@@ -32,7 +39,7 @@ const getMessages = async (conversationId, userId) => {
   });
 };
 
-const sendMessage = async (conversationId, content, role, userId) => {
+const sendMessage = async (conversationId, content, userId) => {
   const conversation = await prisma.chatConversation.findFirst({
     where: { id: conversationId, userId },
   });
@@ -42,7 +49,7 @@ const sendMessage = async (conversationId, content, role, userId) => {
     data: {
       conversationId,
       content,
-      role: role || 'user',
+      role: 'user',
     },
   });
 };

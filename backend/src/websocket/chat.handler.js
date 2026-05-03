@@ -1,6 +1,7 @@
 const prisma = require('../utils/prisma');
 const OpenAI = require('openai');
 const events = require('./events');
+const logger = require('../../utils/logger');
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -46,7 +47,7 @@ async function generateAIResponse(conversationId, userContent) {
 
     return completion.choices[0].message.content;
   } catch (err) {
-    console.error('OpenAI API error:', err.message);
+    logger.error({ err: err.message }, 'OpenAI API error');
     return 'Maaf, terjadi kesalahan saat menghubungi asisten AI. Silakan coba lagi nanti.';
   }
 }
@@ -121,7 +122,7 @@ async function handleChatMessage(ws, data, userId) {
       },
     }));
   } catch (err) {
-    console.error('Chat handler error:', err);
+    logger.error({ err }, 'Chat handler error');
     try {
       ws.send(JSON.stringify({ event: events.ERROR, data: { message: 'An error occurred processing your message' } }));
     } catch (sendErr) {

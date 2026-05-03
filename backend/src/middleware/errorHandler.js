@@ -1,10 +1,9 @@
 const { error } = require('../utils/response');
 const config = require('../config');
+const logger = require('../utils/logger');
 
 const errorHandler = (err, req, res, next) => {
-  if (config.nodeEnv !== 'test') {
-    console.error('Error:', err);
-  }
+  logger.error({ err }, 'Unhandled error');
 
   // Prisma unique constraint violation
   if (err.code === 'P2002') {

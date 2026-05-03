@@ -12,8 +12,17 @@ const app = express();
 
 // Security
 app.use(helmet());
+if (config.nodeEnv === 'production') {
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] !== 'https') {
+      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+    next();
+  });
+}
 if (config.nodeEnv === 'production' && config.corsOrigin === '*') {
-  console.warn('WARNING: CORS_ORIGIN is set to "*" in production. Restrict this to your app domain.');
+  console.error('FATAL: CORS_ORIGIN cannot be "*" in production. Set CORS_ORIGIN environment variable to your app domain.');
+  process.exit(1);
 }
 app.use(cors({
   origin: config.corsOrigin,

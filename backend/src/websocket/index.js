@@ -4,6 +4,21 @@ const events = require('./events');
 
 let wss;
 const clients = new Map();
+const messageRateLimits = new Map(); // userId -> { count, resetAt }
+const WS_RATE_LIMIT = 20; // max messages per window
+const WS_RATE_WINDOW = 60 * 1000; // 1 minute window
+
+function checkWsRateLimit(userId) {
+  const now = Date.now();
+  const record = messageRateLimits.get(userId) || { count: 0, resetAt: now + WS_RATE_WINDOW };
+  if (now > record.resetAt) {
+    record.count = 0;
+    record.resetAt = now + WS_RATE_WINDOW;
+  }
+  record.count++;
+  messageRateLimits.set(userId, record);
+  return record.count <= WS_RATE_LIMIT;
+}
 
 function initWebSocketServer(server) {
   wss = new WebSocketServer({ server, path: '/ws' });
@@ -56,7 +71,13 @@ function initWebSocketServer(server) {
         const { handleChatMessage } = require('./chat.handler');
         switch (message.event) {
           case events.CHAT_MESSAGE:
-            if (userId) handleChatMessage(ws, message.data, userId);
+            if (userId) {
+              if (!checkWsRateLimit(userId)) {
+                ws.send(JSON.stringify({ event: events.ERROR, data: { message: 'Rate limit exceeded. Please wait before sending more messages.' } }));
+                return;
+              }
+              handleChatMessage(ws, message.data, userId);
+            }
             break;
           default:
             break;
@@ -71,6 +92,9 @@ function initWebSocketServer(server) {
       if (userId && clients.has(userId)) {
         clients.get(userId).delete(ws);
         if (clients.get(userId).size === 0) clients.delete(userId);
+      }
+      if (userId && !clients.has(userId)) {
+        messageRateLimits.delete(userId);
       }
     });
   });

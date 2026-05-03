@@ -12,7 +12,6 @@ router.post('/conversations', controller.createConversation);
 router.get('/conversations/:id/messages', controller.getMessages);
 router.post('/conversations/:id/messages', [
   body('content').isString().notEmpty(),
-  body('role').optional().isIn(['user', 'assistant']),
   validate,
 ], controller.sendMessage);
 

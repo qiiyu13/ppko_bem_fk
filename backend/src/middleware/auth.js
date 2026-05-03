@@ -1,5 +1,6 @@
 const { verifyToken } = require('../utils/jwt');
 const { error } = require('../utils/response');
+const { isBlacklisted } = require('../modules/auth/tokenBlacklist');
 
 const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -9,6 +10,10 @@ const authenticate = (req, res, next) => {
   }
 
   const token = authHeader.split(' ')[1];
+
+  if (isBlacklisted(token)) {
+    return error(res, 'Token has been revoked', 401, 'TOKEN_REVOKED');
+  }
 
   try {
     const decoded = verifyToken(token);

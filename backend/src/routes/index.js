@@ -1,8 +1,14 @@
 const router = require('express').Router();
+const prisma = require('../utils/prisma');
 
 // Health check
-router.get('/health', (req, res) => {
-  res.json({ success: true, message: 'OK', timestamp: new Date().toISOString() });
+router.get('/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ success: true, message: 'OK', timestamp: new Date().toISOString(), database: 'connected' });
+  } catch (err) {
+    res.status(503).json({ success: false, message: 'Service degraded', database: 'disconnected', timestamp: new Date().toISOString() });
+  }
 });
 
 // Mount modules
