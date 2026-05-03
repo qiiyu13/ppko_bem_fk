@@ -1,17 +1,27 @@
 import 'api_service.dart';
+import 'cache_service.dart';
 
 class ScreeningService {
   static Future<Map<String, dynamic>> getStats() async {
-    final response = await ApiService.get('/screenings/stats');
-    return response.data['data'] as Map<String, dynamic>;
+    try {
+      final response = await ApiService.get('/screenings/stats');
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      return {'total': 0, 'byCategory': {}};
+    }
   }
 
   static Future<List<Map<String, dynamic>>> getScreenings({String? profileId}) async {
     final queryParams = <String, dynamic>{};
     if (profileId != null) queryParams['profileId'] = profileId;
-    final response = await ApiService.get('/screenings', queryParameters: queryParams);
-    final List<dynamic> data = response.data['data'] ?? [];
-    return data.cast<Map<String, dynamic>>();
+
+    try {
+      final response = await ApiService.get('/screenings', queryParameters: queryParams);
+      final List<dynamic> data = response.data['data'] ?? [];
+      return data.cast<Map<String, dynamic>>();
+    } catch (e) {
+      return [];
+    }
   }
 
   static Future<Map<String, dynamic>> createScreening({
@@ -25,7 +35,7 @@ class ScreeningService {
     double? weight,
     String? notes,
   }) async {
-    final response = await ApiService.post('/screenings', data: {
+    final requestData = <String, dynamic>{
       'profileId': profileId,
       'systolic': systolic,
       'diastolic': diastolic,
@@ -35,7 +45,18 @@ class ScreeningService {
       if (height != null) 'height': height,
       if (weight != null) 'weight': weight,
       if (notes != null) 'notes': notes,
-    });
-    return response.data['data'] as Map<String, dynamic>;
+    };
+
+    try {
+      final response = await ApiService.post('/screenings', data: requestData);
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      await CacheService.queueSync('/screenings', 'POST', requestData);
+      return <String, dynamic>{
+        'id': 'local_${DateTime.now().millisecondsSinceEpoch}',
+        ...requestData,
+        'synced': false,
+      };
+    }
   }
 }

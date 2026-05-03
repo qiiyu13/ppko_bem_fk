@@ -1,22 +1,44 @@
 import 'api_service.dart';
+import 'cache_service.dart';
 import '../models/tanaman_article.dart';
 
 class ArticleService {
   static Future<List<TanamanArticle>> getPublishedArticles() async {
-    final response = await ApiService.get('/articles');
-    final List<dynamic> data = response.data['data'] ?? [];
-    return data.map((json) => TanamanArticle.fromApi(json as Map<String, dynamic>)).toList();
+    try {
+      final response = await ApiService.get('/articles');
+      final List<dynamic> data = response.data['data'] ?? [];
+      final articles = data.map((json) => TanamanArticle.fromApi(json as Map<String, dynamic>)).toList();
+      await CacheService.saveArticles(articles.map((a) => a.toMap()).toList());
+      return articles;
+    } catch (e) {
+      final cached = await CacheService.getArticles();
+      return cached.map((m) => TanamanArticle.fromMap(m)).toList();
+    }
   }
 
   static Future<TanamanArticle> getArticle(String id) async {
-    final response = await ApiService.get('/articles/$id');
-    return TanamanArticle.fromApi(response.data['data'] as Map<String, dynamic>);
+    try {
+      final response = await ApiService.get('/articles/$id');
+      return TanamanArticle.fromApi(response.data['data'] as Map<String, dynamic>);
+    } catch (e) {
+      final cached = await CacheService.getArticles();
+      return cached
+          .map((m) => TanamanArticle.fromMap(m))
+          .firstWhere((a) => a.id == id, orElse: () => throw Exception('Article not found in cache'));
+    }
   }
 
   static Future<List<TanamanArticle>> getAllArticles() async {
-    final response = await ApiService.get('/articles/admin/all');
-    final List<dynamic> data = response.data['data'] ?? [];
-    return data.map((json) => TanamanArticle.fromApi(json as Map<String, dynamic>)).toList();
+    try {
+      final response = await ApiService.get('/articles/admin/all');
+      final List<dynamic> data = response.data['data'] ?? [];
+      final articles = data.map((json) => TanamanArticle.fromApi(json as Map<String, dynamic>)).toList();
+      await CacheService.saveArticles(articles.map((a) => a.toMap()).toList());
+      return articles;
+    } catch (e) {
+      final cached = await CacheService.getArticles();
+      return cached.map((m) => TanamanArticle.fromMap(m)).toList();
+    }
   }
 
   static Future<TanamanArticle> createArticle({
@@ -27,15 +49,33 @@ class ArticleService {
     bool isDraft = true,
     bool isPublished = false,
   }) async {
-    final response = await ApiService.post('/articles/admin', data: {
+    final requestData = <String, dynamic>{
       'title': title,
       'content': content,
       if (imagePath != null) 'imagePath': imagePath,
       if (tags != null) 'tags': tags,
       'isDraft': isDraft,
       'isPublished': isPublished,
-    });
-    return TanamanArticle.fromApi(response.data['data'] as Map<String, dynamic>);
+    };
+
+    try {
+      final response = await ApiService.post('/articles/admin', data: requestData);
+      return TanamanArticle.fromApi(response.data['data'] as Map<String, dynamic>);
+    } catch (e) {
+      await CacheService.queueSync('/articles/admin', 'POST', requestData);
+      return TanamanArticle(
+        id: 'local_${DateTime.now().millisecondsSinceEpoch}',
+        title: title,
+        content: content,
+        imagePath: imagePath ?? '',
+        publishDate: DateTime.now(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        tags: tags ?? [],
+        isDraft: isDraft,
+        isPublished: isPublished,
+      );
+    }
   }
 
   static Future<TanamanArticle> updateArticle(String id, {
@@ -47,7 +87,7 @@ class ArticleService {
     bool? isPublished,
     required DateTime updatedAt,
   }) async {
-    final response = await ApiService.put('/articles/admin/$id', data: {
+    final requestData = <String, dynamic>{
       if (title != null) 'title': title,
       if (content != null) 'content': content,
       if (imagePath != null) 'imagePath': imagePath,
@@ -55,19 +95,49 @@ class ArticleService {
       if (isDraft != null) 'isDraft': isDraft,
       if (isPublished != null) 'isPublished': isPublished,
       'updatedAt': updatedAt.toIso8601String(),
-    });
-    return TanamanArticle.fromApi(response.data['data'] as Map<String, dynamic>);
+    };
+
+    try {
+      final response = await ApiService.put('/articles/admin/$id', data: requestData);
+      return TanamanArticle.fromApi(response.data['data'] as Map<String, dynamic>);
+    } catch (e) {
+      await CacheService.queueSync('/articles/admin/$id', 'PUT', requestData);
+      return TanamanArticle(
+        id: id,
+        title: title ?? '',
+        content: content ?? '',
+        imagePath: imagePath ?? '',
+        publishDate: DateTime.now(),
+        createdAt: DateTime.now(),
+        updatedAt: updatedAt,
+        tags: tags ?? [],
+        isDraft: isDraft ?? false,
+        isPublished: isPublished ?? false,
+      );
+    }
   }
 
   static Future<void> deleteArticle(String id, DateTime updatedAt) async {
-    await ApiService.delete('/articles/admin/$id', data: {
-      'updatedAt': updatedAt.toIso8601String(),
-    });
+    try {
+      await ApiService.delete('/articles/admin/$id', data: {
+        'updatedAt': updatedAt.toIso8601String(),
+      });
+    } catch (e) {
+      await CacheService.queueSync('/articles/admin/$id', 'DELETE', {
+        'updatedAt': updatedAt.toIso8601String(),
+      });
+    }
   }
 
   static Future<void> publishArticle(String id, DateTime updatedAt) async {
-    await ApiService.post('/articles/admin/$id/publish', data: {
-      'updatedAt': updatedAt.toIso8601String(),
-    });
+    try {
+      await ApiService.post('/articles/admin/$id/publish', data: {
+        'updatedAt': updatedAt.toIso8601String(),
+      });
+    } catch (e) {
+      await CacheService.queueSync('/articles/admin/$id/publish', 'POST', {
+        'updatedAt': updatedAt.toIso8601String(),
+      });
+    }
   }
 }
