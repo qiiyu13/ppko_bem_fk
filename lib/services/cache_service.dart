@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:dio/dio.dart';
 import 'api_service.dart';
 
 class CacheService {
@@ -165,8 +166,18 @@ class CacheService {
         await _db?.delete('pending_sync', where: 'id = ?', whereArgs: [item['id']]);
         synced++;
       } catch (e) {
-        // Skip failed items (e.g., 409 conflict, 404 deleted) to avoid blocking queue
-        await _db?.delete('pending_sync', where: 'id = ?', whereArgs: [item['id']]);
+        final statusCode = e is DioException ? e.response?.statusCode : null;
+        if (statusCode == 409) {
+          // Conflict - server has newer data, drop this sync item (server wins)
+          await _db?.delete('pending_sync', where: 'id = ?', whereArgs: [item['id']]);
+        } else if (statusCode == 404) {
+          // Resource deleted on server, drop this sync item
+          await _db?.delete('pending_sync', where: 'id = ?', whereArgs: [item['id']]);
+        } else if (statusCode == 401) {
+          // Auth expired, stop syncing - user needs to re-login
+          break;
+        }
+        // Other errors: keep item in queue for next sync attempt
       }
     }
     return synced;
