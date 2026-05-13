@@ -10,6 +10,7 @@ import '../../../models/health_metric.dart';
 import '../../../models/family_profile.dart';
 import '../../../services/profile_service.dart';
 import '../../../services/api_service.dart';
+import 'dart:async';
 import 'dart:math' as math;
 
 class MiniBarChart extends StatelessWidget {
@@ -66,19 +67,35 @@ class _HomeTabState extends State<HomeTab> {
   List<HealthMetric> _metrics = [];
   Map<String, dynamic>? _nextAppointment;
   bool _isLoading = true;
+  int _dataVersion = 0;
   String? _error;
+  StreamSubscription<FamilyProfile?>? _profileSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _profileSubscription = ProfileService.instance.activeProfileStream.listen((
+      _,
+    ) {
+      _loadData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _profileSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    final hasExistingData = _metrics.isNotEmpty;
+    if (!hasExistingData) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
 
     try {
       final profileId = ProfileService.instance.activeProfile?.id;
@@ -91,8 +108,14 @@ class _HomeTabState extends State<HomeTab> {
       }
 
       final results = await Future.wait([
-        ApiService.get('/metrics/latest', queryParameters: {'profileId': profileId}),
-        ApiService.get('/appointments', queryParameters: {'profileId': profileId}),
+        ApiService.get(
+          '/metrics/latest',
+          queryParameters: {'profileId': profileId},
+        ),
+        ApiService.get(
+          '/appointments',
+          queryParameters: {'profileId': profileId},
+        ),
       ]);
 
       final metricsResponse = results[0];
@@ -106,11 +129,29 @@ class _HomeTabState extends State<HomeTab> {
       final gender = profile?.gender ?? 'Pria';
 
       setState(() {
-        _metrics = metricsData.map((json) => _parseMetric(json as Map<String, dynamic>, age, gender)).toList();
+        _metrics = metricsData
+            .map(
+              (json) => _parseMetric(json as Map<String, dynamic>, age, gender),
+            )
+            .toList()
+          ..sort((a, b) {
+            const order = [
+              MetricType.bloodPressure,
+              MetricType.bloodSugar,
+              MetricType.cholesterol,
+              MetricType.uricAcid,
+            ];
+            return order.indexOf(a.type).compareTo(order.indexOf(b.type));
+          });
         if (appointmentsData.isNotEmpty) {
-          _nextAppointment = Map<String, dynamic>.from(appointmentsData.first as Map<String, dynamic>);
+          _nextAppointment = Map<String, dynamic>.from(
+            appointmentsData.first as Map<String, dynamic>,
+          );
         }
         _isLoading = false;
+        if (_metrics.isNotEmpty || !hasExistingData) {
+          _dataVersion++;
+        }
       });
     } catch (e) {
       setState(() {
@@ -124,8 +165,8 @@ class _HomeTabState extends State<HomeTab> {
     final type = _parseMetricType(json['type'] as String? ?? '');
     switch (type) {
       case MetricType.bloodPressure:
-        final systolic = (json['systolic'] as num?)?.toInt() ?? 120;
-        final diastolic = (json['diastolic'] as num?)?.toInt() ?? 80;
+        final systolic = (json['value'] as num?)?.toInt() ?? 120;
+        final diastolic = (json['secondaryValue'] as num?)?.toInt() ?? 80;
         return HealthMetric(
           type: type,
           name: 'Blood Pressure',
@@ -133,7 +174,11 @@ class _HomeTabState extends State<HomeTab> {
           unit: 'mmHg',
           displayValue: '$systolic/$diastolic',
           lastUpdated: _parseDate(json['lastUpdated']),
-          status: HealthMetricData.getBloodPressureStatus(systolic, diastolic, age),
+          status: HealthMetricData.getBloodPressureStatus(
+            systolic,
+            diastolic,
+            age,
+          ),
           icon: PhosphorIcons.heart(PhosphorIconsStyle.fill),
           primaryColor: const Color(0xFFE53935),
         );
@@ -181,11 +226,16 @@ class _HomeTabState extends State<HomeTab> {
 
   MetricType _parseMetricType(String type) {
     switch (type) {
-      case 'blood_pressure': return MetricType.bloodPressure;
-      case 'cholesterol': return MetricType.cholesterol;
-      case 'blood_sugar': return MetricType.bloodSugar;
-      case 'uric_acid': return MetricType.uricAcid;
-      default: return MetricType.bloodPressure;
+      case 'blood_pressure':
+        return MetricType.bloodPressure;
+      case 'cholesterol':
+        return MetricType.cholesterol;
+      case 'blood_sugar':
+        return MetricType.bloodSugar;
+      case 'uric_acid':
+        return MetricType.uricAcid;
+      default:
+        return MetricType.bloodPressure;
     }
   }
 
@@ -292,9 +342,8 @@ class _HomeTabState extends State<HomeTab> {
                             builder: (context, profilesSnapshot) {
                               final profiles = profilesSnapshot.data ?? [];
                               return StreamBuilder<FamilyProfile?>(
-                                stream: ProfileService
-                                    .instance
-                                    .activeProfileStream,
+                                stream:
+                                    ProfileService.instance.activeProfileStream,
                                 initialData:
                                     ProfileService.instance.activeProfile,
                                 builder: (context, activeSnapshot) {
@@ -312,8 +361,9 @@ class _HomeTabState extends State<HomeTab> {
                                               .withValues(alpha: 0.3),
                                           shape: BoxShape.circle,
                                           border: Border.all(
-                                            color: AppColors.primary
-                                                .withValues(alpha: 0.2),
+                                            color: AppColors.primary.withValues(
+                                              alpha: 0.2,
+                                            ),
                                             width: 2,
                                           ),
                                         ),
@@ -321,8 +371,8 @@ class _HomeTabState extends State<HomeTab> {
                                           child: Icon(
                                             activeProfile != null
                                                 ? _getGenderIcon(
-                                                  activeProfile.gender,
-                                                )
+                                                    activeProfile.gender,
+                                                  )
                                                 : Icons.person_outline,
                                             color: AppColors.primary,
                                             size: 24,
@@ -350,14 +400,13 @@ class _HomeTabState extends State<HomeTab> {
                                             GestureDetector(
                                               onTap:
                                                   activeProfile != null &&
-                                                          profiles.length > 1
-                                                      ? () =>
-                                                          _showProfileDropdown(
-                                                            context,
-                                                            activeProfile,
-                                                            profiles,
-                                                          )
-                                                      : null,
+                                                      profiles.length > 1
+                                                  ? () => _showProfileDropdown(
+                                                      context,
+                                                      activeProfile,
+                                                      profiles,
+                                                    )
+                                                  : null,
                                               child: Row(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
@@ -429,146 +478,171 @@ class _HomeTabState extends State<HomeTab> {
 
                   const SizedBox(height: 16),
 
-                  // Appointment Banner (conditional)
-                  if (showAppointmentBanner)
-                    Container(
-                      margin: EdgeInsets.symmetric(
-                        horizontal: math.max(ResponsiveSize.paddingMedium, 16),
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.textOnPrimary,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '$daysUntilAppointment hari menuju',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: AppColors.textSecondary,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    _nextAppointment?['title'] as String? ?? 'Janji Temu',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Image.asset(
-                              AssetHelper.getIllustrationPath('Mediana-banner.webp'),
-                              height: math.min(screenWidth * 0.22, 120),
-                              width: math.min(screenWidth * 0.22, 120),
-                              fit: BoxFit.contain,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                  if (showAppointmentBanner)
-                    SizedBox(height: ResponsiveSize.spacingMedium),
-
-                  // Metrics Grid Section
-                  Container(
-                    margin: EdgeInsets.symmetric(
-                      horizontal: math.max(ResponsiveSize.paddingMedium, 12),
-                    ),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      key: ValueKey(_dataVersion),
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (_metrics.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 32),
-                            child: Center(
-                              child: Column(
+                        if (showAppointmentBanner) ...[
+                          Container(
+                            margin: EdgeInsets.symmetric(
+                              horizontal: math.max(
+                                ResponsiveSize.paddingMedium,
+                                16,
+                              ),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.textOnPrimary,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.bar_chart, size: 48, color: AppColors.textSecondary),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'Belum ada data',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: AppColors.textSecondary,
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '$daysUntilAppointment hari menuju',
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            color: AppColors.textSecondary,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          _nextAppointment?['title']
+                                                  as String? ??
+                                              'Janji Temu',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ],
                                     ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Image.asset(
+                                    AssetHelper.getIllustrationPath(
+                                      'Mediana-banner.webp',
+                                    ),
+                                    height: math.min(screenWidth * 0.22, 120),
+                                    width: math.min(screenWidth * 0.22, 120),
+                                    fit: BoxFit.contain,
                                   ),
                                 ],
                               ),
                             ),
-                          )
-                        else
-                          LayoutBuilder(
-                            builder: (context, gridConstraints) {
-                              final gridWidth = gridConstraints.maxWidth;
-                              final cardWidth = (gridWidth - 16) / 2;
-                              final cardHeight = cardWidth;
-                              final gridHeight = (cardHeight * 2) + 16;
-
-                              return Container(
-                                height: gridHeight,
-                                child: GridView.count(
-                                  crossAxisCount: 2,
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 16,
-                                  childAspectRatio: 1.0,
-                                  children: _metrics.map((metric) {
-                                    return _buildMetricCard(
-                                      context: context,
-                                      metric: metric,
-                                      screenWidth: screenWidth,
-                                    );
-                                  }).toList(),
-                                ),
-                              );
-                            },
                           ),
+                          SizedBox(height: ResponsiveSize.spacingMedium),
+                        ],
 
-                        const SizedBox(height: 10),
+                        // Metrics Grid Section
+                        Container(
+                          margin: EdgeInsets.symmetric(
+                            horizontal: math.max(
+                              ResponsiveSize.paddingMedium,
+                              12,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_metrics.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 32,
+                                  ),
+                                  child: Center(
+                                    child: Column(
+                                      children: [
+                                        Icon(
+                                          Icons.bar_chart,
+                                          size: 48,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          'Belum ada data',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              else
+                                LayoutBuilder(
+                                  builder: (context, gridConstraints) {
+                                    final gridWidth = gridConstraints.maxWidth;
+                                    final cardWidth = (gridWidth - 16) / 2;
+                                    final cardHeight = cardWidth;
+                                    final gridHeight = (cardHeight * 2) + 16;
 
-                        // Action Button
-                        _buildActionButton(
-                          title: 'Lihat Laporan Lengkap',
-                          subtitle: 'Riwayat dan detail pemeriksaan',
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    LaporanSayaScreen(gender: userGender),
+                                    return Container(
+                                      height: gridHeight,
+                                      child: GridView.count(
+                                        crossAxisCount: 2,
+                                        shrinkWrap: true,
+                                        physics:
+                                            const NeverScrollableScrollPhysics(),
+                                        crossAxisSpacing: 16,
+                                        mainAxisSpacing: 16,
+                                        childAspectRatio: 1.0,
+                                        children: _metrics.map((metric) {
+                                          return _buildMetricCard(
+                                            context: context,
+                                            metric: metric,
+                                            screenWidth: screenWidth,
+                                          );
+                                        }).toList(),
+                                      ),
+                                    );
+                                  },
+                                ),
+
+                              const SizedBox(height: 10),
+
+                              // Action Button
+                              _buildActionButton(
+                                title: 'Lihat Laporan Lengkap',
+                                subtitle: 'Riwayat dan detail pemeriksaan',
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          LaporanSayaScreen(gender: userGender),
+                                    ),
+                                  );
+                                },
+                                screenWidth: screenWidth,
                               ),
-                            );
-                          },
-                          screenWidth: screenWidth,
-                        ),
 
-                        // Bottom spacer for nav bar clearance
-                        SizedBox(
-                          height: math.max(
-                            ResponsiveSize.spacingXLarge * 2,
-                            80.0,
+                              // Bottom spacer for nav bar clearance
+                              SizedBox(
+                                height: math.max(
+                                  ResponsiveSize.spacingXLarge * 2,
+                                  80.0,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -749,7 +823,6 @@ class _HomeTabState extends State<HomeTab> {
   IconData _getGenderIcon(String gender) {
     return gender == 'Pria' ? Icons.male : Icons.female;
   }
-
 }
 
 class _SmoothAspectRatioRectTween extends RectTween {
