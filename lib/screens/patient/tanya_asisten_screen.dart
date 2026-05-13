@@ -342,33 +342,28 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.primary,
       elevation: 0,
+      titleSpacing: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        padding: EdgeInsets.zero,
         onPressed: _onBackPressed,
       ),
       title: Row(
         children: [
-          // Doctor avatar
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.surface, width: 1),
-            ),
-            child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: SvgPicture.asset(
-            AssetHelper.getSvgPath('doodle-01.svg'),
-            fit: BoxFit.cover,
-            ),
+            decoration: const BoxDecoration(shape: BoxShape.circle),
+            child: ClipOval(
+              child: SvgPicture.asset(
+                AssetHelper.getSvgPath('doodle-01.svg'),
+                fit: BoxFit.cover,
+              ),
             ),
           ),
-          SizedBox(width: ResponsiveSize.paddingSmall),
-          // Name and status
+          SizedBox(width: ResponsiveSize.spacingMedium),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,27 +371,10 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
                 const Text(
                   'Asisten Sehat',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
-                ),
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF4CAF50),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'Online',
-                      style: TextStyle(color: Color(0xFF4CAF50), fontSize: 12),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -865,6 +843,8 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
                     Expanded(
                       child: TextField(
                         controller: _messageController,
+                        minLines: 1,
+                        maxLines: 6,
                         decoration: InputDecoration(
                           hintText: 'Ketik pesan...',
                           hintStyle: TextStyle(
