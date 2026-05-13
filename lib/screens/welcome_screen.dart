@@ -8,6 +8,7 @@ import '../screens/superadmin/superadmin_main_screen.dart';
 import '../screens/register_screen.dart';
 import 'forgot_password_screen.dart';
 import '../services/auth_service.dart';
+import '../services/profile_service.dart';
 import '../utils/asset_helper.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -40,10 +41,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   Future<void> _checkLoginStatus() async {
     final userData = await AuthService.getMe();
     if (userData != null && mounted) {
-      final user = userData['user'];
       setState(() {
         _isLoggedIn = true;
-        _userName = user['responsibleName'] ?? 'Pengguna';
+        _userName = userData['responsibleName'] ?? 'Pengguna';
         _isLoading = false;
       });
     } else if (mounted) {
@@ -287,19 +287,25 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  void _navigateToPatientDashboard() {
+  Future<void> _navigateToPatientDashboard() async {
+    await ProfileService.instance.initialize();
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => const PatientMainScreen()),
     );
   }
 
-  void _navigateToAdminDashboard() {
+  Future<void> _navigateToAdminDashboard() async {
+    await ProfileService.instance.initialize();
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => const AdminMainScreen()),
     );
   }
 
-  void _navigateToSuperadminDashboard() {
+  Future<void> _navigateToSuperadminDashboard() async {
+    await ProfileService.instance.initialize();
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => const SuperadminMainScreen()),
     );
@@ -320,8 +326,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   Widget _buildLoadingForm() {
-    return const Center(
-      child: CircularProgressIndicator(color: AppColors.primary),
+    return const SizedBox(
+      height: 300,
+      child: Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
     );
   }
 
@@ -358,7 +367,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           width: double.infinity,
           height: isShortScreen ? 44 : 52,
           child: ElevatedButton(
-            onPressed: _navigateToPatientDashboard,
+            onPressed: () => _navigateToPatientDashboard(),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: AppColors.textOnPrimary,
@@ -579,7 +588,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   password: password,
                 );
                 if (mounted) {
-                  _navigateToPatientDashboard();
+                  await _navigateToPatientDashboard();
                 }
               } catch (e) {
                 if (mounted) {
