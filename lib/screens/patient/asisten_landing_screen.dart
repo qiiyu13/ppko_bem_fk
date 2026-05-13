@@ -165,20 +165,16 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
     }
   }
 
-  Future<void> _navigateToChat() async {
-    String? conversationId;
-    try {
-      final conv = await ChatService.createConversation();
-      conversationId = conv['id'] as String;
-    } catch (_) {
-      // If API fails, we'll use local-only mode
-    }
+  Future<void> _navigateToChat({String? conversationId}) async {
+    // Only create a new conversation if opening from history (ID provided) or
+    // defer creation to when the user actually sends their first message.
+    // Previously _navigateToChat() always called createConversation(), which
+    // produced empty conversations in the history when no messages were sent.
 
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => TanyaAsistenScreen(conversationId: conversationId)),
     );
-    // Refresh when returning
     _loadConversations();
   }
 
@@ -570,7 +566,7 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
         trailing: _isSelecting
             ? null
             : Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textSecondary),
-        onTap: _isSelecting ? () => _toggleSelection(conversation.id) : _navigateToChat,
+        onTap: _isSelecting ? () => _toggleSelection(conversation.id) : () => _navigateToChat(conversationId: conversation.id),
       ),
     );
 

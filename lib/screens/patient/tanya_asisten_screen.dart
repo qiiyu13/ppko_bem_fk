@@ -28,16 +28,27 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
   final ChatStorageService _storageService = ChatStorageService();
   bool _isTyping = false;
   bool _isLoading = true;
+  bool _isInRecordingMode = false;
+  bool _isRecordingActive = false;
+  bool _isRecordingLocked = false;
+  double _recordingDragDx = 0;
+  double _recordingDragDy = 0;
   Timer? _saveTimer;
   StreamSubscription<Map<String, dynamic>>? _chatSubscription;
+  String? _activeConversationId;
+
+  static const double _cancelThreshold = 80;
+  static const double _lockThreshold = 60;
 
   @override
   void initState() {
     super.initState();
+    _activeConversationId = widget.conversationId;
+    _messageController.addListener(_onTextChanged);
     _loadConversation();
     _chatSubscription = WebSocketService.instance.chatMessageStream.listen((event) {
       final convId = event['conversationId'] as String?;
-      if (convId == widget.conversationId) {
+      if (convId == _activeConversationId) {
         final messageData = event['message'] as Map<String, dynamic>;
         final role = messageData['role'] as String?;
         if (role == 'assistant') {
@@ -59,10 +70,9 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
   Future<void> _loadConversation() async {
     await _storageService.init();
 
-    if (widget.conversationId != null) {
-      // Load from API
+    if (_activeConversationId != null) {
       try {
-        final apiMessages = await ChatService.getMessages(widget.conversationId!);
+        final apiMessages = await ChatService.getMessages(_activeConversationId!);
         if (apiMessages.isNotEmpty) {
           setState(() {
             _messages.addAll(apiMessages.map((m) => ChatMessage(
@@ -75,7 +85,6 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
           _addWelcomeMessages();
         }
       } catch (e) {
-        // Fallback to local storage
         _loadFromLocalStorage();
       }
     } else {
@@ -129,7 +138,7 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
     await _storageService.saveCurrentConversation(_messages);
   }
 
-  void _sendMessage(String text) {
+  Future<void> _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
     final now = DateTime.now();
@@ -139,12 +148,20 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
       _isTyping = true;
     });
 
-    // Save conversation locally
     _saveConversation();
 
-    // Send to API if conversationId is available
-    if (widget.conversationId != null) {
-      ChatService.sendMessageViaWebSocket(widget.conversationId!, text);
+    // Lazily create conversation on first message if not already open
+    if (_activeConversationId == null && WebSocketService.instance.isConnected) {
+      try {
+        final conv = await ChatService.createConversation();
+        _activeConversationId = conv['id'] as String;
+      } catch (_) {
+        // Fall through to offline message
+      }
+    }
+
+    if (_activeConversationId != null) {
+      ChatService.sendMessageViaWebSocket(_activeConversationId!, text);
       if (!WebSocketService.instance.isConnected) {
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted) {
@@ -198,13 +215,74 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
   }
 
   Future<void> _onBackPressed() async {
-    // End current local conversation if it has messages and we're in local-only mode
-    if (widget.conversationId == null && _messages.isNotEmpty) {
+    if (_activeConversationId == null && _messages.isNotEmpty) {
       await _storageService.endCurrentConversation();
     }
     if (mounted) {
       Navigator.pop(context);
     }
+  }
+
+  void _onTextChanged() {
+    if (!_isInRecordingMode) {
+      setState(() {});
+    }
+  }
+
+  void _enterRecordingMode() {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _isInRecordingMode = true;
+    });
+  }
+
+  void _exitRecordingMode() {
+    setState(() {
+      _isInRecordingMode = false;
+      _isRecordingActive = false;
+      _isRecordingLocked = false;
+      _recordingDragDx = 0;
+      _recordingDragDy = 0;
+    });
+  }
+
+  void _onRecordStart(LongPressStartDetails details) {
+    setState(() {
+      _isRecordingActive = true;
+      _isRecordingLocked = false;
+      _recordingDragDx = 0;
+      _recordingDragDy = 0;
+    });
+  }
+
+  void _onRecordUpdate(LongPressMoveUpdateDetails details) {
+    setState(() {
+      _recordingDragDx = details.offsetFromOrigin.dx;
+      _recordingDragDy = details.offsetFromOrigin.dy;
+
+      if (_recordingDragDy < -_lockThreshold) {
+        _isRecordingLocked = true;
+      }
+    });
+  }
+
+  void _onRecordEnd(LongPressEndDetails details) {
+    if (_isRecordingLocked) {
+      setState(() {}); // stay recording, keep overlay visible
+      return;
+    }
+
+    if (_recordingDragDx < -_cancelThreshold) {
+      _exitRecordingMode();
+      return;
+    }
+
+    // Voice message recorded — placeholder for transcription integration
+    _exitRecordingMode();
+  }
+
+  void _stopLockedRecording() {
+    _exitRecordingMode();
   }
 
   @override
@@ -325,16 +403,6 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
           ),
         ],
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.phone, color: AppColors.textPrimary),
-          onPressed: () {},
-        ),
-        IconButton(
-          icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
-          onPressed: () {},
-        ),
-      ],
     );
   }
 
@@ -606,7 +674,155 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
     );
   }
 
+  Widget _buildRecordingInput() {
+    final isCancelling = _recordingDragDx < -_cancelThreshold;
+    final isLocking = _recordingDragDy < -_lockThreshold && !_isRecordingLocked;
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: ResponsiveSize.paddingMedium,
+        vertical: ResponsiveSize.paddingMedium,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        border: Border(top: BorderSide(color: AppColors.surface, width: 1)),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Lock hint (appears when dragging up)
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 150),
+              opacity: _isRecordingActive ? 1.0 : 0.0,
+              child: Padding(
+                padding: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Cancel zone
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.delete_outline,
+                          color: isCancelling ? Colors.red : AppColors.textSecondary,
+                          size: 20,
+                        ),
+                        SizedBox(width: ResponsiveSize.spacingSmall * 0.5),
+                        Text(
+                          'Batal',
+                          style: TextStyle(
+                            color: isCancelling ? Colors.red : AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Lock zone
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _isRecordingLocked ? 'Terkunci' : 'Kunci',
+                          style: TextStyle(
+                            color: isLocking || _isRecordingLocked
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        SizedBox(width: ResponsiveSize.spacingSmall * 0.5),
+                        Icon(
+                          _isRecordingLocked ? Icons.lock : Icons.lock_open,
+                          color: isLocking || _isRecordingLocked
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Record button
+            GestureDetector(
+              onLongPressStart: _onRecordStart,
+              onLongPressMoveUpdate: _onRecordUpdate,
+              onLongPressEnd: _onRecordEnd,
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: _isRecordingActive ? Colors.red : AppColors.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (_isRecordingActive ? Colors.red : AppColors.primary)
+                          .withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.mic,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+            ),
+            SizedBox(height: ResponsiveSize.spacingMedium),
+            // Hint text
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Text(
+                _isRecordingLocked
+                    ? 'Merekam...'
+                    : _isRecordingActive
+                        ? 'Geser kiri untuk batal, atas untuk kunci'
+                        : 'Tahan untuk merekam',
+                key: ValueKey(_isRecordingLocked
+                    ? 'locked'
+                    : _isRecordingActive
+                        ? 'active'
+                        : 'idle'),
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            // Stop button (when locked)
+            if (_isRecordingLocked)
+              Padding(
+                padding: EdgeInsets.only(top: ResponsiveSize.spacingSmall),
+                child: TextButton(
+                  onPressed: _stopLockedRecording,
+                  child: const Text(
+                    'Selesai & Kirim',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildMessageInput() {
+    // Recording mode replaces the entire input bar
+    if (_isInRecordingMode) {
+      return _buildRecordingInput();
+    }
+
+    final hasText = _messageController.text.isNotEmpty;
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: ResponsiveSize.paddingMedium,
@@ -619,81 +835,78 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
       child: SafeArea(
         child: Row(
           children: [
-            // Attachment button - fixed size 44x44
-            SizedBox(
-              width: 44,
-              height: 44,
-              child: IconButton(
-                icon: Icon(
-                  Icons.add_circle_outline,
-                  color: AppColors.textSecondary,
-                  size: ResponsiveSize.iconMedium * 0.8,
-                ),
-                padding: EdgeInsets.zero,
-                onPressed: () {},
-              ),
-            ),
-            // Equal spacing
-            SizedBox(width: ResponsiveSize.spacingSmall),
-            // Text input - expanded to fill space
             Expanded(
               child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveSize.paddingMedium,
+                padding: EdgeInsets.only(
+                  right: ResponsiveSize.paddingMedium,
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(24),
                 ),
-                child: TextField(
-                  controller: _messageController,
-                  decoration: InputDecoration(
-                    hintText: 'Ketik pesan...',
-                    hintStyle: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: ResponsiveSize.fontMedium,
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.add_circle_outline,
+                        color: AppColors.textSecondary,
+                        size: ResponsiveSize.iconMedium * 0.8,
+                      ),
+                      padding: EdgeInsets.only(
+                        left: ResponsiveSize.paddingSmall,
+                        right: ResponsiveSize.spacingSmall * 0.5,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 44,
+                      ),
+                      onPressed: () {},
                     ),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      vertical: ResponsiveSize.paddingSmall,
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        decoration: InputDecoration(
+                          hintText: 'Ketik pesan...',
+                          hintStyle: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: ResponsiveSize.fontMedium,
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: false,
+                          contentPadding: EdgeInsets.symmetric(
+                            vertical: ResponsiveSize.paddingSmall,
+                          ),
+                        ),
+                        onSubmitted: _sendMessage,
+                      ),
                     ),
-                  ),
-                  onSubmitted: _sendMessage,
+                  ],
                 ),
               ),
             ),
-            // Equal spacing
             SizedBox(width: ResponsiveSize.spacingSmall),
-            // Microphone button - fixed size 44x44
-            SizedBox(
-              width: 44,
-              height: 44,
-              child: IconButton(
-                icon: Icon(
-                  Icons.mic,
-                  color: AppColors.textSecondary,
-                  size: ResponsiveSize.iconMedium * 0.8,
-                ),
-                padding: EdgeInsets.zero,
-                onPressed: () {},
-              ),
-            ),
-            // Equal spacing
-            SizedBox(width: ResponsiveSize.spacingSmall),
-            // Send button
             GestureDetector(
-              onTap: () => _sendMessage(_messageController.text),
-              child: Container(
+              onTap: hasText
+                  ? () => _sendMessage(_messageController.text)
+                  : _enterRecordingMode,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 width: 44,
                 height: 44,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  Icons.send,
-                  color: AppColors.textOnPrimary,
-                  size: ResponsiveSize.iconMedium * 0.7,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    hasText ? Icons.send : Icons.mic,
+                    key: ValueKey(hasText ? 'send' : 'mic'),
+                    color: AppColors.textOnPrimary,
+                    size: ResponsiveSize.iconMedium * 0.7,
+                  ),
                 ),
               ),
             ),
@@ -707,6 +920,7 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
   void dispose() {
     _saveTimer?.cancel();
     _chatSubscription?.cancel();
+    _messageController.removeListener(_onTextChanged);
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
