@@ -110,7 +110,10 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
       color: AppColors.background,
       child: SafeArea(
         bottom: false, // Don't apply bottom safe area since we have navbar
-        child: child,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + CustomBottomNav.barHeight),
+          child: child,
+        ),
       ),
     );
   }

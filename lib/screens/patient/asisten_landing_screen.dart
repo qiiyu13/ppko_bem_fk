@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../services/chat_service.dart';
@@ -13,9 +14,14 @@ class AsistenLandingScreen extends StatefulWidget {
 
 class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
   final ChatStorageService _storageService = ChatStorageService();
+  final ScrollController _conversationScrollController = ScrollController();
   List<Conversation> _conversations = [];
   bool _isLoading = true;
   bool _dependenciesLoaded = false;
+  bool _isSelecting = false;
+  final Set<String> _selectedIds = {};
+  String? _toastMessage;
+  Timer? _toastTimer;
 
   @override
   void initState() {
@@ -30,6 +36,13 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
       _dependenciesLoaded = true;
       _loadConversations();
     }
+  }
+
+  @override
+  void dispose() {
+    _toastTimer?.cancel();
+    _conversationScrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadConversations() async {
@@ -98,37 +111,57 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
     await _loadConversations();
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Percakapan dihapus'),
-          backgroundColor: AppColors.primary,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      _showToast('Percakapan dihapus');
     }
   }
 
-  Future<void> _clearAllConversations() async {
-    try {
-      final apiConversations = await ChatService.getConversations();
-      for (final c in apiConversations) {
-        try {
-          await ChatService.deleteConversation(c['id'] as String);
-        } catch (_) {}
+  void _toggleSelectMode() {
+    setState(() {
+      _isSelecting = !_isSelecting;
+      if (!_isSelecting) {
+        _selectedIds.clear();
       }
-    } catch (_) {}
-    await _storageService.clearAllConversations();
+    });
+  }
+
+  void _toggleSelection(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  void _showToast(String message) {
+    _toastTimer?.cancel();
+    setState(() {
+      _toastMessage = message;
+    });
+    _toastTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _toastMessage = null;
+        });
+      }
+    });
+  }
+
+  Future<void> _batchDelete() async {
+    final ids = _selectedIds.toList();
+    for (final id in ids) {
+      try {
+        await ChatService.deleteConversation(id);
+      } catch (_) {}
+      await _storageService.deleteConversation(id);
+    }
+
+    _toggleSelectMode();
     await _loadConversations();
 
     if (mounted) {
-      Navigator.pop(context); // Close dialog
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Semua riwayat dihapus'),
-          backgroundColor: AppColors.primary,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      _showToast('${ids.length} percakapan dihapus');
     }
   }
 
@@ -149,38 +182,6 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
     _loadConversations();
   }
 
-  void _showClearAllDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.background,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Hapus Semua Riwayat',
-          style: TextStyle(fontSize: 20, color: AppColors.textPrimary),
-        ),
-        content: Text(
-          'Apakah Anda yakin ingin menghapus semua riwayat percakapan?',
-          style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Batal',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: _clearAllConversations,
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Hapus', style: TextStyle(fontSize: 14)),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -199,196 +200,278 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // Fixed header section
-            Container(
-              padding: EdgeInsets.all(padding),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                border: Border(
-                  bottom: BorderSide(color: AppColors.surface, width: 1),
-                ),
-              ),
-              child: Column(
-                children: [
-                  // Tanya mediku! Card
-                  GestureDetector(
-                    onTap: _navigateToChat,
-                    child: Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(padding * 1.5),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(padding * 0.75),
-                                decoration: BoxDecoration(
-                                  color: AppColors.background.withValues(
-                                    alpha: 0.2,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(
-                                  Icons.chat_bubble_outline,
-                                  color: AppColors.background,
-                                  size: 32,
-                                ),
-                              ),
-                              SizedBox(width: padding),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Tanya mediku!',
-                                      style: TextStyle(
-                                        color: AppColors.background,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(height: spacing * 0.5),
-                                    Text(
-                                      'Konsultasi kesehatan dengan Asisten Sehat',
-                                      style: TextStyle(
-                                        color: AppColors.background.withValues(
-                                          alpha: 0.9,
-                                        ),
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: spacing * 1.5),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: padding,
-                              vertical: spacing,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.background,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.arrow_forward,
-                                  color: AppColors.primary,
-                                  size: 18,
-                                ),
-                                SizedBox(width: spacing * 0.5),
-                                Text(
-                                  'Mulai Percakapan',
-                                  style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: spacing * 1.5),
-                  // Section title
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.history,
-                        color: AppColors.textSecondary,
-                        size: 20,
-                      ),
-                      SizedBox(width: spacing * 0.75),
-                      Text(
-                        'Riwayat Percakapan',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${_conversations.length} percakapan',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            // Scrollable history list
-            Expanded(
-              child: _conversations.isEmpty
-                  ? _buildEmptyState(padding, spacing)
-                  : ListView.builder(
-                      padding: EdgeInsets.symmetric(horizontal: padding),
-                      itemCount: _conversations.length,
-                      itemBuilder: (context, index) {
-                        final conversation = _conversations[index];
-                        return _buildConversationItem(
-                          conversation,
-                          padding,
-                          spacing,
-                        );
-                      },
-                    ),
-            ),
-            // Clear All button (at bottom)
-            if (_conversations.isNotEmpty)
+            Column(
+              children: [
+                if (_isSelecting)
+              _buildSelectionHeader(padding, spacing)
+            else ...[
               Container(
-                width: double.infinity,
                 padding: EdgeInsets.all(padding),
                 decoration: BoxDecoration(
                   color: AppColors.background,
                   border: Border(
-                    top: BorderSide(color: AppColors.surface, width: 1),
+                    bottom: BorderSide(color: AppColors.surface, width: 1),
                   ),
                 ),
-                child: ElevatedButton.icon(
-                  onPressed: _showClearAllDialog,
-                  icon: Icon(Icons.delete_outline, color: AppColors.background),
-                  label: Text(
-                    'Hapus Semua Riwayat',
-                    style: TextStyle(color: AppColors.background, fontSize: 14),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.background,
-                    padding: EdgeInsets.symmetric(vertical: padding * 0.75),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      onTap: _navigateToChat,
+                      child: Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(padding * 1.5),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(padding * 0.75),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.background.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.chat_bubble_outline,
+                                    color: AppColors.background,
+                                    size: 32,
+                                  ),
+                                ),
+                                SizedBox(width: padding),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Tanya mediku!',
+                                        style: TextStyle(
+                                          color: AppColors.background,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(height: spacing * 0.5),
+                                      Text(
+                                        'Konsultasi kesehatan dengan Asisten Sehat',
+                                        style: TextStyle(
+                                          color: AppColors.background.withValues(alpha: 0.9),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: spacing * 1.5),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: padding,
+                                vertical: spacing,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.background,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.arrow_forward,
+                                    color: AppColors.primary,
+                                    size: 18,
+                                  ),
+                                  SizedBox(width: spacing * 0.5),
+                                  Text(
+                                    'Mulai Percakapan',
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    elevation: 0,
+                    SizedBox(height: spacing * 1.5),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.history,
+                          color: AppColors.textSecondary,
+                          size: 20,
+                        ),
+                        SizedBox(width: spacing * 0.75),
+                        Text(
+                          'Riwayat Percakapan',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, size: 22),
+                          color: AppColors.textSecondary,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: _conversations.isNotEmpty ? _toggleSelectMode : null,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            Expanded(
+              child: _conversations.isEmpty
+                  ? _buildEmptyState(padding, spacing)
+                  : Stack(
+                      children: [
+                        Scrollbar(
+                          controller: _conversationScrollController,
+                          child: ListView.builder(
+                            controller: _conversationScrollController,
+                            padding: EdgeInsets.symmetric(horizontal: padding).copyWith(top: spacing),
+                            itemCount: _conversations.length,
+                            itemBuilder: (context, index) {
+                              final conversation = _conversations[index];
+                              return _buildConversationItem(
+                                conversation,
+                                padding,
+                                spacing,
+                              );
+                            },
+                          ),
+                        ),
+                        if (!_isSelecting)
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            height: 40,
+                            child: IgnorePointer(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      AppColors.background.withValues(alpha: 0),
+                                      AppColors.background.withValues(alpha: 0.8),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+        Positioned(
+          bottom: 80,
+          left: 16,
+          right: 16,
+          child: IgnorePointer(
+            ignoring: _toastMessage == null,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 300),
+              opacity: _toastMessage != null ? 1.0 : 0.0,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _toastMessage ?? '',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ),
               ),
-          ],
+            ),
+          ),
         ),
+      ],
+    ),
+      ),
+    );
+  }
+
+  Widget _buildSelectionHeader(double padding, double spacing) {
+    final count = _selectedIds.length;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: spacing),
+      color: AppColors.primary,
+      child: Row(
+        children: [
+          TextButton.icon(
+            onPressed: _toggleSelectMode,
+            icon: const Icon(Icons.close, size: 16),
+            label: const Text(
+              'Batal',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+          const Spacer(),
+          GestureDetector(
+            onTap: count > 0 ? () => _batchDelete() : null,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: count > 0 ? Colors.red : Colors.red.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.delete_outline, size: 14, color: Colors.white),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Hapus ($count)',
+                    style: TextStyle(
+                      color: count > 0 ? Colors.white : Colors.white.withValues(alpha: 0.6),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -428,6 +511,71 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
     double padding,
     double spacing,
   ) {
+    final isSelected = _selectedIds.contains(conversation.id);
+    final lastMessage = conversation.lastMessageText;
+
+    final child = Container(
+      margin: EdgeInsets.only(bottom: spacing),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected ? AppColors.primary : AppColors.surface,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        dense: true,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: padding,
+          vertical: spacing * 0.25,
+        ),
+        leading: _isSelecting
+            ? Checkbox(
+                value: isSelected,
+                activeColor: AppColors.primary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                onChanged: (_) => _toggleSelection(conversation.id),
+              )
+            : Container(
+                padding: EdgeInsets.all(padding * 0.5),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.chat, color: AppColors.primary, size: 20),
+              ),
+        title: Text(
+          conversation.formattedTimestamp,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        subtitle: lastMessage.isNotEmpty
+            ? Text(
+                lastMessage,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              )
+            : null,
+        trailing: _isSelecting
+            ? null
+            : Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textSecondary),
+        onTap: _isSelecting ? () => _toggleSelection(conversation.id) : _navigateToChat,
+      ),
+    );
+
+    if (_isSelecting) return child;
+
     return Dismissible(
       key: Key(conversation.id),
       direction: DismissDirection.endToStart,
@@ -444,55 +592,7 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
       onDismissed: (direction) {
         _deleteConversation(conversation.id);
       },
-      child: Container(
-        margin: EdgeInsets.only(bottom: spacing),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.surface, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.05),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: ListTile(
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: padding,
-            vertical: spacing * 0.5,
-          ),
-          leading: Container(
-            padding: EdgeInsets.all(padding * 0.5),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(Icons.chat, color: AppColors.primary, size: 20),
-          ),
-          title: Text(
-            conversation.formattedTimestamp,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          subtitle: Text(
-            conversation.lastMessageText,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          ),
-          trailing: Icon(
-            Icons.arrow_forward_ios,
-            size: 14,
-            color: AppColors.textSecondary,
-          ),
-          onTap: _navigateToChat,
-        ),
-      ),
+      child: child,
     );
   }
 }
