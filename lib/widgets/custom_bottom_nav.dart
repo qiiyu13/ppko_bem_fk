@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../constants/app_colors.dart';
-import '../utils/asset_helper.dart';
 
 /// Icon-only floating pill navigation bar with sliding active indicator.
-/// Features: 5 evenly-spaced icons, animated sliding circular indicator.
-/// Supports both IconData (Flutter icons), image assets, and SVG assets.
+/// Features: 5 evenly-spaced Material icons, animated sliding circular indicator.
 class CustomBottomNav extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
 
   static const double barHeight = 64;
   static const double indicatorSize = 44;
+  static const double iconSize = 28;
 
   const CustomBottomNav({
     super.key,
@@ -29,13 +27,6 @@ class CustomBottomNav extends StatelessWidget {
         : screenWidth < 400
         ? 20.0
         : 24.0;
-
-    // Responsive icon size
-    final iconSize = screenWidth < 360
-        ? 22.0
-        : screenWidth < 400
-        ? 24.0
-        : 26.0;
 
     // Max width constraint to prevent stretching on large screens
     final maxWidth = screenWidth < 500
@@ -90,28 +81,26 @@ class CustomBottomNav extends StatelessWidget {
                       icon: Icons.home_outlined,
                       activeIcon: Icons.home,
                       index: 0,
-                      iconSize: iconSize * 1.15, // Scaled up slightly for visual balance
                     ),
                     _buildNavItem(
-                      icon: Icons.calendar_today_outlined,
-                      activeIcon: Icons.calendar_today,
+                      icon: Icons.event_note_outlined,
+                      activeIcon: Icons.event_note,
                       index: 1,
-                      iconSize: iconSize,
                     ),
                     _buildNavItem(
-                      svgPath: AssetHelper.getIconPath('Tanaman-toga.svg'),
+                      icon: Icons.eco_outlined,
+                      activeIcon: Icons.eco,
                       index: 2,
-                      iconSize: iconSize,
                     ),
                     _buildNavItem(
-                      imagePath: AssetHelper.getIconPath('chat.png'),
+                      icon: Icons.chat_outlined,
+                      activeIcon: Icons.chat,
                       index: 3,
-                      iconSize: iconSize,
                     ),
                     _buildNavItem(
-                      svgPath: AssetHelper.getIconPath('profile-patient.svg'),
+                      icon: Icons.person_outline,
+                      activeIcon: Icons.person,
                       index: 4,
-                      iconSize: iconSize,
                     ),
                   ],
                 ),
@@ -124,96 +113,29 @@ class CustomBottomNav extends StatelessWidget {
   }
 
   Widget _buildNavItem({
-    IconData? icon,
-    IconData? activeIcon,
+    required IconData icon,
+    required IconData activeIcon,
     required int index,
-    required double iconSize,
-    String? imagePath,
-    String? svgPath,
   }) {
     final bool isSelected = currentIndex == index;
 
     return Expanded(
       child: InkWell(
         onTap: () => onTap(index),
+        borderRadius: BorderRadius.circular(32),
         child: Center(
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
-            child: svgPath != null
-                ? _buildSvgIcon(svgPath, isSelected, iconSize, index)
-                : imagePath != null
-                    ? _buildImageIcon(imagePath, isSelected, iconSize, index)
-                    : _buildMaterialIcon(
-                        icon: isSelected ? activeIcon! : icon!,
-                        isSelected: isSelected,
-                        iconSize: iconSize,
-                        index: index,
-                      ),
+            child: Icon(
+              isSelected ? activeIcon : icon,
+              key: ValueKey<int>(isSelected ? index + 100 : index),
+              color: isSelected
+                  ? AppColors.primary
+                  : AppColors.textOnPrimary.withValues(alpha: 0.6),
+              size: iconSize,
+            ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildMaterialIcon({
-    required IconData icon,
-    required bool isSelected,
-    required double iconSize,
-    required int index,
-  }) {
-    return Icon(
-      icon,
-      key: ValueKey<int>(isSelected ? index + 100 : index),
-      color: isSelected
-          ? AppColors.primary
-          : AppColors.textOnPrimary.withValues(alpha: 0.6),
-      size: iconSize * 1.15,
-    );
-  }
-
-  Widget _buildSvgIcon(
-    String svgPath,
-    bool isSelected,
-    double iconSize,
-    int index,
-  ) {
-    final adjustedSize = iconSize * 1.15;
-    return SvgPicture.asset(
-      svgPath,
-      key: ValueKey<int>(isSelected ? index + 100 : index),
-      width: adjustedSize,
-      height: adjustedSize,
-      fit: BoxFit.contain,
-      colorFilter: ColorFilter.mode(
-        isSelected
-            ? AppColors.primary
-            : AppColors.textOnPrimary.withValues(alpha: 0.6),
-        BlendMode.srcIn,
-      ),
-    );
-  }
-
-  Widget _buildImageIcon(
-    String imagePath,
-    bool isSelected,
-    double iconSize,
-    int index,
-  ) {
-    // Multiply size by 1.15 to match visual size of Material icons (reduced from 1.3)
-    final adjustedSize = iconSize * 1.15;
-    return ColorFiltered(
-      key: ValueKey<int>(isSelected ? index + 100 : index),
-      colorFilter: ColorFilter.mode(
-        isSelected
-            ? AppColors.primary
-            : AppColors.textOnPrimary.withValues(alpha: 0.6),
-        BlendMode.srcIn,
-      ),
-      child: Image.asset(
-        imagePath,
-        width: adjustedSize,
-        height: adjustedSize,
-        fit: BoxFit.contain,
       ),
     );
   }
