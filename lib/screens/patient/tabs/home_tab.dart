@@ -977,6 +977,34 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
             child: Hero(
               tag: 'metric_bg_$metricId',
               createRectTween: createTween,
+              transitionOnUserGestures: false,
+              flightShuttleBuilder: (_, animation, flightDir, fromCtx, toCtx) {
+                return AnimatedBuilder(
+                  animation: animation,
+                  builder: (context, child) {
+                    final t = animation.value;
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Color.lerp(
+                          Colors.white,
+                          widget.metric.primaryColor,
+                          0.15,
+                        ),
+                        borderRadius: BorderRadius.circular(24.0 * (1.0 - t)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(
+                              alpha: 0.05 * (1.0 - t),
+                            ),
+                            blurRadius: 8.0 * (1.0 - t),
+                            offset: Offset(0, 2.0 * (1.0 - t)),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
               child: Container(
                 decoration: BoxDecoration(
                   color: Color.lerp(
@@ -1002,9 +1030,15 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
               left: 0,
               right: 0,
               height: 52,
-              child: MiniSparkline(
-                primaryColor: widget.metric.primaryColor,
-                values: widget.metric.recentValues,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(24),
+                ),
+                child: MiniSparkline(
+                  primaryColor: widget.metric.primaryColor,
+                  values: widget.metric.recentValues,
+                ),
               ),
             ),
           Padding(
@@ -1064,6 +1098,36 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
             child: Hero(
               tag: 'metric_icon_$metricId',
               createRectTween: createTween,
+              transitionOnUserGestures: false,
+              flightShuttleBuilder: (_, animation, flightDir, fromCtx, toCtx) {
+                return AnimatedBuilder(
+                  animation: animation,
+                  builder: (context, child) {
+                    final t = animation.value;
+                    final iconSize =
+                        widget.iconSize + (28.0 - widget.iconSize) * t;
+                    return Container(
+                      padding: EdgeInsets.all(12.0 * t),
+                      decoration: BoxDecoration(
+                        color: AppColors.card.withValues(alpha: t),
+                        borderRadius: BorderRadius.circular(16.0 * t),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05 * t),
+                            blurRadius: 4.0 * t,
+                            offset: Offset(-2.0 * t, 2.0 * t),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        widget.metric.icon,
+                        color: widget.metric.primaryColor,
+                        size: iconSize,
+                      ),
+                    );
+                  },
+                );
+              },
               child: Container(
                 width: widget.chipSize,
                 height: widget.chipSize,
@@ -1087,7 +1151,7 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
         opaque: false,
         barrierColor: Colors.transparent,
         transitionDuration: const Duration(milliseconds: 400),
-        reverseTransitionDuration: const Duration(milliseconds: 350),
+        reverseTransitionDuration: const Duration(milliseconds: 400),
         pageBuilder: (context, animation, secondaryAnimation) {
           return MetricDetailScreen(
             metric: widget.metric,

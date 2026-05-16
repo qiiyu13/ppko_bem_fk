@@ -23,6 +23,7 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     with TickerProviderStateMixin {
   late Animation<double> _contentFadeAnimation;
   late Animation<double> _chartFadeAnimation;
+  late Animation<Offset> _slideAnimation;
   bool _isClosing = false;
   List<MetricReading> _readings = [];
   bool _isLoading = true;
@@ -35,12 +36,22 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
 
     _contentFadeAnimation = CurvedAnimation(
       parent: widget.routeAnimation,
-      curve: const Interval(0.75, 1.0, curve: Curves.easeOutCubic),
+      curve: const Interval(0.5, 1.0, curve: Curves.easeOutCubic),
     );
 
     _chartFadeAnimation = CurvedAnimation(
       parent: widget.routeAnimation,
-      curve: const Interval(0.80, 1.0, curve: Curves.easeOutCubic),
+      curve: const Interval(0.55, 1.0, curve: Curves.easeOutCubic),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: widget.routeAnimation,
+        curve: const Interval(0.45, 1.0, curve: Curves.easeOutCubic),
+      ),
     );
   }
 
@@ -141,16 +152,18 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  child: FadeTransition(
-                    opacity: _contentFadeAnimation,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(32),
-                          topRight: Radius.circular(32),
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: FadeTransition(
+                      opacity: _contentFadeAnimation,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(32),
+                            topRight: Radius.circular(32),
+                          ),
                         ),
-                      ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -231,6 +244,7 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                         ],
                       ),
                     ),
+                  ),
                   ),
                 ),
               ],
