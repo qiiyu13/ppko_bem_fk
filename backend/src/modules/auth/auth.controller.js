@@ -66,7 +66,7 @@ const logout = async (req, res, next) => {
   try {
     const token = req.headers.authorization.split(' ')[1];
     const decoded = require('../../utils/jwt').verifyToken(token);
-    require('./tokenBlacklist').blacklistToken(token, decoded.exp * 1000);
+    await require('./tokenBlacklist').blacklistToken(token, decoded.exp * 1000);
     return success(res, null, 'Logged out successfully');
   } catch (err) {
     next(err);

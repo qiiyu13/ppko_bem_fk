@@ -5,7 +5,7 @@ const prisma = require('../../utils/prisma');
 const getProfiles = async (userId) => {
   return prisma.familyProfile.findMany({
     where: { userId },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: 'asc' },
   });
 };
 

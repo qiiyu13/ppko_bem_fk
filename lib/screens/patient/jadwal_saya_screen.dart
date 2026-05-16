@@ -211,6 +211,8 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
   }
 
   Widget _buildDaftarTab() {
+    final today = DateTime.now();
+
     return SingleChildScrollView(
       padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
       child: Column(
@@ -229,7 +231,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                '12 Oktober 2023',
+                '${today.day} ${_getFullMonthName(today.month)} ${today.year}',
                 style: TextStyle(
                   color: AppColors.primary,
                   fontSize: 12,
@@ -239,16 +241,22 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
             ),
           ),
           SizedBox(height: ResponsiveSize.spacingMedium),
-          ..._todaySchedules.map((schedule) => _buildEventCard(schedule, true)),
+          if (_todaySchedules.isEmpty)
+            _buildEmptyState('Tidak ada jadwal screening hari ini')
+          else
+            ..._todaySchedules.map((schedule) => _buildEventCard(schedule, true)),
 
           SizedBox(height: ResponsiveSize.spacingXLarge),
 
           // Akan Datang Section
           _buildSectionHeader('Akan Datang'),
           SizedBox(height: ResponsiveSize.spacingMedium),
-          ..._upcomingSchedules.map(
-            (schedule) => _buildEventCard(schedule, false),
-          ),
+          if (_upcomingSchedules.isEmpty)
+            _buildEmptyState('Belum ada jadwal screening mendatang')
+          else
+            ..._upcomingSchedules.map(
+              (schedule) => _buildEventCard(schedule, false),
+            ),
           // Bottom spacer for nav bar clearance
           const SizedBox(height: 100),
         ],
@@ -270,6 +278,32 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
         ),
         if (trailing != null) trailing,
       ],
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Container(
+      padding: EdgeInsets.all(ResponsiveSize.paddingLarge),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(
+              Icons.event_busy_outlined,
+              size: 48,
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
+            ),
+            SizedBox(height: ResponsiveSize.spacingSmall),
+            Text(
+              message,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -631,25 +665,27 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
             },
           ),
           // Legend
-          SizedBox(height: ResponsiveSize.spacingMedium),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
+          if (_markedDates.isNotEmpty) ...[
+            SizedBox(height: ResponsiveSize.spacingMedium),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ),
-              SizedBox(width: 6),
-              Text(
-                'Ada Jadwal',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-              ),
-            ],
-          ),
+                SizedBox(width: 6),
+                Text(
+                  'Ada Jadwal',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -661,29 +697,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
         .toList();
 
     if (events.isEmpty) {
-      return Container(
-        padding: EdgeInsets.all(ResponsiveSize.paddingLarge),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Center(
-          child: Column(
-            children: [
-              Icon(
-                Icons.event_busy_outlined,
-                size: 48,
-                color: AppColors.textSecondary.withValues(alpha: 0.5),
-              ),
-              SizedBox(height: ResponsiveSize.spacingSmall),
-              Text(
-                'Tidak ada jadwal',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-      );
+      return _buildEmptyState('Tidak ada jadwal');
     }
 
     return Column(
@@ -691,7 +705,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
           .map(
             (event) => _buildEventCard(
               event,
-              _isSameDay(event['date'] as DateTime, DateTime(2023, 10, 12)),
+              _isSameDay(event['date'] as DateTime, DateTime.now()),
             ),
           )
           .toList(),

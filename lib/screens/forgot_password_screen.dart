@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../services/auth_service.dart';
 import '../services/otp_service.dart';
+import '../services/platform_util.dart';
 
 enum ForgotPasswordStep { phone, otp, newPassword }
 
@@ -37,6 +38,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   void _sendOTP() async {
+    if (!PlatformUtil.firebaseAvailable) {
+      setState(() => _error = 'Fitur OTP tidak tersedia di platform ini');
+      return;
+    }
+
     final kk = _kkController.text.trim();
     final phone = _phoneController.text.trim();
     if (kk.length != 16) {

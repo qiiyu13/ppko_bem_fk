@@ -71,7 +71,7 @@ class ProfileService {
     try {
       final response = await ApiService.get('/profiles');
       final data = response.data['data'] as List;
-      _profiles = data.map((json) => FamilyProfile.fromMap(json as Map<String, dynamic>)).toList();
+      _profiles = data.map((json) => FamilyProfile.fromApi(json as Map<String, dynamic>)).toList();
       _profilesController.add(List.unmodifiable(_profiles));
 
       for (final profile in _profiles) {

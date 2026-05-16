@@ -9,10 +9,13 @@ import 'screens/splash_screen.dart';
 import 'services/api_service.dart';
 import 'services/cache_service.dart';
 import 'services/connectivity_service.dart';
+import 'services/platform_util.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  if (PlatformUtil.firebaseAvailable) {
+    await Firebase.initializeApp();
+  }
 
   // Initialize API service with interceptors
   ApiService.setupInterceptors();

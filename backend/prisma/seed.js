@@ -103,7 +103,22 @@ async function main() {
     },
   });
 
-  console.log('✅ Created 3 family profiles');
+  const profile4 = await prisma.familyProfile.create({
+    data: {
+      id: 'profile-004',
+      userId: patient.id,
+      name: 'Anton Wijaya',
+      nik: '12131418',
+      gender: 'pria',
+      birthDate: new Date('1995-07-12'),
+      height: 175,
+      weight: 70,
+      bloodType: 'AB',
+      phone: '08123456784',
+    },
+  });
+
+  console.log('✅ Created 4 family profiles');
 
   // ─── Health Metrics ───
   await prisma.healthMetric.createMany({
@@ -267,6 +282,7 @@ async function main() {
   await prisma.appointment.create({
     data: {
       userId: patient.id,
+      profileId: profile1.id,
       title: 'Pemeriksaan Gula Darah',
       date: new Date('2026-05-15T09:00:00Z'),
       location: 'Puskesmas Sehat',

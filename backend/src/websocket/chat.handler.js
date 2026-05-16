@@ -1,7 +1,7 @@
 const prisma = require('../utils/prisma');
 const OpenAI = require('openai');
 const events = require('./events');
-const logger = require('../../utils/logger');
+const logger = require('../utils/logger');
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -12,6 +12,30 @@ Namamu MediBot. Tugasmu adalah memberikan informasi kesehatan umum, tips pola hi
 dan menjawab pertanyaan seputar kesehatan keluarga. 
 Kamu BUKAN pengganti dokter. Selalu sarankan untuk berkonsultasi dengan tenaga medis profesional 
 untuk diagnosis atau pengobatan. Jawab dalam Bahasa Indonesia yang mudah dipahami.`;
+
+// Daily message cap per user to protect against excessive OpenAI API costs
+const DAILY_MESSAGE_CAP = parseInt(process.env.DAILY_CHAT_LIMIT, 10) || 50;
+const dailyMessageCounts = new Map(); // userId -> { count, resetAt }
+
+function checkDailyMessageCap(userId) {
+  const now = Date.now();
+  const record = dailyMessageCounts.get(userId);
+
+  if (!record || now > record.resetAt) {
+    // New day or first message — reset counter
+    const midnight = new Date();
+    midnight.setHours(23, 59, 59, 999);
+    dailyMessageCounts.set(userId, { count: 1, resetAt: midnight.getTime() });
+    return { allowed: true, remaining: DAILY_MESSAGE_CAP - 1 };
+  }
+
+  if (record.count >= DAILY_MESSAGE_CAP) {
+    return { allowed: false, remaining: 0 };
+  }
+
+  record.count++;
+  return { allowed: true, remaining: DAILY_MESSAGE_CAP - record.count };
+}
 
 async function getChatHistory(conversationId, limit = 20) {
   const messages = await prisma.chatMessage.findMany({
@@ -70,6 +94,16 @@ async function handleChatMessage(ws, data, userId) {
 
     if (typeof conversationId !== 'string') {
       ws.send(JSON.stringify({ event: events.ERROR, data: { message: 'Invalid conversationId' } }));
+      return;
+    }
+
+    // Check daily message cap (OpenAI cost protection)
+    const capCheck = checkDailyMessageCap(userId);
+    if (!capCheck.allowed) {
+      ws.send(JSON.stringify({
+        event: events.ERROR,
+        data: { message: `Batas harian tercapai (${DAILY_MESSAGE_CAP} pesan/hari). Silakan coba lagi besok.` },
+      }));
       return;
     }
 
@@ -132,3 +166,4 @@ async function handleChatMessage(ws, data, userId) {
 }
 
 module.exports = { handleChatMessage };
+

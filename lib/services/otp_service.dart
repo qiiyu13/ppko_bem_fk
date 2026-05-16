@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'platform_util.dart';
+
 class OtpService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -12,6 +14,11 @@ class OtpService {
     required void Function(String error) onError,
     required void Function() onAutoVerify,
   }) async {
+    if (!PlatformUtil.firebaseAvailable) {
+      onError('OTP tidak tersedia di platform ini');
+      return;
+    }
+
     String formattedPhone = phoneNumber;
     if (!phoneNumber.startsWith('+')) {
       formattedPhone = '+62${phoneNumber.replaceFirst(RegExp(r'^0'), '')}';
@@ -40,6 +47,7 @@ class OtpService {
   }
 
   static Future<String?> verifyOTP(String smsCode) async {
+    if (!PlatformUtil.firebaseAvailable) return null;
     if (_verificationId == null) throw Exception('No verification in progress');
 
     final credential = PhoneAuthProvider.credential(

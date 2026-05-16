@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:io' show Platform;
+
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'cache_service.dart';
 
 class ConnectivityService {
@@ -12,6 +15,10 @@ class ConnectivityService {
   bool _isOnline = true;
   bool get isOnline => _isOnline;
 
+  static bool get _connectivityAvailable => !(isLinuxDesktop);
+
+  static bool get isLinuxDesktop => !kIsWeb && Platform.isLinux;
+
   final _syncStatusController = StreamController<SyncStatus>.broadcast();
   Stream<SyncStatus> get syncStatusStream => _syncStatusController.stream;
 
@@ -19,6 +26,11 @@ class ConnectivityService {
   int get pendingSyncCount => _pendingSyncCount;
 
   Future<void> initialize() async {
+    if (!_connectivityAvailable) {
+      await _updatePendingCount();
+      return;
+    }
+
     final result = await _connectivity.checkConnectivity();
     _isOnline = result != ConnectivityResult.none;
     await _updatePendingCount();

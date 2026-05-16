@@ -16,13 +16,11 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
-  
+
   String _selectedGender = 'Pria';
   String? _selectedBloodType;
   DateTime? _selectedBirthDate;
   bool _isLoading = false;
-
-  final List<String> _bloodTypes = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
   @override
   void dispose() {
@@ -52,33 +50,39 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Informasi Pribadi',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          physics: const ClampingScrollPhysics(),
+          children: [
+            RepaintBoundary(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Informasi Pribadi',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Masukkan data anggota keluarga',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Masukkan data anggota keluarga',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 24),
+            ),
+            const SizedBox(height: 24),
 
-              // NIK
-              _buildTextField(
+            RepaintBoundary(
+              child: _buildTextField(
                 controller: _nikController,
                 label: 'NIK',
                 hint: 'Masukkan 16 digit NIK',
@@ -94,9 +98,10 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
                   return null;
                 },
               ),
+            ),
 
-              // Name
-              _buildTextField(
+            RepaintBoundary(
+              child: _buildTextField(
                 controller: _nameController,
                 label: 'Nama Lengkap',
                 hint: 'Masukkan nama lengkap',
@@ -107,102 +112,58 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
                   return null;
                 },
               ),
+            ),
 
-              // Gender
-              _buildLabel('Jenis Kelamin'),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildGenderOption('Pria', Icons.male),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildGenderOption('Wanita', Icons.female),
-                  ),
-                ],
+            RepaintBoundary(
+              child: _GenderSelector(
+                selectedGender: _selectedGender,
+                onGenderSelected: (gender) {
+                  setState(() => _selectedGender = gender);
+                },
               ),
-              const SizedBox(height: 20),
+            ),
+            const SizedBox(height: 20),
 
-              // Birth Date
-              _buildLabel('Tanggal Lahir'),
-              InkWell(
+            RepaintBoundary(
+              child: _BirthDateField(
+                selectedDate: _selectedBirthDate,
                 onTap: _selectBirthDate,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.card,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.surface),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        _selectedBirthDate != null
-                            ? '${_selectedBirthDate!.day}/${_selectedBirthDate!.month}/${_selectedBirthDate!.year}'
-                            : 'Pilih tanggal lahir',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: _selectedBirthDate != null
-                              ? AppColors.textPrimary
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
-              const SizedBox(height: 20),
+            ),
+            const SizedBox(height: 20),
 
-              // Blood Type
-              _buildLabel('Golongan Darah'),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _bloodTypes.map((type) {
-                  final isSelected = _selectedBloodType == type;
-                  return ChoiceChip(
-                    label: Text(type),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        _selectedBloodType = selected ? type : null;
-                      });
-                    },
-                    selectedColor: AppColors.primary,
-                    labelStyle: TextStyle(
-                      color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  );
-                }).toList(),
+            RepaintBoundary(
+              child: _BloodTypeSelector(
+                selectedBloodType: _selectedBloodType,
+                onBloodTypeSelected: (type) {
+                  setState(() => _selectedBloodType = type);
+                },
               ),
-              const SizedBox(height: 20),
+            ),
+            const SizedBox(height: 20),
 
-              // Address
-              _buildTextField(
+            RepaintBoundary(
+              child: _buildTextField(
                 controller: _addressController,
                 label: 'Alamat',
                 hint: 'Masukkan alamat lengkap',
                 maxLines: 3,
               ),
+            ),
 
-              // Phone
-              _buildTextField(
+            RepaintBoundary(
+              child: _buildTextField(
                 controller: _phoneController,
                 label: 'Nomor Telepon',
                 hint: 'Contoh: 081234567890',
                 keyboardType: TextInputType.phone,
               ),
+            ),
 
-              const SizedBox(height: 32),
+            const SizedBox(height: 32),
 
-              // Submit Button
-              SizedBox(
+            RepaintBoundary(
+              child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _submitForm,
@@ -232,8 +193,8 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
                         ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -297,42 +258,6 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
         ),
         const SizedBox(height: 20),
       ],
-    );
-  }
-
-  Widget _buildGenderOption(String gender, IconData icon) {
-    final isSelected = _selectedGender == gender;
-    return InkWell(
-      onTap: () => setState(() => _selectedGender = gender),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : AppColors.card,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.surface,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 32,
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              gender,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? AppColors.primary : AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -400,5 +325,218 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+}
+
+class _GenderSelector extends StatelessWidget {
+  final String selectedGender;
+  final ValueChanged<String> onGenderSelected;
+
+  const _GenderSelector({
+    required this.selectedGender,
+    required this.onGenderSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'Jenis Kelamin',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: _GenderOption(
+                gender: 'Pria',
+                icon: Icons.male,
+                isSelected: selectedGender == 'Pria',
+                onTap: () => onGenderSelected('Pria'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _GenderOption(
+                gender: 'Wanita',
+                icon: Icons.female,
+                isSelected: selectedGender == 'Wanita',
+                onTap: () => onGenderSelected('Wanita'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _GenderOption extends StatelessWidget {
+  final String gender;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _GenderOption({
+    required this.gender,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : AppColors.card,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.surface,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 32,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              gender,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? AppColors.primary : AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BirthDateField extends StatelessWidget {
+  final DateTime? selectedDate;
+  final VoidCallback onTap;
+
+  const _BirthDateField({
+    required this.selectedDate,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'Tanggal Lahir',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+        InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.surface),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.calendar_today,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  selectedDate != null
+                      ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
+                      : 'Pilih tanggal lahir',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: selectedDate != null
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BloodTypeSelector extends StatelessWidget {
+  final String? selectedBloodType;
+  final ValueChanged<String?> onBloodTypeSelected;
+
+  const _BloodTypeSelector({
+    required this.selectedBloodType,
+    required this.onBloodTypeSelected,
+  });
+
+  static const _bloodTypes = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'Golongan Darah',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _bloodTypes.map((type) {
+            final isSelected = selectedBloodType == type;
+            return ChoiceChip(
+              label: Text(type),
+              selected: isSelected,
+              onSelected: (selected) {
+                onBloodTypeSelected(selected ? type : null);
+              },
+              selectedColor: AppColors.primary,
+              labelStyle: TextStyle(
+                color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
   }
 }

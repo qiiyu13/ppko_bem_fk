@@ -219,3 +219,13 @@ model PasswordReset {
 
   @@map("password_resets")
 }
+
+model TokenBlacklist {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@map("token_blacklist")
+}

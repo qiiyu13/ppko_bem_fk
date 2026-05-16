@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:dio/dio.dart';
 import 'api_service.dart';
@@ -10,6 +13,11 @@ class CacheService {
   static Database? _db;
 
   static Future<void> init() async {
+    if (!kIsWeb && Platform.isLinux) {
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    }
+
     _db = await openDatabase(
       join(await getDatabasesPath(), 'mediku_cache.db'),
       version: 2,

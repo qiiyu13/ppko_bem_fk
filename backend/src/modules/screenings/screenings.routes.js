@@ -5,19 +5,17 @@ const authenticate = require('../../middleware/auth');
 const authorize = require('../../middleware/roleGuard');
 const validate = require('../../middleware/validate');
 
-router.use(authenticate, authorize('ADMIN', 'SUPERADMIN'));
+router.get('/', authenticate, controller.getScreenings);
+router.get('/stats', authenticate, authorize('ADMIN', 'SUPERADMIN'), controller.getStats);
 
-router.post('/', [
+router.post('/', authenticate, authorize('ADMIN', 'SUPERADMIN'), [
   body('profileId').isString().notEmpty(),
   body('systolic').isInt({ min: 0 }),
   body('diastolic').isInt({ min: 0 }),
-  body('bloodSugar').isFloat({ min: 0 }),
-  body('cholesterol').isFloat({ min: 0 }),
-  body('uricAcid').isFloat({ min: 0 }),
+  body('bloodSugar').optional().isFloat({ min: 0 }),
+  body('cholesterol').optional().isFloat({ min: 0 }),
+  body('uricAcid').optional().isFloat({ min: 0 }),
   validate,
 ], controller.createScreening);
-
-router.get('/', controller.getScreenings);
-router.get('/stats', controller.getStats);
 
 module.exports = router;

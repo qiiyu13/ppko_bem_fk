@@ -11,9 +11,21 @@ const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
 };
 
-if (!process.env.JWT_SECRET && config.nodeEnv === 'production') {
-  console.error('FATAL: JWT_SECRET environment variable is required in production');
-  process.exitCode = 1;
+// Hard-fail in production if critical environment variables are missing
+if (config.nodeEnv === 'production') {
+  if (!process.env.JWT_SECRET) {
+    console.error('FATAL: JWT_SECRET environment variable is required in production');
+    process.exit(1);
+  }
+  if (!process.env.DATABASE_URL) {
+    console.error('FATAL: DATABASE_URL environment variable is required in production');
+    process.exit(1);
+  }
+}
+
+// Warn about optional but important missing config
+if (!process.env.OPENAI_API_KEY) {
+  console.warn('WARNING: OPENAI_API_KEY is not set. AI chat assistant will be disabled.');
 }
 
 module.exports = config;

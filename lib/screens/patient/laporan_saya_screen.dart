@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../constants/app_colors.dart';
 import '../../utils/asset_helper.dart';
 import '../../utils/responsive_size.dart';
@@ -52,14 +55,14 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
         _screeningData = data.map((json) {
           final map = json as Map<String, dynamic>;
           return BPScreeningData(
-            date: DateTime.parse(map['date'] as String),
+            date: DateTime.parse(map['screeningAt'] as String),
             systolic: (map['systolic'] as num).toInt(),
             diastolic: (map['diastolic'] as num).toInt(),
-            weight: (map['weight'] as num).toDouble(),
-            height: (map['height'] as num).toDouble(),
-            bloodSugar: (map['bloodSugar'] as num).toDouble(),
-            uricAcid: (map['uricAcid'] as num).toDouble(),
-            cholesterol: (map['cholesterol'] as num).toDouble(),
+            weight: (map['weight'] as num? ?? 0).toDouble(),
+            height: (map['height'] as num? ?? 0).toDouble(),
+            bloodSugar: (map['bloodSugar'] as num? ?? 0).toDouble(),
+            uricAcid: (map['uricAcid'] as num? ?? 0).toDouble(),
+            cholesterol: (map['cholesterol'] as num? ?? 0).toDouble(),
             gender: widget.gender,
           );
         }).toList();
@@ -196,10 +199,6 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
                         );
                       }),
 
-                      SizedBox(height: ResponsiveSize.spacingXLarge),
-
-                      // Bottom Action Buttons
-                      _buildActionButtons(),
                     ],
                   ),
                 ),
@@ -221,63 +220,6 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
     );
   }
 
-  Widget _buildActionButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: TouchableButton(
-            onTap: () {},
-            isFilled: false,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.download,
-                  color: AppColors.textSecondary,
-                  size: ResponsiveSize.iconSmall,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'UNDUH',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: ResponsiveSize.fontMedium,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(width: ResponsiveSize.paddingSmall),
-        Expanded(
-          child: TouchableButton(
-            onTap: () {},
-            isFilled: true,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.share,
-                  color: AppColors.background,
-                  size: ResponsiveSize.iconSmall,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'BAGIKAN',
-                  style: TextStyle(
-                    color: AppColors.background,
-                    fontSize: ResponsiveSize.fontMedium,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 // Data model for screening
@@ -381,32 +323,6 @@ class _ExpandableScreeningCardWidgetState
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
-  String _getBPStatus(int systolic, int diastolic) {
-    if (systolic <= 90 && diastolic <= 60) return 'RENDAH';
-    if (systolic >= 140 || diastolic >= 90) return 'TINGGI STAGE 2';
-    if (systolic >= 120 && systolic <= 129 && diastolic <= 80)
-      return 'ELEVATED';
-    if ((systolic >= 130 && systolic <= 139) ||
-        (diastolic >= 81 && diastolic <= 89)) {
-      return 'TINGGI STAGE 1';
-    }
-    return 'NORMAL';
-  }
-
-  Color _getBPStatusColor(String status) {
-    switch (status) {
-      case 'NORMAL':
-      case 'ELEVATED':
-        return AppColors.success;
-      case 'RENDAH':
-      case 'TINGGI STAGE 1':
-      case 'TINGGI STAGE 2':
-        return const Color(0xFFEF5350);
-      default:
-        return AppColors.success;
-    }
-  }
-
   Color _getIRDStatusColor(String category) {
     switch (category) {
       case 'Rendah':
@@ -422,8 +338,6 @@ class _ExpandableScreeningCardWidgetState
 
   @override
   Widget build(BuildContext context) {
-    final bpStatus = _getBPStatus(widget.data.systolic, widget.data.diastolic);
-    final statusColor = _getBPStatusColor(bpStatus);
 
     return Container(
       margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
@@ -491,99 +405,91 @@ class _ExpandableScreeningCardWidgetState
             Container(
               padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
               decoration: BoxDecoration(
-                color: AppColors.surface.withValues(alpha: 0.3),
+                color: AppColors.card,
                 borderRadius: BorderRadius.vertical(
                   bottom: Radius.circular(ResponsiveSize.cardBorderRadius),
                 ),
+                border: Border(top: BorderSide(color: AppColors.surface)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Vital chips 2x2 grid
                   Row(
                     children: [
-                      Icon(
-                        Icons.assignment_outlined,
-                        size: 18,
-                        color: AppColors.primary,
+                      Expanded(
+                        child: _buildVitalChip(
+                          icon: Icons.favorite,
+                          iconColor: const Color(0xFFEF5350),
+                          label: 'Tekanan Darah',
+                          value: '${widget.data.systolic}/${widget.data.diastolic}',
+                          unit: 'mmHg',
+                        ),
                       ),
-                      SizedBox(width: ResponsiveSize.paddingSmall * 0.5),
-                      Text(
-                        'Detail Hasil Screening',
-                        style: TextStyle(
-                          fontSize: ResponsiveSize.fontMedium,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                      SizedBox(width: ResponsiveSize.paddingSmall),
+                      Expanded(
+                        child: _buildVitalChip(
+                          icon: Icons.monitor_weight_outlined,
+                          iconColor: const Color(0xFF42A5F5),
+                          label: 'Berat Badan',
+                          value: widget.data.weight.toStringAsFixed(1),
+                          unit: 'kg',
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: ResponsiveSize.paddingSmall),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildVitalChip(
+                          icon: Icons.height,
+                          iconColor: const Color(0xFFAB47BC),
+                          label: 'Tinggi Badan',
+                          value: widget.data.height.toStringAsFixed(0),
+                          unit: 'cm',
+                        ),
+                      ),
+                      SizedBox(width: ResponsiveSize.paddingSmall),
+                      Expanded(
+                        child: _buildVitalChip(
+                          icon: Icons.calculate_outlined,
+                          iconColor: const Color(0xFFFFA726),
+                          label: 'BMI',
+                          value: widget.data.bmi.toStringAsFixed(1),
+                          unit: widget.data.bmiCategory,
                         ),
                       ),
                     ],
                   ),
                   SizedBox(height: ResponsiveSize.spacingMedium),
-                  // Blood Pressure (Primary Focus)
-                  _buildDetailSection(
-                    title: 'Tekanan Darah (Fokus Utama)',
-                    icon: Icons.favorite,
-                    iconColor: statusColor,
-                    children: [
-                      _buildDetailRow(
-                        'Sistolik',
-                        '${widget.data.systolic} mmHg',
-                        isHighlighted: true,
-                      ),
-                      _buildDetailRow(
-                        'Diastolik',
-                        '${widget.data.diastolic} mmHg',
-                        isHighlighted: true,
-                      ),
-                      _buildDetailRow('Status', bpStatus, isStatus: true),
-                    ],
+                  // Lab results
+                  Text(
+                    'Hasil Lab',
+                    style: TextStyle(
+                      fontSize: ResponsiveSize.fontSmall,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
+                  SizedBox(height: ResponsiveSize.spacingSmall),
+                  _buildLabRow('Gula Darah', '${widget.data.bloodSugar.toStringAsFixed(0)} mg/dL', _labColor(widget.data.bloodSugar, normal: 100, borderline: 126)),
+                  _buildLabRow('Asam Urat', '${widget.data.uricAcid.toStringAsFixed(1)} mg/dL', _labColor(widget.data.uricAcid, normal: 6, borderline: 7)),
+                  _buildLabRow('Kolesterol', '${widget.data.cholesterol.toStringAsFixed(0)} mg/dL', _labColor(widget.data.cholesterol, normal: 200, borderline: 240)),
                   SizedBox(height: ResponsiveSize.spacingMedium),
-                  // Weight & BMI
-                  _buildDetailSection(
-                    title: 'Berat & Tinggi Badan',
-                    icon: Icons.monitor_weight_outlined,
-                    iconColor: AppColors.primary,
-                    children: [
-                      _buildDetailRow(
-                        'Berat Badan',
-                        '${widget.data.weight.toStringAsFixed(1)} kg',
-                      ),
-                      _buildDetailRow(
-                        'Tinggi Badan',
-                        '${widget.data.height.toStringAsFixed(0)} cm',
-                      ),
-                      _buildDetailRow(
-                        'BMI',
-                        '${widget.data.bmi.toStringAsFixed(1)} (${widget.data.bmiCategory})',
-                      ),
-                    ],
-                  ),
+                  // IRD progress bar
+                  _buildIRDBar(),
                   SizedBox(height: ResponsiveSize.spacingMedium),
-                  // Lab Results
-                  _buildDetailSection(
-                    title: 'Hasil Laboratorium',
-                    icon: Icons.science_outlined,
-                    iconColor: AppColors.primarySurface,
-                    children: [
-                      _buildDetailRow(
-                        'Gula Darah',
-                        '${widget.data.bloodSugar.toStringAsFixed(0)} mg/dL',
-                      ),
-                      _buildDetailRow(
-                        'Asam Urat',
-                        '${widget.data.uricAcid.toStringAsFixed(1)} mg/dL',
-                      ),
-                      _buildDetailRow(
-                        'Kolesterol',
-                        '${widget.data.cholesterol.toStringAsFixed(0)} mg/dL',
-                      ),
-                      SizedBox(height: ResponsiveSize.spacingSmall),
-                      _buildDetailRow(
-                        'IRD (Index Ratio Diabetes)',
-                        '${widget.data.ird.toStringAsFixed(2)} (${widget.data.irdCategory})',
-                        isIrd: true,
-                      ),
-                    ],
+                  Divider(color: AppColors.surface),
+                  SizedBox(height: ResponsiveSize.spacingSmall),
+                  // Action button
+                  _buildActionButton(
+                    label: 'Unduh Laporan',
+                    icon: Icons.download_outlined,
+                    onTap: () { _downloadReport(); },
+                    bgColor: AppColors.primary,
+                    fgColor: AppColors.background,
+                    borderColor: AppColors.primary,
                   ),
                 ],
               ),
@@ -593,105 +499,374 @@ class _ExpandableScreeningCardWidgetState
     );
   }
 
-  Widget _buildDetailSection({
-    required String title,
+  Widget _buildActionButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+    required Color bgColor,
+    required Color fgColor,
+    required Color borderColor,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: ResponsiveSize.paddingMedium),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(ResponsiveSize.buttonBorderRadius),
+          border: Border.all(color: borderColor, width: 1),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: fgColor, size: ResponsiveSize.iconSmall),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: fgColor,
+                fontSize: ResponsiveSize.fontMedium,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVitalChip({
     required IconData icon,
     required Color iconColor,
-    required List<Widget> children,
+    required String label,
+    required String value,
+    required String unit,
   }) {
     return Container(
       padding: EdgeInsets.all(ResponsiveSize.paddingSmall),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(
-          ResponsiveSize.cardBorderRadius * 0.5,
-        ),
-        border: Border.all(color: AppColors.surface),
+        color: iconColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 16, color: iconColor),
-              SizedBox(width: 6),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: ResponsiveSize.fontSmall,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
+          Icon(icon, color: iconColor, size: 16),
+          SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: ResponsiveSize.fontMedium,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
-          SizedBox(height: ResponsiveSize.spacingSmall),
-          ...children,
+          Text(unit, style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+          Text(label, style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
         ],
       ),
     );
   }
 
-  Widget _buildDetailRow(
-    String label,
-    String value, {
-    bool isHighlighted = false,
-    bool isStatus = false,
-    bool isIrd = false,
-  }) {
-    final bpStatus = isStatus
-        ? _getBPStatus(widget.data.systolic, widget.data.diastolic)
-        : '';
-    final statusColor = isIrd
-        ? _getIRDStatusColor(widget.data.irdCategory)
-        : _getBPStatusColor(bpStatus);
+  Color _labColor(double value, {required double normal, required double borderline}) {
+    if (value < normal) return AppColors.success;
+    if (value < borderline) return const Color(0xFFFFA726);
+    return const Color(0xFFEF5350);
+  }
 
+  Widget _buildLabRow(String label, String value, Color color) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Flexible(
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
             child: Text(
               label,
-              style: TextStyle(
-                fontSize: ResponsiveSize.fontSmall,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: ResponsiveSize.fontSmall, color: AppColors.textSecondary),
             ),
           ),
-          if (isStatus)
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: statusColor,
-                ),
-              ),
-            )
-          else
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: ResponsiveSize.fontSmall,
-                fontWeight: isHighlighted || isIrd
-                    ? FontWeight.w600
-                    : FontWeight.normal,
-                color: isHighlighted
-                    ? AppColors.primary
-                    : (isIrd ? statusColor : AppColors.textPrimary),
-              ),
-            ),
+          Text(
+            value,
+            style: TextStyle(fontSize: ResponsiveSize.fontSmall, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+          ),
         ],
       ),
     );
+  }
+
+  Widget _buildIRDBar() {
+    final irdColor = _getIRDStatusColor(widget.data.irdCategory);
+    final progress = (widget.data.ird).clamp(0.0, 1.5) / 1.5;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'IRD (Index Risiko Diabetes)',
+              style: TextStyle(fontSize: ResponsiveSize.fontSmall, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+            ),
+            Text(
+              '${widget.data.ird.toStringAsFixed(2)} · ${widget.data.irdCategory}',
+              style: TextStyle(fontSize: ResponsiveSize.fontSmall, fontWeight: FontWeight.w600, color: irdColor),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 6,
+            backgroundColor: AppColors.surface,
+            valueColor: AlwaysStoppedAnimation<Color>(irdColor),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _downloadReport() async {
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async {
+        final doc = _generatePdf();
+        return doc.save();
+      },
+      name: 'Laporan_Screening_${_formatDate(widget.data.date)}.pdf',
+    );
+  }
+
+  pw.Document _generatePdf() {
+    final doc = pw.Document();
+    final d = widget.data;
+
+    final primaryColor = PdfColor.fromHex('144425');
+    final greyColor = PdfColor.fromHex('6B7280');
+    final lightGrey = PdfColor.fromHex('F3F4F6');
+    final borderColor = PdfColor.fromHex('E5E7EB');
+
+    PdfColor irdColor;
+    PdfColor irdLightColor;
+    switch (d.irdCategory) {
+      case 'Rendah':
+        irdColor = PdfColor.fromHex('4CAF50');
+        irdLightColor = PdfColor.fromHex('E8F5E9');
+        break;
+      case 'Sedang':
+        irdColor = PdfColor.fromHex('FFA726');
+        irdLightColor = PdfColor.fromHex('FFF8E1');
+        break;
+      default:
+        irdColor = PdfColor.fromHex('EF5350');
+        irdLightColor = PdfColor.fromHex('FFEBEE');
+    }
+
+    final auNormal = d.gender.toLowerCase() == 'pria' ? 7.0 : 6.0;
+
+    doc.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        build: (pw.Context context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.all(16),
+              decoration: pw.BoxDecoration(
+                color: primaryColor,
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'LAPORAN SCREENING KESEHATAN',
+                    style: pw.TextStyle(
+                      fontSize: 16,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.white,
+                    ),
+                  ),
+                  pw.SizedBox(height: 4),
+                  pw.Text(
+                    'Tanggal Screening: ${_formatDate(d.date)}',
+                    style: pw.TextStyle(fontSize: 10, color: PdfColors.white),
+                  ),
+                  pw.Text(
+                    'Dicetak: ${_formatDate(DateTime.now())}',
+                    style: pw.TextStyle(fontSize: 10, color: PdfColors.white),
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 20),
+            pw.Text(
+              'DATA VITAL',
+              style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: primaryColor),
+            ),
+            pw.SizedBox(height: 6),
+            pw.Table(
+              border: pw.TableBorder.all(color: borderColor, width: 0.5),
+              columnWidths: const {
+                0: pw.FlexColumnWidth(2),
+                1: pw.FlexColumnWidth(1.5),
+                2: pw.FlexColumnWidth(1),
+              },
+              children: [
+                pw.TableRow(
+                  decoration: pw.BoxDecoration(color: lightGrey),
+                  children: [
+                    _pdfCell('Parameter', bold: true),
+                    _pdfCell('Nilai', bold: true),
+                    _pdfCell('Satuan', bold: true),
+                  ],
+                ),
+                pw.TableRow(children: [_pdfCell('Tekanan Darah'), _pdfCell('${d.systolic}/${d.diastolic}'), _pdfCell('mmHg')]),
+                pw.TableRow(children: [_pdfCell('Berat Badan'), _pdfCell(d.weight.toStringAsFixed(1)), _pdfCell('kg')]),
+                pw.TableRow(children: [_pdfCell('Tinggi Badan'), _pdfCell(d.height.toStringAsFixed(0)), _pdfCell('cm')]),
+                pw.TableRow(children: [_pdfCell('BMI'), _pdfCell(d.bmi.toStringAsFixed(1)), _pdfCell(d.bmiCategory)]),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+            pw.Text(
+              'HASIL LABORATORIUM',
+              style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: primaryColor),
+            ),
+            pw.SizedBox(height: 6),
+            pw.Table(
+              border: pw.TableBorder.all(color: borderColor, width: 0.5),
+              columnWidths: const {
+                0: pw.FlexColumnWidth(2),
+                1: pw.FlexColumnWidth(1.5),
+                2: pw.FlexColumnWidth(1.5),
+                3: pw.FlexColumnWidth(1),
+              },
+              children: [
+                pw.TableRow(
+                  decoration: pw.BoxDecoration(color: lightGrey),
+                  children: [
+                    _pdfCell('Pemeriksaan', bold: true),
+                    _pdfCell('Hasil', bold: true),
+                    _pdfCell('Normal', bold: true),
+                    _pdfCell('Status', bold: true),
+                  ],
+                ),
+                pw.TableRow(children: [
+                  _pdfCell('Gula Darah'),
+                  _pdfCell('${d.bloodSugar.toStringAsFixed(0)} mg/dL'),
+                  _pdfCell('< 100 mg/dL'),
+                  _pdfColorCell(_labStatusText(d.bloodSugar, 100, 126), _pdfLabColor(d.bloodSugar, 100, 126)),
+                ]),
+                pw.TableRow(children: [
+                  _pdfCell('Asam Urat'),
+                  _pdfCell('${d.uricAcid.toStringAsFixed(1)} mg/dL'),
+                  _pdfCell('< ${auNormal.toStringAsFixed(0)} mg/dL'),
+                  _pdfColorCell(_labStatusText(d.uricAcid, auNormal, auNormal + 1), _pdfLabColor(d.uricAcid, auNormal, auNormal + 1)),
+                ]),
+                pw.TableRow(children: [
+                  _pdfCell('Kolesterol'),
+                  _pdfCell('${d.cholesterol.toStringAsFixed(0)} mg/dL'),
+                  _pdfCell('< 200 mg/dL'),
+                  _pdfColorCell(_labStatusText(d.cholesterol, 200, 240), _pdfLabColor(d.cholesterol, 200, 240)),
+                ]),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+            pw.Text(
+              'INDEX RISIKO DIABETES (IRD)',
+              style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: primaryColor),
+            ),
+            pw.SizedBox(height: 6),
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: pw.BoxDecoration(
+                color: irdLightColor,
+                border: pw.Border(
+                  left: pw.BorderSide(color: irdColor, width: 4),
+                ),
+              ),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('Nilai IRD', style: pw.TextStyle(fontSize: 9, color: greyColor)),
+                      pw.Text(
+                        d.ird.toStringAsFixed(2),
+                        style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text('Kategori Risiko', style: pw.TextStyle(fontSize: 9, color: greyColor)),
+                      pw.Text(
+                        d.irdCategory,
+                        style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: irdColor),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            pw.Spacer(),
+            pw.Divider(color: borderColor),
+            pw.Text(
+              'PPKO BEM FK — Laporan ini dibuat secara otomatis oleh sistem.',
+              style: pw.TextStyle(fontSize: 8, color: greyColor),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return doc;
+  }
+
+  pw.Widget _pdfCell(String text, {bool bold = false}) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(6),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(
+          fontSize: 10,
+          fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+        ),
+      ),
+    );
+  }
+
+  pw.Widget _pdfColorCell(String text, PdfColor color) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(6),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(fontSize: 10, color: color, fontWeight: pw.FontWeight.bold),
+      ),
+    );
+  }
+
+  String _labStatusText(double value, double normal, double borderline) {
+    if (value < normal) return 'Normal';
+    if (value < borderline) return 'Batas';
+    return 'Tinggi';
+  }
+
+  PdfColor _pdfLabColor(double value, double normal, double borderline) {
+    if (value < normal) return PdfColor.fromHex('4CAF50');
+    if (value < borderline) return PdfColor.fromHex('FFA726');
+    return PdfColor.fromHex('EF5350');
   }
 }
 
