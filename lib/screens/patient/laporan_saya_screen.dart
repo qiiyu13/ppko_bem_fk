@@ -636,15 +636,20 @@ class _ExpandableScreeningCardWidgetState
   Future<void> _downloadReport() async {
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async {
-        final doc = _generatePdf();
+        final doc = await _generatePdf();
         return doc.save();
       },
       name: 'Laporan_Screening_${_formatDate(widget.data.date)}.pdf',
     );
   }
 
-  pw.Document _generatePdf() {
-    final doc = pw.Document();
+  Future<pw.Document> _generatePdf() async {
+    final doc = pw.Document(
+      theme: pw.ThemeData.withFont(
+        base: await PdfGoogleFonts.notoSansRegular(),
+        bold: await PdfGoogleFonts.notoSansBold(),
+      ),
+    );
     final d = widget.data;
 
     final primaryColor = PdfColor.fromHex('144425');
