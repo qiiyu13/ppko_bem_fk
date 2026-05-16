@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../constants/app_colors.dart';
+import '../../utils/date_utils.dart';
+import '../../utils/patient_utils.dart';
 import '../../utils/responsive_size.dart';
 
 class PatientDetailScreen extends StatelessWidget {
@@ -92,37 +94,12 @@ class PatientDetailScreen extends StatelessWidget {
     }
   }
 
-  Color _getRiskColor(String riskLevel) {
-    switch (riskLevel) {
-      case 'high':
-        return AppColors.error;
-      case 'attention':
-        return AppColors.warning;
-      case 'normal':
-        return AppColors.success;
-      default:
-        return AppColors.textSecondary;
-    }
-  }
-
-  String _getRiskLabel(String riskLevel) {
-    switch (riskLevel) {
-      case 'high':
-        return 'High Risk';
-      case 'attention':
-        return 'Attention';
-      case 'normal':
-        return 'Normal';
-      default:
-        return 'Unknown';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     ResponsiveSize.init(context);
 
-    final riskColor = _getRiskColor(patient['riskLevel']);
+    final riskColor = PatientUtils.riskColor(patient['riskLevel']);
     final latestData = _medicalHistory.first;
     final bmi = _calculateBMI(latestData['weight'], latestData['height']);
     final bmiCategory = _getBMICategory(bmi);
@@ -269,7 +246,7 @@ class PatientDetailScreen extends StatelessWidget {
                         ),
                         SizedBox(width: ResponsiveSize.paddingSmall),
                         Text(
-                          'Status: ${_getRiskLabel(patient['riskLevel'])}',
+                          'Status: ${PatientUtils.riskLabel(patient['riskLevel'])}',
                           style: TextStyle(
                             color: riskColor,
                             fontSize: ResponsiveSize.fontLarge,
@@ -829,7 +806,7 @@ class PatientDetailScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${date.day} ${_getMonthName(date.month)} ${date.year}',
+                '${date.day} ${IndonesianDate.shortMonth(date.month)} ${date.year}',
                 style: TextStyle(
                   fontSize: ResponsiveSize.fontMedium,
                   fontWeight: FontWeight.w600,
@@ -919,21 +896,4 @@ class PatientDetailScreen extends StatelessWidget {
     );
   }
 
-  String _getMonthName(int month) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
-    return months[month - 1];
-  }
 }

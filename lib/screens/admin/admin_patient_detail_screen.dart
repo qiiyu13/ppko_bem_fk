@@ -41,7 +41,11 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal memuat data pasien')),
+      );
     }
   }
 

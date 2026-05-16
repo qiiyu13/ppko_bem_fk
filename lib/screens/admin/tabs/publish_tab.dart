@@ -59,6 +59,7 @@ class _PublishTabState extends State<PublishTab> {
       ),
     );
 
+    if (!mounted) return;
     if (result != null && result is TanamanArticle) {
       setState(() {
         _articles.insert(0, result);
@@ -75,6 +76,7 @@ class _PublishTabState extends State<PublishTab> {
       ),
     );
 
+    if (!mounted) return;
     if (result != null && result is TanamanArticle) {
       try {
         final updated = await ArticleService.updateArticle(
@@ -87,6 +89,7 @@ class _PublishTabState extends State<PublishTab> {
           isPublished: result.isPublished,
           updatedAt: result.updatedAt,
         );
+        if (!mounted) return;
         setState(() {
           final index = _articles.indexWhere((a) => a.id == updated.id);
           if (index != -1) {
@@ -95,6 +98,7 @@ class _PublishTabState extends State<PublishTab> {
         });
         _showSnackBar('Artikel berhasil diperbarui');
       } catch (e) {
+        if (!mounted) return;
         setState(() {
           final index = _articles.indexWhere((a) => a.id == result.id);
           if (index != -1) {

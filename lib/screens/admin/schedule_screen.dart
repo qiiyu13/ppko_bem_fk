@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../services/appointment_service.dart';
+import '../../utils/date_utils.dart';
 import '../../utils/responsive_size.dart';
 
 class ScheduleScreen extends StatefulWidget {
@@ -86,41 +87,6 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  String _getMonthName(int month) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
-    return months[month - 1];
-  }
-
-  String _getFullMonthName(int month) {
-    const months = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember',
-    ];
-    return months[month - 1];
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -301,7 +267,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  _getMonthName(date.month).toUpperCase(),
+                  IndonesianDate.shortMonth(date.month).toUpperCase(),
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 11,
@@ -476,7 +442,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           // Selected date events
           if (_selectedDate != null) ...[
             _buildSectionHeader(
-              'Jadwal ${_selectedDate!.day} ${_getFullMonthName(_selectedDate!.month)} ${_selectedDate!.year}',
+              'Jadwal ${_selectedDate!.day} ${IndonesianDate.fullMonth(_selectedDate!.month)} ${_selectedDate!.year}',
             ),
             SizedBox(height: ResponsiveSize.spacingMedium),
             _buildSelectedDateEvents(),
@@ -532,7 +498,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                 },
               ),
               Text(
-                '${_getFullMonthName(_focusedDate.month)} ${_focusedDate.year}',
+                '${IndonesianDate.fullMonth(_focusedDate.month)} ${_focusedDate.year}',
                 style: TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 18,

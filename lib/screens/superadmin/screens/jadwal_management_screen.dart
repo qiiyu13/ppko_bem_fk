@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
+import '../../../utils/date_utils.dart';
 import '../../../utils/responsive_size.dart';
 import 'schedule_form_screen.dart';
 
@@ -49,23 +50,6 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
     },
   ];
 
-  String _getMonthName(int month) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
-    return months[month - 1];
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -189,7 +173,7 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      _getMonthName(date.month).toUpperCase(),
+                      IndonesianDate.shortMonth(date.month).toUpperCase(),
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 11,

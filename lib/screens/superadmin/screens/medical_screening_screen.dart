@@ -74,21 +74,61 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     }
   }
 
+  bool _validateScreeningFields() {
+    final fields = <String, TextEditingController>{
+      'Sistolik': _systolicController,
+      'Diastolik': _diastolicController,
+      'Gula Darah': _bloodSugarController,
+      'Kolesterol': _cholesterolController,
+      'Asam Urat': _uricAcidController,
+      'Tinggi Badan': _heightController,
+    };
+    for (final entry in fields.entries) {
+      if (entry.value.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${entry.key} wajib diisi')),
+        );
+        return false;
+      }
+      if (int.tryParse(entry.value.text.trim()) == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${entry.key} harus berupa angka')),
+        );
+        return false;
+      }
+    }
+    if (_weightController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Berat Badan wajib diisi')),
+      );
+      return false;
+    }
+    if (double.tryParse(_weightController.text.trim()) == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Berat Badan harus berupa angka')),
+      );
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _submitScreening() async {
     if (_selectedPatient == null) return;
 
     final profileId = _selectedPatient!['profileId'] ?? _selectedPatient!['id'];
     if (profileId == null) return;
 
+    if (!_validateScreeningFields()) return;
+
     final body = {
       'profileId': profileId,
-      'systolic': int.tryParse(_systolicController.text) ?? 0,
-      'diastolic': int.tryParse(_diastolicController.text) ?? 0,
-      'bloodSugar': int.tryParse(_bloodSugarController.text) ?? 0,
-      'cholesterol': int.tryParse(_cholesterolController.text) ?? 0,
-      'uricAcid': int.tryParse(_uricAcidController.text) ?? 0,
-      'height': int.tryParse(_heightController.text) ?? 0,
-      'weight': double.tryParse(_weightController.text) ?? 0,
+      'systolic': int.parse(_systolicController.text.trim()),
+      'diastolic': int.parse(_diastolicController.text.trim()),
+      'bloodSugar': int.parse(_bloodSugarController.text.trim()),
+      'cholesterol': int.parse(_cholesterolController.text.trim()),
+      'uricAcid': int.parse(_uricAcidController.text.trim()),
+      'height': int.parse(_heightController.text.trim()),
+      'weight': double.parse(_weightController.text.trim()),
       'notes': _notesController.text,
       'screeningAt': DateTime.now().toIso8601String(),
     };

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
+import '../../../utils/patient_utils.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../services/api_service.dart';
 import '../admin_patient_detail_screen.dart';
@@ -72,10 +73,14 @@ class _DashboardTabState extends State<DashboardTab> {
       });
     } catch (e) {
       if (!loadMore) {
+        if (!mounted) return;
         setState(() {
           _patients = [];
           _totalCount = 0;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal memuat data pasien')),
+        );
       }
     } finally {
       setState(() {
@@ -748,11 +753,7 @@ class _DashboardTabState extends State<DashboardTab> {
         : riskLevel == 'attention'
         ? AppColors.warning
         : normalGreen;
-    final riskLabel = riskLevel == 'high'
-        ? 'High Risk'
-        : riskLevel == 'attention'
-        ? 'Attention'
-        : 'Normal';
+    final riskLabel = PatientUtils.riskLabel(riskLevel);
 
     return Container(
       margin: EdgeInsets.symmetric(

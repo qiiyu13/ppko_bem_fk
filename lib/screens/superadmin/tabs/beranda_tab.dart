@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/screening_service.dart';
 import '../../../services/admin_service.dart';
+import '../../../utils/date_utils.dart';
 import '../../../utils/responsive_size.dart';
 
 class BerandaTab extends StatefulWidget {
@@ -123,7 +124,7 @@ class _BerandaTabState extends State<BerandaTab> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            '${DateTime.now().day} ${_getMonthName(DateTime.now().month)} ${DateTime.now().year}',
+                            '${DateTime.now().day} ${IndonesianDate.fullMonth(DateTime.now().month)} ${DateTime.now().year}',
                             style: TextStyle(
                               fontSize: ResponsiveSize.fontSmall,
                               color: AppColors.primary,
@@ -259,13 +260,6 @@ class _BerandaTabState extends State<BerandaTab> {
     );
   }
 
-  String _getMonthName(int month) {
-    const months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-    ];
-    return months[month - 1];
-  }
 
   Widget _buildStatCard(
     String label,

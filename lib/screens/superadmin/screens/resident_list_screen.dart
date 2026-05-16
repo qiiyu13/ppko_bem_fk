@@ -43,19 +43,6 @@ class _ResidentListScreenState extends State<ResidentListScreen> {
     }
   }
 
-  Color _getStatusColor(String? status) {
-    switch (status) {
-      case 'High Risk':
-        return const Color(0xFFEF5350);
-      case 'Attention':
-        return const Color(0xFFFF9800);
-      case 'Normal':
-        return const Color(0xFF4CAF50);
-      default:
-        return AppColors.textSecondary;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     ResponsiveSize.init(context);
