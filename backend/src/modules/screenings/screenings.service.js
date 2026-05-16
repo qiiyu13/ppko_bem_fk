@@ -1,6 +1,7 @@
 const { broadcastToUsers, broadcastToAll, events } = require('../../websocket');
 const { calculateIrd } = require('../../utils/ird');
 const { parsePagination } = require('../../utils/pagination');
+const { createAndSend } = require('../notifications/notifications.service');
 
 const prisma = require('../../utils/prisma');
 
@@ -111,6 +112,18 @@ const createScreening = async (data, userId) => {
   } catch (e) {
     console.error('WebSocket broadcast failed:', e.message);
   }
+  try {
+    const categoryLabel = result.irdCategory === 'RENDAH' ? 'Risiko Rendah'
+      : result.irdCategory === 'SEDANG' ? 'Risiko Sedang'
+      : result.irdCategory === 'TINGGI' ? 'Risiko Tinggi'
+      : result.irdCategory;
+    await createAndSend(profile.userId, {
+      title: 'Hasil Skrining Tersedia',
+      body: `Skrining kesehatan ${profile.name} selesai. Kategori IRD: ${categoryLabel}.`,
+      type: 'screeningResult',
+      data: { screeningId: result.id, profileId: result.profileId },
+    });
+  } catch (e) { console.error('Notification send failed:', e.message); }
   return result;
 };
 

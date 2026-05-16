@@ -1,4 +1,5 @@
 const { broadcastToUsers, broadcastToAll, events } = require('../../websocket');
+const { createAndSend } = require('../notifications/notifications.service');
 
 const prisma = require('../../utils/prisma');
 
@@ -25,6 +26,15 @@ const createAppointment = async (data, userId) => {
     },
   });
   try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'appointments', action: 'create', id: result.id }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
+  try {
+    const dateStr = new Date(result.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    await createAndSend(userId, {
+      title: 'Jadwal Baru Ditambahkan',
+      body: `${result.title} pada ${dateStr}${result.location ? ' di ' + result.location : ''}`,
+      type: 'appointment',
+      data: { appointmentId: result.id },
+    });
+  } catch (e) { console.error('Notification send failed:', e.message); }
   return result;
 };
 

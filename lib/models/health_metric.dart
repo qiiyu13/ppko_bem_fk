@@ -17,6 +17,7 @@ class HealthMetric {
   final MetricStatus status;
   final IconData icon;
   final Color primaryColor;
+  final List<double> recentValues;
 
   const HealthMetric({
     required this.type,
@@ -28,6 +29,7 @@ class HealthMetric {
     required this.status,
     required this.icon,
     required this.primaryColor,
+    this.recentValues = const [],
   });
 }
 

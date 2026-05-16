@@ -6,54 +6,104 @@ import '../../../utils/asset_helper.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../screens/patient/laporan_saya_screen.dart';
 import '../../../screens/patient/metrics/metric_detail_screen.dart';
+import '../../../screens/patient/notification_screen.dart';
 import '../../../models/health_metric.dart';
 import '../../../models/family_profile.dart';
 import '../../../services/profile_service.dart';
+import '../../../services/notification_service.dart';
 import '../../../services/api_service.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
-class MiniBarChart extends StatelessWidget {
+class MiniSparkline extends StatelessWidget {
   final Color primaryColor;
-  final int barCount;
+  final List<double> values;
 
-  const MiniBarChart({
+  const MiniSparkline({
     super.key,
     required this.primaryColor,
-    this.barCount = 9,
+    required this.values,
   });
 
   @override
   Widget build(BuildContext context) {
-    final random = math.Random(42);
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(barCount, (index) {
-        final height = 0.3 + random.nextDouble() * 0.7;
-        final isHighlighted = index % 3 == 0;
-
-        return Container(
-          width: 8,
-          height: 48,
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              width: 6,
-              height: 48 * height,
-              decoration: BoxDecoration(
-                color: isHighlighted
-                    ? primaryColor
-                    : primaryColor.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-          ),
-        );
-      }),
+    return CustomPaint(
+      painter: _SparklinePainter(
+        values: values,
+        color: primaryColor,
+      ),
     );
   }
+}
+
+class _SparklinePainter extends CustomPainter {
+  final List<double> values;
+  final Color color;
+
+  const _SparklinePainter({required this.values, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.length < 2) return;
+
+    final minVal = values.reduce(math.min);
+    final maxVal = values.reduce(math.max);
+    final range = (maxVal - minVal).abs();
+    final effectiveRange = range < 1e-6 ? 1.0 : range;
+
+    double toX(int i) => i / (values.length - 1) * size.width;
+    double toY(double v) =>
+        size.height - ((v - minVal) / effectiveRange) * size.height * 0.8 - size.height * 0.1;
+
+    final points = [
+      for (int i = 0; i < values.length; i++) Offset(toX(i), toY(values[i])),
+    ];
+
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    for (int i = 1; i < points.length; i++) {
+      final cp1 = Offset(
+        points[i - 1].dx + (points[i].dx - points[i - 1].dx) / 3,
+        points[i - 1].dy,
+      );
+      final cp2 = Offset(
+        points[i].dx - (points[i].dx - points[i - 1].dx) / 3,
+        points[i].dy,
+      );
+      path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, points[i].dx, points[i].dy);
+    }
+
+    final fillPath = Path.from(path)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+
+    final gradient = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [color.withValues(alpha: 0.35), color.withValues(alpha: 0.0)],
+    );
+
+    canvas.drawPath(
+      fillPath,
+      Paint()
+        ..shader = gradient.createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+        ..style = PaintingStyle.fill,
+    );
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color.withValues(alpha: 0.85)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_SparklinePainter old) =>
+      old.values != values || old.color != color;
 }
 
 class HomeTab extends StatefulWidget {
@@ -181,6 +231,7 @@ class _HomeTabState extends State<HomeTab> {
           ),
           icon: PhosphorIcons.heart(PhosphorIconsStyle.fill),
           primaryColor: const Color(0xFFE53935),
+          recentValues: _parseRecentValues(json['recentValues']),
         );
       case MetricType.cholesterol:
         final value = (json['value'] as num?)?.toDouble() ?? 0;
@@ -194,6 +245,7 @@ class _HomeTabState extends State<HomeTab> {
           status: HealthMetricData.getCholesterolStatus(value, age),
           icon: PhosphorIcons.drop(PhosphorIconsStyle.fill),
           primaryColor: const Color(0xFFFB8C00),
+          recentValues: _parseRecentValues(json['recentValues']),
         );
       case MetricType.bloodSugar:
         final value = (json['value'] as num?)?.toDouble() ?? 0;
@@ -207,6 +259,7 @@ class _HomeTabState extends State<HomeTab> {
           status: HealthMetricData.getBloodSugarStatus(value, age),
           icon: PhosphorIcons.testTube(PhosphorIconsStyle.fill),
           primaryColor: const Color(0xFF43A047),
+          recentValues: _parseRecentValues(json['recentValues']),
         );
       case MetricType.uricAcid:
         final value = (json['value'] as num?)?.toDouble() ?? 0;
@@ -220,6 +273,7 @@ class _HomeTabState extends State<HomeTab> {
           status: HealthMetricData.getUricAcidStatus(value, age, gender),
           icon: PhosphorIcons.flask(PhosphorIconsStyle.fill),
           primaryColor: const Color(0xFF5E35B1),
+          recentValues: _parseRecentValues(json['recentValues']),
         );
     }
   }
@@ -243,6 +297,14 @@ class _HomeTabState extends State<HomeTab> {
     if (date == null) return DateTime.now();
     if (date is String) return DateTime.parse(date);
     return DateTime.now();
+  }
+
+  List<double> _parseRecentValues(dynamic raw) {
+    if (raw == null) return [];
+    if (raw is List) {
+      return raw.map((v) => (v as num).toDouble()).toList();
+    }
+    return [];
   }
 
   String _getGreeting() {
@@ -443,34 +505,73 @@ class _HomeTabState extends State<HomeTab> {
                             },
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () {},
-                          child: Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: AppColors.card,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Stack(
-                                children: [
-                                  Icon(
-                                    Icons.notifications_outlined,
-                                    color: AppColors.primary,
-                                    size: 24,
+                        ValueListenableBuilder<int>(
+                          valueListenable:
+                              NotificationService.instance.unreadCount,
+                          builder: (context, count, _) {
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const NotificationScreen(),
                                   ),
-                                ],
+                                );
+                              },
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: AppColors.card,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.05),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      const Icon(
+                                        Icons.notifications_outlined,
+                                        color: AppColors.primary,
+                                        size: 24,
+                                      ),
+                                      if (count > 0)
+                                        Positioned(
+                                          top: -4,
+                                          right: -4,
+                                          child: Container(
+                                            width: 16,
+                                            height: 16,
+                                            decoration: const BoxDecoration(
+                                              color: AppColors.statusRed,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                count > 9 ? '9+' : '$count',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -895,15 +996,17 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
               ),
             ),
           ),
-          Positioned(
-            bottom: 16,
-            left: 12,
-            right: 12,
-            child: MiniBarChart(
-              primaryColor: widget.metric.primaryColor,
-              barCount: 9,
+          if (widget.metric.recentValues.length >= 2)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 52,
+              child: MiniSparkline(
+                primaryColor: widget.metric.primaryColor,
+                values: widget.metric.recentValues,
+              ),
             ),
-          ),
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(

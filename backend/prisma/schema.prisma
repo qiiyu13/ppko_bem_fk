@@ -21,6 +21,7 @@ model User {
   responsibleName String   @map("responsible_name")
   role            Role     @default(PATIENT)
   isActive        Boolean  @default(true) @map("is_active")
+  fcmToken        String?  @map("fcm_token")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -29,6 +30,7 @@ model User {
   createdArticles Article[]          @relation("Author")
   appointments    Appointment[]
   conversations   ChatConversation[]
+  notifications   Notification[]
 
   @@map("users")
 }
@@ -228,4 +230,21 @@ model TokenBlacklist {
 
   @@index([expiresAt])
   @@map("token_blacklist")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  body      String
+  type      String   @default("general")
+  isRead    Boolean  @default(false) @map("is_read")
+  data      Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("notifications")
 }

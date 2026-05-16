@@ -9,6 +9,7 @@ import 'screens/splash_screen.dart';
 import 'services/api_service.dart';
 import 'services/cache_service.dart';
 import 'services/connectivity_service.dart';
+import 'services/notification_service.dart';
 import 'services/platform_util.dart';
 
 void main() async {
@@ -25,6 +26,9 @@ void main() async {
 
   // Initialize connectivity monitoring and auto-sync
   await ConnectivityService.instance.initialize();
+
+  // Initialize notification service (loads local cache, registers FCM if available)
+  await NotificationService.instance.initialize();
 
   runApp(
     kDebugMode

@@ -38,32 +38,60 @@ const createMetric = async (data, userId) => {
 };
 
 const getHistory = async (profileId, type, userId) => {
-  // Verify profile belongs to user
   const profile = await prisma.familyProfile.findFirst({
     where: { id: profileId, userId },
   });
   if (!profile) throw Object.assign(new Error('Profile not found'), { statusCode: 404 });
 
-  return prisma.healthMetric.findMany({
+  const records = await prisma.healthMetric.findMany({
     where: { profileId, type },
     orderBy: { recordedAt: 'asc' },
   });
+
+  return records.map((r) => ({
+    date: r.recordedAt,
+    value: r.value,
+    secondaryValue: r.secondaryValue,
+    notes: r.notes,
+  }));
 };
 
 const getLatest = async (profileId, userId) => {
-  // Verify profile belongs to user
   const profile = await prisma.familyProfile.findFirst({
     where: { id: profileId, userId },
   });
   if (!profile) throw Object.assign(new Error('Profile not found'), { statusCode: 404 });
 
-  const types = await prisma.healthMetric.findMany({
-    where: { profileId },
-    distinct: ['type'],
-    orderBy: { recordedAt: 'desc' },
-  });
+  const metricTypes = ['blood_pressure', 'cholesterol', 'blood_sugar', 'uric_acid'];
 
-  return types;
+  const results = await Promise.all(
+    metricTypes.map(async (type) => {
+      const latest = await prisma.healthMetric.findFirst({
+        where: { profileId, type },
+        orderBy: { recordedAt: 'desc' },
+      });
+      if (!latest) return null;
+
+      const recent = await prisma.healthMetric.findMany({
+        where: { profileId, type },
+        orderBy: { recordedAt: 'desc' },
+        take: 7,
+        select: { value: true },
+      });
+
+      return {
+        type: latest.type,
+        value: latest.value,
+        secondaryValue: latest.secondaryValue,
+        unit: latest.unit,
+        notes: latest.notes,
+        lastUpdated: latest.recordedAt,
+        recentValues: recent.map((r) => r.value).reverse(),
+      };
+    }),
+  );
+
+  return results.filter(Boolean);
 };
 
 module.exports = { getMetrics, createMetric, getHistory, getLatest };
