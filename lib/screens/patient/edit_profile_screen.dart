@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../constants/app_colors.dart';
 import '../../models/family_profile.dart';
 import '../../services/profile_service.dart';
+import '../../widgets/profile_form_field.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final FamilyProfile profile;
@@ -25,7 +25,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   DateTime? _selectedBirthDate;
   bool _isLoading = false;
 
-  final List<String> _bloodTypes = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+  static const List<String> _bloodTypes = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
   @override
   void initState() {
@@ -93,7 +93,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 24),
 
               // NIK (read-only)
-              _buildTextField(
+              ProfileFormField(
                 controller: _nikController,
                 label: 'NIK',
                 hint: 'Masukkan 16 digit NIK',
@@ -101,18 +101,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 maxLength: 16,
                 readOnly: true,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'NIK wajib diisi';
-                  }
-                  if (value.length != 16) {
-                    return 'NIK harus 16 digit';
-                  }
+                  if (value == null || value.isEmpty) return 'NIK wajib diisi';
+                  if (value.length != 16) return 'NIK harus 16 digit';
                   return null;
                 },
               ),
 
               // Name
-              _buildTextField(
+              ProfileFormField(
                 controller: _nameController,
                 label: 'Nama Lengkap',
                 hint: 'Masukkan nama lengkap',
@@ -125,7 +121,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
 
               // Gender
-              _buildLabel('Jenis Kelamin'),
+              ProfileFieldLabel('Jenis Kelamin'),
               Row(
                 children: [
                   Expanded(
@@ -140,7 +136,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 20),
 
               // Birth Date
-              _buildLabel('Tanggal Lahir'),
+              ProfileFieldLabel('Tanggal Lahir'),
               InkWell(
                 onTap: _selectBirthDate,
                 child: Container(
@@ -175,7 +171,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 20),
 
               // Blood Type
-              _buildLabel('Golongan Darah'),
+              ProfileFieldLabel('Golongan Darah'),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -200,7 +196,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 20),
 
               // Address
-              _buildTextField(
+              ProfileFormField(
                 controller: _addressController,
                 label: 'Alamat',
                 hint: 'Masukkan alamat lengkap',
@@ -208,7 +204,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
 
               // Phone
-              _buildTextField(
+              ProfileFormField(
                 controller: _phoneController,
                 label: 'Nomor Telepon',
                 hint: 'Contoh: 081234567890',
@@ -252,69 +248,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildLabel(String label) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    String? hint,
-    TextInputType? keyboardType,
-    int? maxLength,
-    int? maxLines,
-    bool readOnly = false,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildLabel(label),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          maxLength: maxLength,
-          maxLines: maxLines ?? 1,
-          readOnly: readOnly,
-          validator: validator,
-          inputFormatters: keyboardType == TextInputType.number
-              ? [FilteringTextInputFormatter.digitsOnly]
-              : null,
-          decoration: InputDecoration(
-            hintText: hint,
-            filled: true,
-            fillColor: readOnly ? AppColors.surface : AppColors.card,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.surface),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary, width: 2),
-            ),
-            contentPadding: const EdgeInsets.all(16),
-            counterText: '',
-          ),
-        ),
-        const SizedBox(height: 20),
-      ],
     );
   }
 

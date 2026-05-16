@@ -3,6 +3,14 @@ import '../../../constants/app_colors.dart';
 import '../../../screens/welcome_screen.dart';
 import '../../../services/profile_service.dart';
 
+const String _kAppVersion = '1.0.0';
+
+void _showComingSoon(BuildContext context, String feature) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text('$feature segera hadir')),
+  );
+}
+
 class SettingsTab extends StatelessWidget {
   const SettingsTab({super.key});
 
@@ -45,7 +53,7 @@ class SettingsTab extends StatelessWidget {
                 icon: Icons.notifications_outlined,
                 title: 'Notifikasi',
                 subtitle: 'Atur notifikasi pengingat',
-                onTap: () {},
+                onTap: () => _showComingSoon(context, 'Notifikasi'),
                 padding: padding,
                 spacing: spacing,
               ),
@@ -54,7 +62,7 @@ class SettingsTab extends StatelessWidget {
                 icon: Icons.language_outlined,
                 title: 'Bahasa',
                 subtitle: 'Bahasa Indonesia',
-                onTap: () {},
+                onTap: () => _showComingSoon(context, 'Bahasa'),
                 padding: padding,
                 spacing: spacing,
               ),
@@ -63,7 +71,7 @@ class SettingsTab extends StatelessWidget {
                 icon: Icons.help_outline,
                 title: 'Bantuan',
                 subtitle: 'Pusat bantuan dan FAQ',
-                onTap: () {},
+                onTap: () => _showComingSoon(context, 'Bantuan'),
                 padding: padding,
                 spacing: spacing,
               ),
@@ -71,7 +79,7 @@ class SettingsTab extends StatelessWidget {
               _buildSettingsItem(
                 icon: Icons.info_outline,
                 title: 'Tentang Aplikasi',
-                subtitle: 'Versi 1.0.0',
+                subtitle: 'Versi $_kAppVersion',
                 onTap: () {},
                 padding: padding,
                 spacing: spacing,

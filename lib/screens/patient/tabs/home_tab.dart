@@ -4,6 +4,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../constants/app_colors.dart';
 import '../../../utils/asset_helper.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../widgets/error_state_widget.dart';
 import '../../../screens/patient/laporan_saya_screen.dart';
 import '../../../screens/patient/metrics/metric_detail_screen.dart';
 import '../../../screens/patient/notification_screen.dart';
@@ -345,28 +346,7 @@ class _HomeTabState extends State<HomeTab> {
     }
 
     if (_error != null && _metrics.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.cloud_off, size: 48, color: AppColors.textSecondary),
-              const SizedBox(height: 16),
-              Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _loadData,
-                child: const Text('Coba Lagi'),
-              ),
-            ],
-          ),
-        ),
-      );
+      return ErrorStateWidget(message: _error!, onRetry: _loadData);
     }
 
     final profile = ProfileService.instance.activeProfile;

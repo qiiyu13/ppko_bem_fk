@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/tanaman_article.dart';
@@ -153,30 +152,14 @@ class _ArticleCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: article.imagePath.isNotEmpty
                     ? Image.asset(
-                        kIsWeb
-                            ? AssetHelper.getWebImagePath(
-                                article.imagePath.replaceFirst(
-                                  'assets/images/',
-                                  '',
-                                ),
-                              )
-                            : AssetHelper.getImagePath(
-                                article.imagePath.replaceFirst(
-                                  'assets/images/',
-                                  '',
-                                ),
-                              ),
+                        AssetHelper.getArticleImagePath(article.imagePath),
                         width: 80,
                         height: 80,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
-                          // Fallback to original image on error
                           return Image.asset(
                             AssetHelper.getImagePath(
-                              article.imagePath.replaceFirst(
-                                'assets/images/',
-                                '',
-                              ),
+                              article.imagePath.replaceFirst('assets/images/', ''),
                             ),
                             width: 80,
                             height: 80,

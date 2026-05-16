@@ -52,14 +52,16 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
         final messageData = event['message'] as Map<String, dynamic>;
         final role = messageData['role'] as String?;
         if (role == 'assistant') {
-          setState(() {
-            _isTyping = false;
-            _messages.add(ChatMessage(
-              text: messageData['content'] as String,
-              isUser: false,
-              timestamp: DateTime.parse(messageData['createdAt'] as String),
-            ));
-          });
+          if (mounted) {
+            setState(() {
+              _isTyping = false;
+              _messages.add(ChatMessage(
+                text: messageData['content'] as String,
+                isUser: false,
+                timestamp: DateTime.parse(messageData['createdAt'] as String),
+              ));
+            });
+          }
           _scrollToBottom();
           _saveConversation();
         }
@@ -163,35 +165,33 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
     if (_activeConversationId != null) {
       ChatService.sendMessageViaWebSocket(_activeConversationId!, text);
       if (!WebSocketService.instance.isConnected) {
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            setState(() {
-              _isTyping = false;
-              _messages.add(ChatMessage(
-                text: 'Maaf, koneksi ke server terputus. Pesan Anda tersimpan secara lokal dan akan dikirim saat koneksi pulih.',
-                isUser: false,
-                timestamp: DateTime.now(),
-              ));
-            });
-            _saveConversation();
-          }
-        });
+        _addOfflineReply(
+          'Maaf, koneksi ke server terputus. Pesan Anda tersimpan secara lokal dan akan dikirim saat koneksi pulih.',
+          const Duration(seconds: 2),
+        );
       }
     } else {
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted) {
-          setState(() {
-            _isTyping = false;
-            _messages.add(ChatMessage(
-              text: 'Asisten AI membutuhkan koneksi internet. Silakan coba lagi saat online.',
-              isUser: false,
-              timestamp: DateTime.now(),
-            ));
-          });
-          _saveConversation();
-        }
-      });
+      _addOfflineReply(
+        'Asisten AI membutuhkan koneksi internet. Silakan coba lagi saat online.',
+        const Duration(seconds: 1),
+      );
     }
+  }
+
+  void _addOfflineReply(String text, Duration delay) {
+    Future.delayed(delay, () {
+      if (mounted) {
+        setState(() {
+          _isTyping = false;
+          _messages.add(ChatMessage(
+            text: text,
+            isUser: false,
+            timestamp: DateTime.now(),
+          ));
+        });
+        _saveConversation();
+      }
+    });
   }
 
   void _scrollToBottom() {

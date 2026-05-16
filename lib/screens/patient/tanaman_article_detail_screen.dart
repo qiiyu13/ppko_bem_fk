@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../models/tanaman_article.dart';
@@ -26,13 +25,7 @@ class TanamanArticleDetailScreen extends StatelessWidget {
               background: Hero(
                 tag: 'article_image_${article.id}',
                 child: Image.asset(
-                  kIsWeb
-                      ? AssetHelper.getWebImagePath(
-                          article.imagePath.replaceFirst('assets/images/', ''),
-                        )
-                      : AssetHelper.getImagePath(
-                          article.imagePath.replaceFirst('assets/images/', ''),
-                        ),
+                  AssetHelper.getArticleImagePath(article.imagePath),
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: double.infinity,

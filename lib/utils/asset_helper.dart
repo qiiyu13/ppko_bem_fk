@@ -58,4 +58,11 @@ class AssetHelper {
     // Using original images for better visual quality.
     return getImagePath(filename);
   }
+
+  /// Normalizes article/tanaman image paths stored as 'assets/images/<name>'
+  /// and returns the correct platform-aware path via [getImagePath].
+  static String getArticleImagePath(String rawPath) {
+    final filename = rawPath.replaceFirst('assets/images/', '');
+    return kIsWeb ? getWebImagePath(filename) : getImagePath(filename);
+  }
 }

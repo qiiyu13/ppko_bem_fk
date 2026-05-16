@@ -106,7 +106,9 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
   Future<void> _deleteConversation(String id) async {
     try {
       await ChatService.deleteConversation(id);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('_deleteConversation remote failed: $e');
+    }
     await _storageService.deleteConversation(id);
     await _loadConversations();
 
@@ -153,7 +155,9 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
     for (final id in ids) {
       try {
         await ChatService.deleteConversation(id);
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('_batchDelete remote failed for $id: $e');
+      }
       await _storageService.deleteConversation(id);
     }
 

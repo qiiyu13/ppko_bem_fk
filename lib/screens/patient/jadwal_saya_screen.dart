@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../services/appointment_service.dart';
 import '../../services/profile_service.dart';
+import '../../utils/date_utils.dart';
 import '../../utils/responsive_size.dart';
 
 class JadwalSayaScreen extends StatefulWidget {
@@ -92,41 +93,9 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  String _getMonthName(int month) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
-    return months[month - 1];
-  }
+  String _getMonthName(int month) => IndonesianDate.shortMonth(month);
 
-  String _getFullMonthName(int month) {
-    const months = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember',
-    ];
-    return months[month - 1];
-  }
+  String _getFullMonthName(int month) => IndonesianDate.fullMonth(month);
 
   @override
   Widget build(BuildContext context) {

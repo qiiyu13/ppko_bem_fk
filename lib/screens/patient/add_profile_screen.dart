@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../constants/app_colors.dart';
 import '../../services/profile_service.dart';
+import '../../widgets/profile_form_field.dart';
 
 class AddProfileScreen extends StatefulWidget {
   const AddProfileScreen({super.key});
@@ -56,116 +56,93 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
           padding: const EdgeInsets.all(16),
           physics: const ClampingScrollPhysics(),
           children: [
-            RepaintBoundary(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Informasi Pribadi',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Informasi Pribadi',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Masukkan data anggota keluarga',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Masukkan data anggota keluarga',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
 
-            RepaintBoundary(
-              child: _buildTextField(
-                controller: _nikController,
-                label: 'NIK',
-                hint: 'Masukkan 16 digit NIK',
-                keyboardType: TextInputType.number,
-                maxLength: 16,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'NIK wajib diisi';
-                  }
-                  if (value.length != 16) {
-                    return 'NIK harus 16 digit';
-                  }
-                  return null;
-                },
-              ),
+            ProfileFormField(
+              controller: _nikController,
+              label: 'NIK',
+              hint: 'Masukkan 16 digit NIK',
+              keyboardType: TextInputType.number,
+              maxLength: 16,
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'NIK wajib diisi';
+                if (value.length != 16) return 'NIK harus 16 digit';
+                return null;
+              },
             ),
 
-            RepaintBoundary(
-              child: _buildTextField(
-                controller: _nameController,
-                label: 'Nama Lengkap',
-                hint: 'Masukkan nama lengkap',
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Nama wajib diisi';
-                  }
-                  return null;
-                },
-              ),
+            ProfileFormField(
+              controller: _nameController,
+              label: 'Nama Lengkap',
+              hint: 'Masukkan nama lengkap',
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Nama wajib diisi';
+                return null;
+              },
             ),
 
-            RepaintBoundary(
-              child: _GenderSelector(
-                selectedGender: _selectedGender,
-                onGenderSelected: (gender) {
-                  setState(() => _selectedGender = gender);
-                },
-              ),
+            _GenderSelector(
+              selectedGender: _selectedGender,
+              onGenderSelected: (gender) {
+                setState(() => _selectedGender = gender);
+              },
             ),
             const SizedBox(height: 20),
 
-            RepaintBoundary(
-              child: _BirthDateField(
-                selectedDate: _selectedBirthDate,
-                onTap: _selectBirthDate,
-              ),
+            _BirthDateField(
+              selectedDate: _selectedBirthDate,
+              onTap: _selectBirthDate,
             ),
             const SizedBox(height: 20),
 
-            RepaintBoundary(
-              child: _BloodTypeSelector(
-                selectedBloodType: _selectedBloodType,
-                onBloodTypeSelected: (type) {
-                  setState(() => _selectedBloodType = type);
-                },
-              ),
+            _BloodTypeSelector(
+              selectedBloodType: _selectedBloodType,
+              onBloodTypeSelected: (type) {
+                setState(() => _selectedBloodType = type);
+              },
             ),
             const SizedBox(height: 20),
 
-            RepaintBoundary(
-              child: _buildTextField(
-                controller: _addressController,
-                label: 'Alamat',
-                hint: 'Masukkan alamat lengkap',
-                maxLines: 3,
-              ),
+            ProfileFormField(
+              controller: _addressController,
+              label: 'Alamat',
+              hint: 'Masukkan alamat lengkap',
+              maxLines: 3,
             ),
 
-            RepaintBoundary(
-              child: _buildTextField(
-                controller: _phoneController,
-                label: 'Nomor Telepon',
-                hint: 'Contoh: 081234567890',
-                keyboardType: TextInputType.phone,
-              ),
+            ProfileFormField(
+              controller: _phoneController,
+              label: 'Nomor Telepon',
+              hint: 'Contoh: 081234567890',
+              keyboardType: TextInputType.phone,
             ),
 
             const SizedBox(height: 32),
 
-            RepaintBoundary(
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
                   onPressed: _isLoading ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -193,71 +170,9 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
                         ),
                 ),
               ),
-            ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildLabel(String label) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    String? hint,
-    TextInputType? keyboardType,
-    int? maxLength,
-    int? maxLines,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildLabel(label),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          maxLength: maxLength,
-          maxLines: maxLines ?? 1,
-          validator: validator,
-          inputFormatters: keyboardType == TextInputType.number
-              ? [FilteringTextInputFormatter.digitsOnly]
-              : null,
-          decoration: InputDecoration(
-            hintText: hint,
-            filled: true,
-            fillColor: AppColors.card,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.surface),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary, width: 2),
-            ),
-            contentPadding: const EdgeInsets.all(16),
-            counterText: '',
-          ),
-        ),
-        const SizedBox(height: 20),
-      ],
     );
   }
 

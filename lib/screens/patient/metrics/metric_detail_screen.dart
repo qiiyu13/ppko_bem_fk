@@ -90,7 +90,7 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = 'Gagal memuat riwayat. Periksa koneksi Anda.';
+        _error = 'Gagal memuat riwayat: $e';
       });
     }
   }
@@ -225,7 +225,8 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                           else
                             LayoutBuilder(
                               builder: (context, constraints) {
-                                final chartHeight = constraints.maxHeight > 750
+                                const _kTallScreenThreshold = 750.0;
+                                final chartHeight = constraints.maxHeight > _kTallScreenThreshold
                                     ? 450.0
                                     : 280.0;
                                 return SizedBox(

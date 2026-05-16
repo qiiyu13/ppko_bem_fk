@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/responsive_size.dart';
+import '../../utils/date_utils.dart';
 import '../../constants/app_colors.dart';
 import 'bp_chart_widget.dart';
 
@@ -29,23 +30,7 @@ class _ExpandableScreeningCardState extends State<ExpandableScreeningCard> {
     _isExpanded = widget.isInitiallyExpanded;
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember',
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
-  }
+  String _formatDate(DateTime date) => IndonesianDate.format(date);
 
   String _getBPStatus(int systolic, int diastolic) {
     if (systolic <= 90 && diastolic <= 60) return 'RENDAH';
