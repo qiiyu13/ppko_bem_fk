@@ -22,22 +22,37 @@ class ProfilTab extends StatelessWidget {
         child: StreamBuilder<List<FamilyProfile>>(
           stream: ProfileService.instance.profilesStream,
           initialData: ProfileService.instance.profiles,
-          builder: (context, snapshot) {
-            final profiles = snapshot.data ?? [];
+          builder: (context, profilesSnapshot) {
+            final profiles = profilesSnapshot.data ?? [];
 
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Padding(
-                padding: EdgeInsets.all(padding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            return StreamBuilder<FamilyProfile?>(
+              stream: ProfileService.instance.activeProfileStream,
+              initialData: ProfileService.instance.activeProfile,
+              builder: (context, activeSnapshot) {
+                final activeProfile = activeSnapshot.data;
+
+                return ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black,
+                      Colors.black,
+                      Colors.transparent,
+                    ],
+                    stops: [0.0, 0.92, 1.0],
+                  ).createShader(bounds),
+                  blendMode: BlendMode.dstIn,
+                  child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Padding(
+                    padding: EdgeInsets.all(padding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        // Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               'Anggota Keluarga',
@@ -47,114 +62,135 @@ class ProfilTab extends StatelessWidget {
                                 color: AppColors.textPrimary,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${profiles.length} anggota terdaftar',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppColors.textSecondary,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.people,
+                                    size: 16,
+                                    color: AppColors.primary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${profiles.length}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
+
+                        SizedBox(height: spacing * 1.5),
+
+                        // Active Profile Card
+                        if (activeProfile != null)
+                          _buildActiveProfileCard(
+                            activeProfile,
+                            screenWidth,
+                            padding,
+                            spacing,
+                            context,
                           ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.people,
-                                size: 16,
-                                color: AppColors.primary,
+
+                        SizedBox(height: spacing * 2),
+
+                        // Family Members List Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Semua Anggota',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${profiles.length}',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const AddProfileScreen(),
                                 ),
                               ),
-                            ],
-                          ),
+                              icon: Icon(
+                                Icons.person_add,
+                                color: AppColors.primary,
+                              ),
+                              tooltip: 'Tambah Anggota',
+                            ),
+                          ],
                         ),
+
+                        SizedBox(height: spacing),
+
+                        if (profiles.isEmpty)
+                          _buildEmptyState(spacing)
+                        else
+                          ...profiles.map(
+                            (profile) => _buildProfileListItem(
+                              profile,
+                              activeProfile?.id == profile.id,
+                              screenWidth,
+                              padding,
+                              spacing,
+                              context,
+                            ),
+                          ),
+
+                        SizedBox(height: spacing),
                       ],
                     ),
-
-                    SizedBox(height: spacing * 1.5),
-
-                    // Active Profile Card
-                    StreamBuilder<FamilyProfile?>(
-                      stream: ProfileService.instance.activeProfileStream,
-                      initialData: ProfileService.instance.activeProfile,
-                      builder: (context, snapshot) {
-                        final activeProfile = snapshot.data;
-                        if (activeProfile == null)
-                          return const SizedBox.shrink();
-
-                        return _buildActiveProfileCard(
-                          activeProfile,
-                          screenWidth,
-                          padding,
-                          spacing,
-                          context,
-                        );
-                      },
-                    ),
-
-                    SizedBox(height: spacing * 2),
-
-                    // Family Members List Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Semua Anggota',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => _showAddProfileDialog(context),
-                          icon: Icon(
-                            Icons.person_add,
-                            color: AppColors.primary,
-                          ),
-                          tooltip: 'Tambah Anggota',
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: spacing),
-
-                    // List of all profiles
-                    ...profiles.map(
-                      (profile) => _buildProfileListItem(
-                        profile,
-                        screenWidth,
-                        padding,
-                        spacing,
-                        context,
-                      ),
-                    ),
-
-                    SizedBox(height: spacing),
-                  ],
-                ),
-              ),
+                  ),
+                  ),
+                );
+              },
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(double spacing) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: spacing * 3),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.people_outline, size: 56, color: AppColors.textSecondary),
+            SizedBox(height: spacing),
+            Text(
+              'Belum ada anggota keluarga',
+              style: TextStyle(
+                fontSize: 15,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            SizedBox(height: spacing * 0.5),
+            Text(
+              'Tambahkan anggota dengan tombol + di atas',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -283,35 +319,6 @@ class ProfilTab extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoChip(String label, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 14,
-            color: AppColors.textOnPrimary.withValues(alpha: 0.9),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textOnPrimary.withValues(alpha: 0.9),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildInfoChipCompact(String label, IconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -343,132 +350,120 @@ class ProfilTab extends StatelessWidget {
 
   Widget _buildProfileListItem(
     FamilyProfile profile,
+    bool isActive,
     double screenWidth,
     double padding,
     double spacing,
     BuildContext context,
   ) {
-    return StreamBuilder<FamilyProfile?>(
-      stream: ProfileService.instance.activeProfileStream,
-      initialData: ProfileService.instance.activeProfile,
-      builder: (context, snapshot) {
-        final activeProfile = snapshot.data;
-        final isActive = activeProfile?.id == profile.id;
-
-        return Container(
-          margin: EdgeInsets.only(bottom: spacing),
-          child: Material(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(12),
-            child: InkWell(
-              onTap: () => _showProfileOptions(context, profile, isActive),
+    return Container(
+      margin: EdgeInsets.only(bottom: spacing),
+      child: Material(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: () => _showProfileOptions(context, profile, isActive),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: EdgeInsets.all(padding * 0.75),
+            decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: EdgeInsets.all(padding * 0.75),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: isActive
-                      ? Border.all(color: AppColors.primary, width: 2)
-                      : Border.all(color: AppColors.surface, width: 1),
+              border: isActive
+                  ? Border.all(color: AppColors.primary, width: 2)
+                  : Border.all(color: AppColors.surface, width: 1),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? AppColors.primary.withValues(alpha: 0.1)
+                        : AppColors.surface,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    profile.gender == 'Pria' ? Icons.male : Icons.female,
+                    size: 24,
+                    color: isActive
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: isActive
-                            ? AppColors.primary.withValues(alpha: 0.1)
-                            : AppColors.surface,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        profile.gender == 'Pria'
-                            ? Icons.male
-                            : Icons.female,
-                        size: 24,
-                        color: isActive
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
-                      ),
-                    ),
-                    SizedBox(width: padding * 0.75),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                SizedBox(width: padding * 0.75),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  profile.name,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: isActive
-                                        ? FontWeight.bold
-                                        : FontWeight.w600,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                          Flexible(
+                            child: Text(
+                              profile.name,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: isActive
+                                    ? FontWeight.bold
+                                    : FontWeight.w600,
+                                color: AppColors.textPrimary,
                               ),
-                              if (isActive) ...[
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    'AKTIF',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.textOnPrimary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            profile.formattedNik,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${profile.age} tahun • ${profile.gender}${profile.bloodType != null ? ' • ${profile.bloodType}' : ''}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary.withValues(
-                                alpha: 0.7,
+                          if (isActive) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'AKTIF',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textOnPrimary,
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ],
                       ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.qr_code, color: AppColors.primary, size: 20),
-                      onPressed: () => _showQRCodeDialog(context, profile),
-                      tooltip: 'Tampilkan QR',
-                    ),
-                    Icon(Icons.more_vert, color: AppColors.textSecondary),
-                  ],
+                      const SizedBox(height: 2),
+                      Text(
+                        profile.formattedNik,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${profile.age} tahun • ${profile.gender}${profile.bloodType != null ? ' • ${profile.bloodType}' : ''}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                IconButton(
+                  icon: Icon(Icons.qr_code, color: AppColors.primary, size: 20),
+                  onPressed: () => _showQRCodeDialog(context, profile),
+                  tooltip: 'Tampilkan QR',
+                ),
+                Icon(Icons.more_vert, color: AppColors.textSecondary),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -573,7 +568,7 @@ class ProfilTab extends StatelessWidget {
                   if (!isActive) {
                     await ProfileService.instance.setActiveProfile(profile.id);
                   }
-                  Navigator.pop(context);
+                  if (context.mounted) Navigator.pop(context);
                 },
               ),
               ListTile(
@@ -581,7 +576,12 @@ class ProfilTab extends StatelessWidget {
                 title: const Text('Edit Profil'),
                 onTap: () {
                   Navigator.pop(context);
-                  _showEditProfileDialog(context, profile);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditProfileScreen(profile: profile),
+                    ),
+                  );
                 },
               ),
               ListTile(
@@ -592,7 +592,7 @@ class ProfilTab extends StatelessWidget {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  _showDeleteConfirmation(context, profile);
+                  _showDeleteConfirmation(context, profile, isActive);
                 },
               ),
               const SizedBox(height: 16),
@@ -603,29 +603,50 @@ class ProfilTab extends StatelessWidget {
     );
   }
 
-  void _showAddProfileDialog(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const AddProfileScreen()),
-    );
-  }
-
-  void _showEditProfileDialog(BuildContext context, FamilyProfile profile) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditProfileScreen(profile: profile),
-      ),
-    );
-  }
-
-  void _showDeleteConfirmation(BuildContext context, FamilyProfile profile) {
+  void _showDeleteConfirmation(
+    BuildContext context,
+    FamilyProfile profile,
+    bool isActive,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Hapus Profil'),
-        content: Text(
-          'Apakah Anda yakin ingin menghapus profil ${profile.name}? Semua data terkait akan dihapus.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Apakah Anda yakin ingin menghapus profil ${profile.name}? Semua data terkait akan dihapus.',
+            ),
+            if (isActive) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        color: Colors.orange, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Ini adalah profil aktif saat ini.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.orange[800],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
         actions: [
           TextButton(
@@ -634,11 +655,18 @@ class ProfilTab extends StatelessWidget {
           ),
           TextButton(
             onPressed: () async {
-              await ProfileService.instance.deleteProfile(profile.id, profile.updatedAt);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Profil ${profile.name} telah dihapus')),
+              await ProfileService.instance.deleteProfile(
+                profile.id,
+                profile.updatedAt,
               );
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Profil ${profile.name} telah dihapus'),
+                  ),
+                );
+              }
             },
             child: Text('Hapus', style: TextStyle(color: Colors.red[400])),
           ),
