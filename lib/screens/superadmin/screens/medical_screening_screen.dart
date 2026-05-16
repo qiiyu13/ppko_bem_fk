@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/api_service.dart';
 import '../../../utils/responsive_size.dart';
+import '../../admin/qr_scanner_screen.dart';
 
 class MedicalScreeningScreen extends StatefulWidget {
-  const MedicalScreeningScreen({super.key});
+  final Map<String, dynamic>? initialPatient;
+
+  const MedicalScreeningScreen({super.key, this.initialPatient});
 
   @override
   State<MedicalScreeningScreen> createState() => _MedicalScreeningScreenState();
@@ -28,7 +31,11 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchPatients();
+    if (widget.initialPatient != null) {
+      _selectedPatient = widget.initialPatient;
+    } else {
+      _fetchPatients();
+    }
   }
 
   @override
@@ -140,31 +147,65 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     );
   }
 
+  void _openQrScanner() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => QrScannerScreen(
+          onScanResult: (data) {
+            setState(() {
+              _selectedPatient = data;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildPatientSelection() {
     return Column(
       children: [
         Container(
           padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-          child: TextField(
-            controller: _searchController,
-            onChanged: (_) => _fetchPatients(),
-            decoration: InputDecoration(
-              hintText: 'Cari pasien (NIK atau Nama)...',
-              hintStyle: TextStyle(color: AppColors.textSecondary),
-              prefixIcon: Icon(Icons.search, color: AppColors.textSecondary),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppColors.surface),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (_) => _fetchPatients(),
+                  decoration: InputDecoration(
+                    hintText: 'Cari pasien (NIK atau Nama)...',
+                    hintStyle: TextStyle(color: AppColors.textSecondary),
+                    prefixIcon:
+                        Icon(Icons.search, color: AppColors.textSecondary),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.surface),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.surface),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.primary),
+                    ),
+                  ),
+                ),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppColors.surface),
+              SizedBox(width: ResponsiveSize.paddingSmall),
+              IconButton(
+                onPressed: _openQrScanner,
+                icon: Icon(Icons.qr_code_scanner, color: AppColors.primary),
+                tooltip: 'Scan QR Pasien',
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppColors.primary),
-              ),
-            ),
+            ],
           ),
         ),
         Expanded(

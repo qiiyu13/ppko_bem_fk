@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'dart:convert';
 import '../../constants/app_colors.dart';
-import 'admin_patient_detail_screen.dart';
+import '../superadmin/screens/medical_screening_screen.dart';
 
 class QrScannerScreen extends StatefulWidget {
-  const QrScannerScreen({super.key});
+  final void Function(Map<String, dynamic>)? onScanResult;
+
+  const QrScannerScreen({super.key, this.onScanResult});
 
   @override
   State<QrScannerScreen> createState() => _QrScannerScreenState();
@@ -45,12 +47,17 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         return;
       }
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AdminPatientDetailScreen(patient: data),
-        ),
-      );
+      if (widget.onScanResult != null) {
+        widget.onScanResult!(data);
+        if (mounted) Navigator.pop(context);
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MedicalScreeningScreen(initialPatient: data),
+          ),
+        );
+      }
     } catch (e) {
       _showError('Gagal membaca QR Code');
       _isProcessing = false;
