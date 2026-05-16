@@ -27,6 +27,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   bool _isLoading = true;
   bool _isLoggedIn = false;
   String _userName = '';
+  String _userRole = '';
 
   @override
   void initState() {
@@ -44,6 +45,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       setState(() {
         _isLoggedIn = true;
         _userName = userData['responsibleName'] ?? 'Pengguna';
+        _userRole = userData['role'] ?? 'PATIENT';
         _isLoading = false;
       });
     } else if (mounted) {
@@ -367,7 +369,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           width: double.infinity,
           height: isShortScreen ? 44 : 52,
           child: ElevatedButton(
-            onPressed: () => _navigateToPatientDashboard(),
+            onPressed: () {
+              if (_userRole == 'ADMIN') {
+                _navigateToAdminDashboard();
+              } else if (_userRole == 'SUPERADMIN') {
+                _navigateToSuperadminDashboard();
+              } else {
+                _navigateToPatientDashboard();
+              }
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: AppColors.textOnPrimary,
@@ -583,12 +593,19 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 return;
               }
               try {
-                await AuthService.login(
+                final data = await AuthService.login(
                   kkNumber: kk,
                   password: password,
                 );
                 if (mounted) {
-                  await _navigateToPatientDashboard();
+                  final role = data['user']?['role'] ?? 'PATIENT';
+                  if (role == 'ADMIN') {
+                    await _navigateToAdminDashboard();
+                  } else if (role == 'SUPERADMIN') {
+                    await _navigateToSuperadminDashboard();
+                  } else {
+                    await _navigateToPatientDashboard();
+                  }
                 }
               } catch (e) {
                 if (mounted) {

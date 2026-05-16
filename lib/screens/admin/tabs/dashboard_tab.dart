@@ -158,7 +158,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 ),
                 SizedBox(height: ResponsiveSize.spacingMedium),
                 Text(
-                  patient['name'],
+                  patient['name'] ?? '-',
                   style: TextStyle(
                     fontSize: ResponsiveSize.fontXLarge,
                     fontWeight: FontWeight.bold,
@@ -167,7 +167,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 ),
                 SizedBox(height: ResponsiveSize.spacingSmall),
                 Text(
-                  'NIK: ${patient['nik']}',
+                  'NIK: ${patient['nik'] ?? '-'}',
                   style: TextStyle(
                     fontSize: ResponsiveSize.fontMedium,
                     color: AppColors.textSecondary,
@@ -780,6 +780,7 @@ class _DashboardTabState extends State<DashboardTab> {
             ),
           );
         },
+        onLongPress: () => _showActionModal(patient),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
@@ -794,7 +795,7 @@ class _DashboardTabState extends State<DashboardTab> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          patient['name'],
+                          patient['name'] ?? '-',
                           style: TextStyle(
                             fontSize: ResponsiveSize.fontLarge,
                             fontWeight: FontWeight.bold,
@@ -803,7 +804,7 @@ class _DashboardTabState extends State<DashboardTab> {
                         ),
                         SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
                         Text(
-                          'NIK: ${patient['nik']}',
+                          'NIK: ${patient['nik'] ?? '-'}',
                           style: TextStyle(
                             fontSize: ResponsiveSize.fontSmall,
                             color: AppColors.textSecondary,
