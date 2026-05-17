@@ -32,7 +32,7 @@ class AnimatedLineNavBar extends StatelessWidget {
     required this.unselectedColor,
     this.backgroundColor = AppColors.background,
     this.indicatorWidth = 0.6,
-    this.animationDuration = const Duration(milliseconds: 300),
+    this.animationDuration = const Duration(milliseconds: 220),
   });
 
   @override
@@ -73,13 +73,12 @@ class AnimatedLineNavBar extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 200),
-                                  transitionBuilder: (child, animation) {
-                                    return ScaleTransition(
-                                      scale: animation,
-                                      child: child,
-                                    );
-                                  },
+                                  duration: const Duration(milliseconds: 180),
+                                  transitionBuilder: (child, animation) =>
+                                      FadeTransition(
+                                        opacity: animation,
+                                        child: child,
+                                      ),
                                   child: Icon(
                                     currentIndex == index
                                         ? items[index].activeIcon
@@ -96,8 +95,9 @@ class AnimatedLineNavBar extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  items[index].label,
+                                AnimatedDefaultTextStyle(
+                                  duration: const Duration(milliseconds: 180),
+                                  curve: Curves.easeOut,
                                   style: TextStyle(
                                     color: currentIndex == index
                                         ? selectedColor
@@ -107,6 +107,7 @@ class AnimatedLineNavBar extends StatelessWidget {
                                         ? FontWeight.w600
                                         : FontWeight.normal,
                                   ),
+                                  child: Text(items[index].label),
                                 ),
                                 const SizedBox(height: 6),
                               ],
@@ -119,7 +120,7 @@ class AnimatedLineNavBar extends StatelessWidget {
                   // Animated indicator line
                   AnimatedPositioned(
                     duration: animationDuration,
-                    curve: Curves.easeInOut,
+                    curve: Curves.easeOutCubic,
                     top: 0,
                     left:
                         (currentIndex * tabWidth) +

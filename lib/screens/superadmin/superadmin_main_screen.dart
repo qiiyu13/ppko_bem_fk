@@ -70,7 +70,6 @@ class _SuperadminMainScreenState extends State<SuperadminMainScreen> {
         unselectedColor: inactiveGray,
         backgroundColor: AppColors.background,
         indicatorWidth: 0.6,
-        animationDuration: const Duration(milliseconds: 300),
       ),
     );
   }
