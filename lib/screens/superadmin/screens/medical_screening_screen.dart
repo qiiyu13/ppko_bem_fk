@@ -214,7 +214,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                   controller: _searchController,
                   onChanged: (_) => _fetchPatients(),
                   decoration: InputDecoration(
-                    hintText: 'Cari pasien (NIK atau Nama)...',
+                    hintText: 'Cari KK atau Keluarga',
                     hintStyle: TextStyle(color: AppColors.textSecondary),
                     prefixIcon:
                         Icon(Icons.search, color: AppColors.textSecondary),

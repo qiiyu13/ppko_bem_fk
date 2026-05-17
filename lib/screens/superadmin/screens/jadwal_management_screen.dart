@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
+import '../../../services/appointment_service.dart';
 import '../../../utils/date_utils.dart';
 import '../../../utils/responsive_size.dart';
 import 'schedule_form_screen.dart';
@@ -14,42 +16,78 @@ class JadwalManagementScreen extends StatefulWidget {
 class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
   static const Color highRiskRed = Color(0xFFEF5350);
 
-  final List<Map<String, dynamic>> _schedules = [
-    {
-      'id': 1,
-      'title': 'Screening Massal - Sukamaju',
-      'date': DateTime(2023, 10, 15),
-      'time': '08:00 - 12:00',
-      'location': 'Balai Desa Sukamaju',
-      'village': 'Sukamaju',
-      'patientsCount': 45,
-      'highRiskCount': 8,
-      'status': 'Scheduled',
-    },
-    {
-      'id': 2,
-      'title': 'Follow-up High Risk - Cibadak',
-      'date': DateTime(2023, 10, 18),
-      'time': '09:00 - 11:00',
-      'location': 'Puskesmas Kecamatan',
-      'village': 'Cibadak',
-      'patientsCount': 12,
-      'highRiskCount': 12,
-      'status': 'Urgent',
-    },
-    {
-      'id': 3,
-      'title': 'Screening Massal - Mekarwangi',
-      'date': DateTime(2023, 10, 22),
-      'time': '08:00 - 14:00',
-      'location': 'Posyandu Mekarwangi',
-      'village': 'Mekarwangi',
-      'patientsCount': 62,
-      'highRiskCount': 5,
-      'status': 'Scheduled',
-    },
-  ];
+  List<Map<String, dynamic>> _schedules = [];
+  bool _isLoading = true;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadSchedules();
+  }
+
+  Future<void> _loadSchedules() async {
+    setState(() => _isLoading = true);
+    try {
+      final all = await AppointmentService.getAppointments();
+      final jadwal = all
+          .where((a) => a['type'] == 'JADWAL')
+          .map(_appointmentToSchedule)
+          .toList();
+      jadwal.sort((a, b) {
+        final da = a['date'] as DateTime;
+        final db = b['date'] as DateTime;
+        return da.compareTo(db);
+      });
+      if (mounted) setState(() => _schedules = jadwal);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Map<String, dynamic> _appointmentToSchedule(Map<String, dynamic> a) {
+    DateTime date = DateTime.now();
+    final rawDate = a['date'];
+    if (rawDate is String) {
+      date = DateTime.tryParse(rawDate) ?? date;
+    } else if (rawDate is DateTime) {
+      date = rawDate;
+    }
+
+    String time = '';
+    String village = '';
+    final notes = a['notes'];
+    if (notes != null) {
+      try {
+        final parsed = jsonDecode(notes as String) as Map<String, dynamic>;
+        time = parsed['time'] ?? '';
+        village = parsed['village'] ?? '';
+      } catch (_) {}
+    }
+
+    return {
+      'id': a['id'],
+      'title': a['title'] ?? '',
+      'date': date,
+      'time': time,
+      'location': a['location'] ?? '',
+      'village': village,
+      'patientsCount': 0,
+      'highRiskCount': 0,
+      'status': 'Scheduled',
+      'updatedAt': a['updatedAt'],
+      'notes': notes,
+    };
+  }
+
+  Future<void> _deleteSchedule(Map<String, dynamic> schedule) async {
+    final id = schedule['id'].toString();
+    final updatedAt = schedule['updatedAt'] != null
+        ? DateTime.tryParse(schedule['updatedAt'].toString()) ?? DateTime.now()
+        : DateTime.now();
+
+    await AppointmentService.deleteAppointment(id, updatedAt);
+    await _loadSchedules();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,13 +121,14 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
+                  onPressed: () async {
+                    final result = await Navigator.push<bool>(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const ScheduleFormScreen(),
                       ),
                     );
+                    if (result == true) _loadSchedules();
                   },
                   icon: Icon(Icons.add, color: AppColors.textOnPrimary),
                   label: Text(
@@ -110,14 +149,33 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
             ),
 
             Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                itemCount: _schedules.length,
-                itemBuilder: (context, index) {
-                  final schedule = _schedules[index];
-                  return _buildScheduleCard(schedule);
-                },
-              ),
+              child: _isLoading
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    )
+                  : _schedules.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Belum ada jadwal',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: ResponsiveSize.fontMedium,
+                            ),
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _loadSchedules,
+                          color: AppColors.primary,
+                          child: ListView.builder(
+                            padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+                            itemCount: _schedules.length,
+                            itemBuilder: (context, index) {
+                              return _buildScheduleCard(_schedules[index]);
+                            },
+                          ),
+                        ),
             ),
           ],
         ),
@@ -210,7 +268,7 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
                           ),
                         ),
                         Container(
-                          padding: EdgeInsets.symmetric(
+                          padding: const EdgeInsets.symmetric(
                             horizontal: 10,
                             vertical: 4,
                           ),
@@ -230,24 +288,26 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
                       ],
                     ),
                     SizedBox(height: ResponsiveSize.spacingSmall),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                        SizedBox(width: 6),
-                        Text(
-                          schedule['time'],
-                          style: TextStyle(
+                    if ((schedule['time'] as String).isNotEmpty) ...[
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 14,
                             color: AppColors.textSecondary,
-                            fontSize: 13,
                           ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 4),
+                          const SizedBox(width: 6),
+                          Text(
+                            schedule['time'],
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                    ],
                     Row(
                       children: [
                         Icon(
@@ -255,7 +315,7 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
                           size: 14,
                           color: AppColors.textSecondary,
                         ),
-                        SizedBox(width: 6),
+                        const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             schedule['location'],
@@ -277,7 +337,7 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
           Row(
             children: [
               Icon(Icons.people_outline, size: 14, color: AppColors.primary),
-              SizedBox(width: 4),
+              const SizedBox(width: 4),
               Text(
                 '${schedule['patientsCount']} pasien',
                 style: TextStyle(
@@ -287,9 +347,9 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
                 ),
               ),
               if (highRiskCount > 0) ...[
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Icon(Icons.warning_amber, size: 14, color: highRiskRed),
-                SizedBox(width: 4),
+                const SizedBox(width: 4),
                 Text(
                   '$highRiskCount high risk',
                   style: TextStyle(
@@ -302,14 +362,15 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
               const Spacer(),
               IconButton(
                 icon: Icon(Icons.edit, color: AppColors.primary, size: 20),
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  final result = await Navigator.push<bool>(
                     context,
                     MaterialPageRoute(
                       builder: (context) =>
                           ScheduleFormScreen(schedule: schedule),
                     ),
                   );
+                  if (result == true) _loadSchedules();
                 },
               ),
               IconButton(
@@ -318,21 +379,23 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: Text('Hapus Jadwal'),
-                      content: Text(
+                      title: const Text('Hapus Jadwal'),
+                      content: const Text(
                         'Apakah Anda yakin ingin menghapus jadwal ini?',
                       ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: Text('Batal'),
+                          child: const Text('Batal'),
                         ),
                         ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
+                            final messenger = ScaffoldMessenger.of(context);
                             Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            await _deleteSchedule(schedule);
+                            messenger.showSnackBar(
                               SnackBar(
-                                content: Text('Jadwal berhasil dihapus'),
+                                content: const Text('Jadwal berhasil dihapus'),
                                 backgroundColor: AppColors.statusGreen,
                               ),
                             );
@@ -340,7 +403,7 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: highRiskRed,
                           ),
-                          child: Text('Hapus'),
+                          child: const Text('Hapus'),
                         ),
                       ],
                     ),

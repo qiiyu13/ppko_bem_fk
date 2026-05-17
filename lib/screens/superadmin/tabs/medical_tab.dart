@@ -3,7 +3,6 @@ import '../../../constants/app_colors.dart';
 import '../../../utils/responsive_size.dart';
 import '../screens/jadwal_management_screen.dart';
 import '../screens/medical_screening_screen.dart';
-import '../screens/tambah_pasien_screen.dart';
 
 class MedicalTab extends StatelessWidget {
   const MedicalTab({super.key});
@@ -55,25 +54,6 @@ class MedicalTab extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => const MedicalScreeningScreen(),
-                    ),
-                  );
-                },
-              ),
-
-              SizedBox(height: ResponsiveSize.spacingMedium),
-
-              _buildOptionCard(
-                context,
-                icon: Icons.person_add_outlined,
-                title: 'Tambah Pasien Baru',
-                subtitle:
-                    'Daftarkan pasien baru dan langsung tambahkan data screening',
-                color: AppColors.primary,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const TambahPasienScreen(),
                     ),
                   );
                 },
