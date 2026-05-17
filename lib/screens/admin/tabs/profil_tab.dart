@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../utils/responsive_size.dart';
+import '../../patient/tabs/settings_tab.dart';
 
 class AdminProfilTab extends StatelessWidget {
   const AdminProfilTab({super.key});
 
-  // Admin hard-coded data
   static const String adminName = 'Dr. Windah Basudara';
   static const String adminId = '1312';
   static const String adminRole = 'Dokter perut';
@@ -32,199 +32,210 @@ class AdminProfilTab extends StatelessWidget {
           ),
         ),
         centerTitle: true,
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Padding(
-                padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                child: IntrinsicHeight(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: ResponsiveSize.spacingXLarge),
-
-                      // Profile Card - White background
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                        decoration: BoxDecoration(
-                          color: AppColors.background,
-                          borderRadius: BorderRadius.circular(
-                            ResponsiveSize.cardBorderRadius,
-                          ),
-                          border: Border.all(
-                            color: AppColors.surface,
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: ResponsiveSize.screenWidth * 0.2,
-                              height: ResponsiveSize.screenWidth * 0.2,
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.primary,
-                                  width: 3,
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.local_hospital,
-                                size: ResponsiveSize.iconLarge,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            SizedBox(height: ResponsiveSize.spacingMedium),
-                            Text(
-                              adminName,
-                              style: TextStyle(
-                                fontSize: ResponsiveSize.fontXLarge,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: ResponsiveSize.paddingMedium,
-                                vertical: ResponsiveSize.paddingSmall * 0.5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                adminRole,
-                                style: TextStyle(
-                                  fontSize: ResponsiveSize.fontMedium,
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: ResponsiveSize.spacingSmall),
-                            Text(
-                              'ID: $adminId',
-                              style: TextStyle(
-                                fontSize: ResponsiveSize.fontMedium,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      SizedBox(height: ResponsiveSize.spacingXLarge),
-
-                      // Info Items - White cards with light gray accents
-                      _buildInfoItem('ID', adminId),
-                      _buildInfoItem('Jabatan', adminRole),
-                      _buildInfoItem('Wilayah Monitoring', adminWilayah),
-                      _buildInfoItem('Kontak', adminKontak),
-                      _buildInfoItem('Alamat', adminAlamat),
-
-                      const Spacer(),
-
-                      SizedBox(height: ResponsiveSize.spacingMedium),
-
-                      // Edit Button - Dark teal
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {},
-                          icon: Icon(
-                            Icons.edit,
-                            size: ResponsiveSize.iconSmall,
-                            color: AppColors.textOnPrimary,
-                          ),
-                          label: Text(
-                            'Edit Profil',
-                            style: TextStyle(
-                              fontSize: ResponsiveSize.fontMedium,
-                              color: AppColors.textOnPrimary,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.textOnPrimary,
-                            padding: EdgeInsets.symmetric(
-                              vertical: ResponsiveSize.paddingSmall * 1.2,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                ResponsiveSize.buttonBorderRadius,
-                              ),
-                            ),
-                            elevation: 0,
-                          ),
-                        ),
-                      ),
-                      // Bottom spacer for nav bar clearance
-                      const SizedBox(height: 100),
-                    ],
-                  ),
-                ),
-              ),
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.settings_outlined,
+              color: AppColors.primary,
             ),
-          );
-        },
+            tooltip: 'Setelan',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SettingsTab(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(height: ResponsiveSize.spacingLarge),
+            _buildUnifiedCard(),
+            const SizedBox(height: 100),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildInfoItem(String label, String value) {
+  Widget _buildUnifiedCard() {
+    final avatarSize = ResponsiveSize.screenWidth * 0.22;
+
     return Container(
-      margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
-      padding: EdgeInsets.all(ResponsiveSize.paddingSmall * 1.2),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(ResponsiveSize.buttonBorderRadius),
-        border: Border.all(color: AppColors.surface, width: 1),
+        borderRadius: BorderRadius.circular(ResponsiveSize.cardBorderRadius),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: AppColors.primary.withValues(alpha: 0.12),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: ResponsiveSize.fontMedium,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          Flexible(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: ResponsiveSize.fontMedium,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(ResponsiveSize.cardBorderRadius),
+        child: Column(
+          children: [
+            // Zone A — Hero header
+            Container(
+              width: double.infinity,
+              color: AppColors.primary,
+              padding: EdgeInsets.fromLTRB(
+                ResponsiveSize.paddingMedium,
+                ResponsiveSize.paddingSmall,
+                ResponsiveSize.paddingMedium,
+                ResponsiveSize.paddingLarge,
               ),
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.right,
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(
+                          left: ResponsiveSize.paddingSmall * 0.5,
+                        ),
+                        child: Text(
+                          'ID: $adminId',
+                          style: TextStyle(
+                            fontSize: ResponsiveSize.fontMedium,
+                            color: AppColors.textOnPrimary.withValues(alpha: 0.7),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.edit_outlined,
+                          color: AppColors.textOnPrimary,
+                          size: ResponsiveSize.iconSmall,
+                        ),
+                        tooltip: 'Edit Profil',
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
+                  Container(
+                    width: avatarSize,
+                    height: avatarSize,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.textOnPrimary,
+                        width: 3,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.local_hospital,
+                      size: ResponsiveSize.iconLarge,
+                      color: AppColors.textOnPrimary,
+                    ),
+                  ),
+                  SizedBox(height: ResponsiveSize.spacingMedium),
+                  Text(
+                    adminName,
+                    style: TextStyle(
+                      fontSize: ResponsiveSize.fontXLarge,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textOnPrimary,
+                    ),
+                  ),
+                  SizedBox(height: ResponsiveSize.spacingSmall * 0.6),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveSize.paddingMedium,
+                      vertical: ResponsiveSize.paddingSmall * 0.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      adminRole,
+                      style: TextStyle(
+                        fontSize: ResponsiveSize.fontMedium,
+                        color: AppColors.textOnPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+
+            // Zone B — Info rows
+            Container(
+              width: double.infinity,
+              color: AppColors.card,
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveSize.paddingMedium,
+                vertical: ResponsiveSize.paddingSmall,
+              ),
+              child: Column(
+                children: [
+                  _buildInfoRow('Jabatan', adminRole),
+                  _buildInfoRow('Wilayah Monitoring', adminWilayah),
+                  _buildInfoRow('Kontak', adminKontak),
+                  _buildInfoRow('Alamat', adminAlamat, last: true),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value, {bool last = false}) {
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(
+            vertical: ResponsiveSize.paddingSmall * 1.1,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: ResponsiveSize.fontMedium,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              SizedBox(width: ResponsiveSize.spacingMedium),
+              Flexible(
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: ResponsiveSize.fontMedium,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.right,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (!last)
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: AppColors.surface,
+          ),
+      ],
     );
   }
 }
