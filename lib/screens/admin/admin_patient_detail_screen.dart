@@ -5,8 +5,13 @@ import '../../utils/responsive_size.dart';
 
 class AdminPatientDetailScreen extends StatefulWidget {
   final Map<String, dynamic> patient;
+  final bool preloaded;
 
-  const AdminPatientDetailScreen({super.key, required this.patient});
+  const AdminPatientDetailScreen({
+    super.key,
+    required this.patient,
+    this.preloaded = false,
+  });
 
   @override
   State<AdminPatientDetailScreen> createState() =>
@@ -23,7 +28,14 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchPatientDetail();
+    if (widget.preloaded) {
+      final List<dynamic> screenings = widget.patient['screenings'] ?? [];
+      _patientData = widget.patient;
+      _screenings = screenings.cast<Map<String, dynamic>>();
+      _isLoading = false;
+    } else {
+      _fetchPatientDetail();
+    }
   }
 
   Future<void> _fetchPatientDetail() async {

@@ -7,7 +7,7 @@ import '../../../utils/responsive_size.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/token_service.dart';
-import '../admin_patient_detail_screen.dart';
+import '../admin_family_detail_screen.dart';
 import '../qr_scanner_screen.dart';
 
 class DashboardTab extends StatefulWidget {
@@ -176,7 +176,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 ),
                 SizedBox(height: ResponsiveSize.spacingSmall),
                 Text(
-                  'NIK: ${patient['nik'] ?? '-'}',
+                  'KK: ${patient['nik'] ?? '-'}',
                   style: TextStyle(
                     fontSize: ResponsiveSize.fontMedium,
                     color: AppColors.textSecondary,
@@ -885,11 +885,11 @@ class _DashboardTabState extends State<DashboardTab> {
         ? name.replaceFirst(RegExp(r'^Keluarga\s+', caseSensitive: false), '')[0]
             .toUpperCase()
         : '?';
-    final nik = (patient['nik'] as String?) ?? '';
-    final nikTail = nik.length > 3 ? nik.substring(nik.length - 3) : nik;
+    final kk = (patient['nik'] as String?) ?? '';
+    final kkTail = kk.length > 3 ? kk.substring(kk.length - 3) : kk;
     final lastScreened = _formatScreeningDate(patient);
     final subtitle = [
-      if (nikTail.isNotEmpty) 'NIK …$nikTail',
+      if (kkTail.isNotEmpty) 'KK …$kkTail',
       if (lastScreened.isNotEmpty) lastScreened,
     ].join(' · ');
 
@@ -898,7 +898,7 @@ class _DashboardTabState extends State<DashboardTab> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => AdminPatientDetailScreen(patient: patient),
+            builder: (context) => AdminFamilyDetailScreen(family: patient),
           ),
         );
       },
