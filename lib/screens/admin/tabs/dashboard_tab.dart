@@ -31,8 +31,6 @@ class _DashboardTabState extends State<DashboardTab> {
   int _totalPages = 1;
   Timer? _searchDebounce;
   String? _userName;
-  String? _userRole;
-  String? _userVillage;
 
   @override
   void initState() {
@@ -49,12 +47,8 @@ class _DashboardTabState extends State<DashboardTab> {
     final me = await AuthService.getMe();
     if (!mounted || me == null) return;
     final name = (me['name'] ?? me['responsibleName']) as String? ?? _userName;
-    final role = me['role'] as String?;
-    final village = (me['village'] ?? me['desa']) as String?;
     setState(() {
       _userName = name;
-      _userRole = role;
-      _userVillage = village;
     });
   }
 
@@ -520,8 +514,6 @@ class _DashboardTabState extends State<DashboardTab> {
   Widget _buildGreetingHeader() {
     final name = _userName ?? 'Pengguna';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
-    final role = _userRole ?? 'Kader';
-    final village = _userVillage ?? '—';
     return Container(
       padding: EdgeInsets.fromLTRB(
         ResponsiveSize.paddingMedium,
@@ -555,25 +547,11 @@ class _DashboardTabState extends State<DashboardTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Hai,',
-                  style: TextStyle(
-                    fontSize: ResponsiveSize.fontSmall,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                Text(
                   name,
                   style: TextStyle(
                     fontSize: ResponsiveSize.fontLarge,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  '$role · $village',
-                  style: TextStyle(
-                    fontSize: ResponsiveSize.fontSmall,
-                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
