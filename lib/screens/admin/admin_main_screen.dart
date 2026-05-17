@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../components/animated_line_navbar.dart';
 import '../../constants/app_colors.dart';
-import '../../utils/responsive_size.dart';
 import '../../widgets/sync_status_banner.dart';
-import '../patient/tabs/settings_tab.dart';
 import 'tabs/dashboard_tab.dart';
 import 'tabs/profil_tab.dart';
 import 'tabs/publish_tab.dart';
@@ -24,7 +22,6 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
     const ScheduleScreen(),
     const PublishTab(),
     const AdminProfilTab(),
-    const SettingsTab(),
   ];
 
   final List<NavBarItem> _navItems = const [
@@ -47,11 +44,6 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
       icon: Icons.person_outline,
       activeIcon: Icons.person,
       label: 'Profil',
-    ),
-    NavBarItem(
-      icon: Icons.settings_outlined,
-      activeIcon: Icons.settings,
-      label: 'Setelan',
     ),
   ];
 
@@ -79,7 +71,6 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
         unselectedColor: AppColors.textSecondary,
         backgroundColor: AppColors.background,
         indicatorWidth: 0.6,
-        animationDuration: const Duration(milliseconds: 300),
       ),
     );
   }
