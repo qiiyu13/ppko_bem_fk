@@ -34,7 +34,29 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10 }) => {
     where.id = { in: patientIds };
   }
 
-  const [users, total] = await Promise.all([
+  // Get latest screening per profile to compute per-category totals (global, ignoring pagination)
+  const latestScreenings = await prisma.medicalScreening.findMany({
+    orderBy: { screeningAt: 'desc' },
+    distinct: ['profileId'],
+    select: { profileId: true, irdCategory: true },
+  });
+  const profilesByCategory = { high: [], attention: [], normal: [] };
+  for (const s of latestScreenings) {
+    if (s.irdCategory && profilesByCategory[s.irdCategory]) {
+      profilesByCategory[s.irdCategory].push(s.profileId);
+    }
+  }
+  const countCategory = async (profileIds) => {
+    if (!profileIds.length) return 0;
+    const rows = await prisma.familyProfile.findMany({
+      where: { id: { in: profileIds } },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+    return rows.length;
+  };
+
+  const [users, total, totalHighRisk, totalAttention, totalNormal] = await Promise.all([
     prisma.user.findMany({
       where,
       skip,
@@ -60,6 +82,9 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10 }) => {
       },
     }),
     prisma.user.count({ where }),
+    countCategory(profilesByCategory.high),
+    countCategory(profilesByCategory.attention),
+    countCategory(profilesByCategory.normal),
   ]);
 
   // Flatten latest IRD per patient
@@ -69,15 +94,15 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10 }) => {
 
     return {
       id: user.id,
-      kkNumber: user.kkNumber,
-      responsibleName: user.responsibleName,
+      name: user.responsibleName,
+      nik: user.kkNumber,
       phone: user.phone,
       createdAt: user.createdAt,
       latestIrd: latest || null,
     };
   });
 
-  return { data, total, page: parseInt(page), limit: take };
+  return { data, total, totalHighRisk, totalAttention, totalNormal, page: parseInt(page), limit: take };
 };
 
 const getPatientDetail = async (id) => {

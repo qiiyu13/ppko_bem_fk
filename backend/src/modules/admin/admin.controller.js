@@ -5,7 +5,11 @@ const getPatients = async (req, res, next) => {
   try {
     const { search, irdCategory, page, limit } = req.query;
     const result = await adminService.getPatients({ search, irdCategory, page, limit });
-    return paginated(res, result.data, result.total, result.page, result.limit);
+    return paginated(res, result.data, result.total, result.page, result.limit, {
+      totalHighRisk: result.totalHighRisk,
+      totalAttention: result.totalAttention,
+      totalNormal: result.totalNormal,
+    });
   } catch (err) {
     next(err);
   }

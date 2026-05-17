@@ -6,11 +6,11 @@ const error = (res, message = 'Internal Server Error', statusCode = 500, code = 
   return res.status(statusCode).json({ success: false, error: { code, message } });
 };
 
-const paginated = (res, data, total, page, limit) => {
+const paginated = (res, data, total, page, limit, extras = {}) => {
   return res.status(200).json({
     success: true,
     data,
-    meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    meta: { total, page, limit, totalPages: Math.ceil(total / limit), ...extras },
   });
 };
 
