@@ -523,9 +523,11 @@ class _DashboardTabState extends State<DashboardTab> {
     final role = _userRole ?? 'Kader';
     final village = _userVillage ?? '—';
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: ResponsiveSize.paddingMedium,
-        vertical: ResponsiveSize.paddingMedium,
+      padding: EdgeInsets.fromLTRB(
+        ResponsiveSize.paddingMedium,
+        MediaQuery.of(context).padding.top + ResponsiveSize.paddingMedium,
+        ResponsiveSize.paddingMedium,
+        ResponsiveSize.paddingMedium,
       ),
       color: AppColors.card,
       child: Row(

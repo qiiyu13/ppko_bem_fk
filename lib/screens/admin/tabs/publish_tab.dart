@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/tanaman_article.dart';
 import '../../../services/article_service.dart';
+import '../../../utils/responsive_size.dart';
 import '../article_editor_screen.dart';
 
 class PublishTab extends StatefulWidget {
@@ -14,6 +15,7 @@ class PublishTab extends StatefulWidget {
 class _PublishTabState extends State<PublishTab> {
   List<TanamanArticle> _articles = [];
   String _selectedFilter = 'Semua';
+  String _searchQuery = '';
   final List<String> _filters = ['Semua', 'Dipublikasikan', 'Draft'];
   bool _isLoading = false;
 
@@ -40,15 +42,27 @@ class _PublishTabState extends State<PublishTab> {
     }
   }
 
+  int get _publishedCount =>
+      _articles.where((a) => a.isPublished && !a.isDraft).length;
+  int get _draftCount => _articles.where((a) => a.isDraft).length;
+
   List<TanamanArticle> get _filteredArticles {
+    Iterable<TanamanArticle> list = _articles;
     switch (_selectedFilter) {
       case 'Dipublikasikan':
-        return _articles.where((a) => a.isPublished && !a.isDraft).toList();
+        list = list.where((a) => a.isPublished && !a.isDraft);
+        break;
       case 'Draft':
-        return _articles.where((a) => a.isDraft).toList();
-      default:
-        return _articles;
+        list = list.where((a) => a.isDraft);
+        break;
     }
+    final q = _searchQuery.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      list = list.where((a) =>
+          a.title.toLowerCase().contains(q) ||
+          a.tags.any((t) => t.toLowerCase().contains(q)));
+    }
+    return list.toList();
   }
 
   void _createNewArticle() async {
@@ -208,22 +222,40 @@ class _PublishTabState extends State<PublishTab> {
 
   @override
   Widget build(BuildContext context) {
+    ResponsiveSize.init(context);
+    final articles = _filteredArticles;
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            _buildFilterTabs(),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-                  : _filteredArticles.isEmpty
-                      ? _buildEmptyState()
-                      : _buildArticleList(),
-            ),
-          ],
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
         ),
+        slivers: [
+          SliverToBoxAdapter(child: _buildHeader()),
+          if (_isLoading)
+            const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+            )
+          else if (articles.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _buildEmptyState(),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
+              sliver: SliverList.separated(
+                itemCount: articles.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) =>
+                    _buildArticleCard(articles[index]),
+              ),
+            ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'admin_publish_fab',
@@ -240,13 +272,18 @@ class _PublishTabState extends State<PublishTab> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(
+        ResponsiveSize.paddingMedium,
+        MediaQuery.of(context).padding.top + ResponsiveSize.paddingMedium,
+        ResponsiveSize.paddingMedium,
+        ResponsiveSize.paddingSmall,
+      ),
       decoration: BoxDecoration(
         color: AppColors.card,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -257,266 +294,335 @@ class _PublishTabState extends State<PublishTab> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const Text(
+                'Artikel',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Kelola Artikel',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
+                  const Icon(
+                    Icons.article,
+                    color: AppColors.primary,
+                    size: 20,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(width: 6),
                   Text(
-                    '${_articles.length} artikel',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
+                    '$_publishedCount',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
                     ),
                   ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.article, color: AppColors.primary, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${_articles.where((a) => a.isPublished && !a.isDraft).length}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
+          ),
+          SizedBox(height: ResponsiveSize.spacingMedium),
+          _buildSearchField(),
+          SizedBox(height: ResponsiveSize.spacingMedium),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (var i = 0; i < _filters.length; i++) ...[
+                  _buildFilterChip(_filters[i]),
+                  if (i != _filters.length - 1)
+                    SizedBox(width: ResponsiveSize.paddingSmall),
+                ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterTabs() {
+  Widget _buildSearchField() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      color: AppColors.background,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: _filters.map((filter) {
-            final isSelected = _selectedFilter == filter;
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
-                label: Text(filter),
-                selected: isSelected,
-                onSelected: (selected) {
-                  if (selected) {
-                    setState(() {
-                      _selectedFilter = filter;
-                    });
-                  }
-                },
-                selectedColor: AppColors.primary,
-                backgroundColor: Colors.white,
-                labelStyle: TextStyle(
-                  color: isSelected ? Colors.white : AppColors.textPrimary,
-                  fontWeight: FontWeight.w500,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(
-                    color: isSelected ? AppColors.primary : Colors.grey.shade300,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
+      height: 42,
+      decoration: BoxDecoration(
+        color: AppColors.surface.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextField(
+        onChanged: (value) => setState(() => _searchQuery = value),
+        decoration: InputDecoration(
+          isDense: true,
+          isCollapsed: true,
+          hintText: 'Cari artikel...',
+          hintStyle: TextStyle(
+            color: AppColors.textSecondary.withOpacity(0.7),
+            fontSize: ResponsiveSize.fontMedium,
+          ),
+          prefixIcon: const Icon(
+            Icons.search,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 10,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildArticleList() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _filteredArticles.length,
-      itemBuilder: (context, index) {
-        final article = _filteredArticles[index];
-        return _buildArticleCard(article);
+  Color _filterColor(String label) {
+    switch (label) {
+      case 'Dipublikasikan':
+        return AppColors.statusGreen;
+      case 'Draft':
+        return AppColors.statusAmber;
+      default:
+        return AppColors.textPrimary;
+    }
+  }
+
+  int _filterCount(String label) {
+    switch (label) {
+      case 'Dipublikasikan':
+        return _publishedCount;
+      case 'Draft':
+        return _draftCount;
+      default:
+        return _articles.length;
+    }
+  }
+
+  Widget _buildFilterChip(String label) {
+    final isSelected = _selectedFilter == label;
+    final color = _filterColor(label);
+    final count = _filterCount(label);
+    final showDot = label != 'Semua';
+    return InkWell(
+      onTap: () {
+        if (_selectedFilter == label) return;
+        setState(() => _selectedFilter = label);
       },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? color : AppColors.card,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? color : AppColors.divider,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showDot) ...[
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.textOnPrimary : color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected
+                    ? AppColors.textOnPrimary
+                    : AppColors.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (count > 0) ...[
+              const SizedBox(width: 6),
+              Text(
+                count.toString(),
+                style: TextStyle(
+                  color: isSelected
+                      ? AppColors.textOnPrimary
+                      : AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildArticleCard(TanamanArticle article) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider, width: 1),
       ),
-      child: InkWell(
-        onTap: () => _editArticle(article),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Thumbnail
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  color: AppColors.background,
-                  child: article.imagePath.isNotEmpty
-                      ? Image.asset(
-                          article.imagePath,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: AppColors.primary.withOpacity(0.1),
-                              child: Icon(
-                                Icons.image,
-                                color: AppColors.primary.withOpacity(0.5),
-                                size: 32,
-                              ),
-                            );
-                          },
-                        )
-                      : Container(
-                          color: AppColors.primary.withOpacity(0.1),
-                          child: Icon(
-                            Icons.image_not_supported,
-                            color: AppColors.primary.withOpacity(0.5),
-                            size: 32,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _editArticle(article),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    color: AppColors.background,
+                    child: article.imagePath.isNotEmpty
+                        ? Image.asset(
+                            article.imagePath,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: AppColors.primary.withOpacity(0.1),
+                                child: Icon(
+                                  Icons.image,
+                                  color: AppColors.primary.withOpacity(0.5),
+                                  size: 24,
+                                ),
+                              );
+                            },
+                          )
+                        : Container(
+                            color: AppColors.primary.withOpacity(0.1),
+                            child: Icon(
+                              Icons.image_not_supported,
+                              color: AppColors.primary.withOpacity(0.5),
+                              size: 24,
+                            ),
                           ),
-                        ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              // Content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: article.statusColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            article.statusLabel,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: article.statusColor,
-                            ),
-                          ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        article.title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                          height: 1.2,
                         ),
-                        if (article.isPublished && !article.isDraft) ...[
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.visibility,
-                            size: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Publik',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
                             ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      article.title,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Terakhir diupdate: ${_formatDate(article.updatedAt)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    if (article.tags.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 6,
-                        children: article.tags.take(3).map((tag) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppColors.background,
+                              color: article.statusColor.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              '#$tag',
+                              article.statusLabel,
                               style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: article.statusColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              '· ${_formatDate(article.updatedAt)}',
+                              style: const TextStyle(
                                 fontSize: 11,
                                 color: AppColors.textSecondary,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          );
-                        }).toList(),
+                          ),
+                        ],
                       ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              // Actions
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  switch (value) {
-                    case 'edit':
-                      _editArticle(article);
-                      break;
-                    case 'unpublish':
-                      _unpublishArticle(article);
-                      break;
-                    case 'publish':
-                      _publishArticle(article);
-                      break;
-                    case 'delete':
-                      _deleteArticle(article);
-                      break;
-                  }
-                },
-                itemBuilder: (context) {
-                  if (article.isPublished && !article.isDraft) {
+                PopupMenuButton<String>(
+                  icon: const Icon(
+                    Icons.more_vert,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
+                  padding: EdgeInsets.zero,
+                  splashRadius: 18,
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'edit':
+                        _editArticle(article);
+                        break;
+                      case 'unpublish':
+                        _unpublishArticle(article);
+                        break;
+                      case 'publish':
+                        _publishArticle(article);
+                        break;
+                      case 'delete':
+                        _deleteArticle(article);
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) {
+                    if (article.isPublished && !article.isDraft) {
+                      return [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit, color: Colors.blue),
+                              SizedBox(width: 8),
+                              Text('Edit'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'unpublish',
+                          child: Row(
+                            children: [
+                              Icon(Icons.unpublished, color: Colors.orange),
+                              SizedBox(width: 8),
+                              Text('Unpublish'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text('Hapus'),
+                            ],
+                          ),
+                        ),
+                      ];
+                    }
                     return [
                       const PopupMenuItem(
                         value: 'edit',
@@ -529,12 +635,12 @@ class _PublishTabState extends State<PublishTab> {
                         ),
                       ),
                       const PopupMenuItem(
-                        value: 'unpublish',
+                        value: 'publish',
                         child: Row(
                           children: [
-                            Icon(Icons.unpublished, color: Colors.orange),
+                            Icon(Icons.publish, color: Colors.green),
                             SizedBox(width: 8),
-                            Text('Unpublish'),
+                            Text('Publikasikan'),
                           ],
                         ),
                       ),
@@ -549,42 +655,10 @@ class _PublishTabState extends State<PublishTab> {
                         ),
                       ),
                     ];
-                  }
-                  return [
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit, color: Colors.blue),
-                          SizedBox(width: 8),
-                          Text('Edit'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'publish',
-                      child: Row(
-                        children: [
-                          Icon(Icons.publish, color: Colors.green),
-                          SizedBox(width: 8),
-                          Text('Publikasikan'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Hapus'),
-                        ],
-                      ),
-                    ),
-                  ];
-                },
-              ),
-            ],
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -598,18 +672,18 @@ class _PublishTabState extends State<PublishTab> {
         children: [
           Icon(
             Icons.article_outlined,
-            size: 80,
+            size: 72,
             color: AppColors.textSecondary.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
           Text(
             'Belum ada artikel ${_selectedFilter.toLowerCase()}',
-            style: TextStyle(
-              fontSize: 16,
+            style: const TextStyle(
+              fontSize: 14,
               color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           ElevatedButton.icon(
             onPressed: _createNewArticle,
             icon: const Icon(Icons.add),
@@ -617,9 +691,9 @@ class _PublishTabState extends State<PublishTab> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
           ),
@@ -643,7 +717,7 @@ class _PublishTabState extends State<PublishTab> {
     } else if (difference.inDays < 7) {
       return '${difference.inDays} hari lalu';
     } else {
-      final months = [
+      const months = [
         'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
         'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'
       ];
