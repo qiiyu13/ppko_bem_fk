@@ -54,14 +54,19 @@ class _ScheduleScreenState extends State<ScheduleScreen>
         };
       }).toList();
 
+      if (!mounted) return;
       setState(() {
         _schedules = mapped;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memuat jadwal: $e')),
+      );
     }
   }
 
@@ -135,6 +140,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                 ],
               ),
               indicatorSize: TabBarIndicatorSize.tab,
+              splashFactory: NoSplash.splashFactory,
+              overlayColor: WidgetStateProperty.all(Colors.transparent),
               labelColor: AppColors.primary,
               unselectedLabelColor: AppColors.textSecondary,
               labelStyle: const TextStyle(
@@ -165,6 +172,10 @@ class _ScheduleScreenState extends State<ScheduleScreen>
   }
 
   Widget _buildDaftarTab() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final today = DateTime.now();
     return SingleChildScrollView(
       padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
       child: Column(
@@ -183,7 +194,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                '12 Oktober 2023',
+                '${today.day} ${IndonesianDate.fullMonth(today.month)} ${today.year}',
                 style: TextStyle(
                   color: AppColors.primary,
                   fontSize: 12,
@@ -193,21 +204,53 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             ),
           ),
           SizedBox(height: ResponsiveSize.spacingMedium),
-          ..._todaySchedules.map(
-            (schedule) => _buildScheduleCard(schedule, true),
-          ),
+          if (_todaySchedules.isEmpty)
+            _buildEmptyState('Tidak ada jadwal monitoring hari ini')
+          else
+            ..._todaySchedules.map(
+              (schedule) => _buildScheduleCard(schedule, true),
+            ),
 
           SizedBox(height: ResponsiveSize.spacingXLarge),
 
           // Akan Datang Section
           _buildSectionHeader('Akan Datang'),
           SizedBox(height: ResponsiveSize.spacingMedium),
-          ..._upcomingSchedules.map(
-            (schedule) => _buildScheduleCard(schedule, false),
-          ),
+          if (_upcomingSchedules.isEmpty)
+            _buildEmptyState('Belum ada jadwal monitoring mendatang')
+          else
+            ..._upcomingSchedules.map(
+              (schedule) => _buildScheduleCard(schedule, false),
+            ),
           // Bottom spacer for nav bar clearance
           const SizedBox(height: 100),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Container(
+      padding: EdgeInsets.all(ResponsiveSize.paddingLarge),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(
+              Icons.event_busy_outlined,
+              size: 48,
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
+            ),
+            SizedBox(height: ResponsiveSize.spacingSmall),
+            Text(
+              message,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -432,6 +475,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
   }
 
   Widget _buildKalenderTab() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
     return SingleChildScrollView(
       padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
       child: Column(
@@ -611,25 +657,27 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             },
           ),
           // Legend
-          SizedBox(height: ResponsiveSize.spacingMedium),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
+          if (_markedDates.isNotEmpty) ...[
+            SizedBox(height: ResponsiveSize.spacingMedium),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ),
-              SizedBox(width: 6),
-              Text(
-                'Ada Jadwal',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-              ),
-            ],
-          ),
+                SizedBox(width: 6),
+                Text(
+                  'Ada Jadwal',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -641,29 +689,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
         .toList();
 
     if (events.isEmpty) {
-      return Container(
-        padding: EdgeInsets.all(ResponsiveSize.paddingLarge),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Center(
-          child: Column(
-            children: [
-              Icon(
-                Icons.event_busy_outlined,
-                size: 48,
-                color: AppColors.textSecondary.withValues(alpha: 0.5),
-              ),
-              SizedBox(height: ResponsiveSize.spacingSmall),
-              Text(
-                'Tidak ada jadwal',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-      );
+      return _buildEmptyState('Tidak ada jadwal');
     }
 
     return Column(
