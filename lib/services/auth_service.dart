@@ -44,12 +44,16 @@ class AuthService {
     return data;
   }
 
-  static Future<Map<String, dynamic>?> getMe() async {
+  static Map<String, dynamic>? _cachedMe;
+
+  static Future<Map<String, dynamic>?> getMe({bool force = false}) async {
+    if (!force && _cachedMe != null) return _cachedMe;
     try {
       final response = await ApiService.get('/auth/me');
-      return response.data['data'];
+      _cachedMe = response.data['data'] as Map<String, dynamic>?;
+      return _cachedMe;
     } catch (e) {
-      return null;
+      return _cachedMe;
     }
   }
 
@@ -67,6 +71,7 @@ class AuthService {
       // Ignore errors - still clear local data
     }
     WebSocketService.instance.disconnect();
+    _cachedMe = null;
     await TokenService.clearAll();
   }
 

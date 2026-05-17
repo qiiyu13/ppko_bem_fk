@@ -42,17 +42,15 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   Future<void> _loadUser() async {
-    final me = await AuthService.getMe();
-    String? name;
-    String? role;
-    String? village;
-    if (me != null) {
-      name = (me['name'] ?? me['responsibleName']) as String?;
-      role = me['role'] as String?;
-      village = (me['village'] ?? me['desa']) as String?;
+    final cachedName = await TokenService.getResponsibleName();
+    if (mounted && cachedName != null && cachedName.isNotEmpty) {
+      setState(() => _userName = cachedName);
     }
-    name ??= await TokenService.getResponsibleName();
-    if (!mounted) return;
+    final me = await AuthService.getMe();
+    if (!mounted || me == null) return;
+    final name = (me['name'] ?? me['responsibleName']) as String? ?? _userName;
+    final role = me['role'] as String?;
+    final village = (me['village'] ?? me['desa']) as String?;
     setState(() {
       _userName = name;
       _userRole = role;
@@ -324,6 +322,7 @@ class _DashboardTabState extends State<DashboardTab> {
       child: Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: FloatingActionButton(
+        heroTag: 'admin_dashboard_fab',
         onPressed: () {
           Navigator.push(
             context,

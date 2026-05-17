@@ -226,6 +226,7 @@ class _PublishTabState extends State<PublishTab> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'admin_publish_fab',
         onPressed: _createNewArticle,
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add, color: Colors.white),
