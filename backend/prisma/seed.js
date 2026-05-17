@@ -279,18 +279,45 @@ async function main() {
   console.log('✅ Created 2 residents');
 
   // ─── Appointments ───
-  await prisma.appointment.create({
-    data: {
-      userId: patient.id,
-      profileId: profile1.id,
-      title: 'Pemeriksaan Gula Darah',
-      date: new Date('2026-05-15T09:00:00Z'),
-      location: 'Puskesmas Sehat',
-      type: 'SCREENING',
-    },
+  const startOfToday = new Date();
+  startOfToday.setHours(9, 0, 0, 0);
+  const inDays = (n, hour = 9) => {
+    const d = new Date(startOfToday);
+    d.setDate(d.getDate() + n);
+    d.setHours(hour, 0, 0, 0);
+    return d;
+  };
+
+  await prisma.appointment.createMany({
+    data: [
+      {
+        userId: admin.id,
+        title: 'Screening Diabetes Massal',
+        date: inDays(0, 9),
+        location: 'Posyandu Desa Sukamaju',
+        notes: 'dr. Ratna Sari',
+        type: 'SCREENING',
+      },
+      {
+        userId: admin.id,
+        title: 'Monitoring Hipertensi',
+        date: inDays(3, 10),
+        location: 'Balai Desa Sukamaju',
+        notes: 'dr. Bagus Pratama',
+        type: 'MONITORING',
+      },
+      {
+        userId: admin.id,
+        title: 'Pemeriksaan Lansia',
+        date: inDays(7, 8),
+        location: 'Puskesmas Sehat',
+        notes: 'dr. Indah Permata',
+        type: 'GENERAL',
+      },
+    ],
   });
 
-  console.log('✅ Created 1 appointment');
+  console.log('✅ Created 3 appointments');
 
   console.log('\n🎉 Seed completed successfully!');
   console.log('\nLogin credentials:');
