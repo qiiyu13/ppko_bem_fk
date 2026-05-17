@@ -66,7 +66,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SyncStatusBanner(
-        child: SafeArea(child: _screens[_currentIndex]),
+        child: _screens[_currentIndex],
       ),
       bottomNavigationBar: AnimatedLineNavBar(
         currentIndex: _currentIndex,

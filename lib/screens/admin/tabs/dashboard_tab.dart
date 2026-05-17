@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../constants/app_colors.dart';
 import '../../../utils/patient_utils.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../services/api_service.dart';
+import '../../../services/auth_service.dart';
+import '../../../services/token_service.dart';
 import '../admin_patient_detail_screen.dart';
 import '../qr_scanner_screen.dart';
 
@@ -15,22 +18,46 @@ class DashboardTab extends StatefulWidget {
 }
 
 class _DashboardTabState extends State<DashboardTab> {
-  static const Color normalGreen = Color(0xFF4CAF50);
-
   String _selectedFilter = 'All';
   String _searchQuery = '';
   bool _isLoading = false;
   bool _isLoadingMore = false;
   List<Map<String, dynamic>> _patients = [];
   int _totalCount = 0;
+  int _totalHighRiskCount = 0;
+  int _totalAttentionCount = 0;
+  int _totalNormalCount = 0;
   int _currentPage = 1;
   int _totalPages = 1;
   Timer? _searchDebounce;
+  String? _userName;
+  String? _userRole;
+  String? _userVillage;
 
   @override
   void initState() {
     super.initState();
     _fetchPatients();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final me = await AuthService.getMe();
+    String? name;
+    String? role;
+    String? village;
+    if (me != null) {
+      name = (me['name'] ?? me['responsibleName']) as String?;
+      role = me['role'] as String?;
+      village = (me['village'] ?? me['desa']) as String?;
+    }
+    name ??= await TokenService.getResponsibleName();
+    if (!mounted) return;
+    setState(() {
+      _userName = name;
+      _userRole = role;
+      _userVillage = village;
+    });
   }
 
   @override
@@ -48,13 +75,17 @@ class _DashboardTabState extends State<DashboardTab> {
     }
 
     try {
+      const irdCategoryMap = {
+        'High Risk': 'high',
+        'Attention': 'attention',
+        'Normal': 'normal',
+      };
       final queryParams = <String, dynamic>{
         'page': _currentPage,
         'limit': 20,
       };
-      if (_searchQuery.isNotEmpty) {
-        queryParams['search'] = _searchQuery;
-      }
+      if (_searchQuery.isNotEmpty) queryParams['search'] = _searchQuery;
+      if (_selectedFilter != 'All') queryParams['irdCategory'] = irdCategoryMap[_selectedFilter];
       final response = await ApiService.get(
         '/admin/patients',
         queryParameters: queryParams,
@@ -69,6 +100,9 @@ class _DashboardTabState extends State<DashboardTab> {
           _patients = data.cast<Map<String, dynamic>>();
         }
         _totalCount = meta?['total'] ?? _patients.length;
+        _totalHighRiskCount = meta?['totalHighRisk'] ?? 0;
+        _totalAttentionCount = meta?['totalAttention'] ?? 0;
+        _totalNormalCount = meta?['totalNormal'] ?? 0;
         _totalPages = meta?['totalPages'] ?? 1;
       });
     } catch (e) {
@@ -105,34 +139,6 @@ class _DashboardTabState extends State<DashboardTab> {
     return null;
   }
 
-  List<Map<String, dynamic>> get _filteredPatients {
-    return _patients.where((patient) {
-      final riskLevel = _getRiskCategory(patient) ?? 'normal';
-      if (_selectedFilter != 'All') {
-        final riskMap = {
-          'High Risk': 'high',
-          'Attention': 'attention',
-          'Normal': 'normal',
-        };
-        if (riskLevel != riskMap[_selectedFilter]) {
-          return false;
-        }
-      }
-      return true;
-    }).toList();
-  }
-
-  Map<String, int> get _riskCounts {
-    return {
-      'All': _patients.length,
-      'High Risk': _patients.where((p) => _getRiskCategory(p) == 'high').length,
-      'Attention': _patients.where((p) => _getRiskCategory(p) == 'attention').length,
-      'Normal': _patients.where((p) {
-        final c = _getRiskCategory(p);
-        return c == null || c == 'normal';
-      }).length,
-    };
-  }
 
   void _showActionModal(Map<String, dynamic> patient) {
     showModalBottomSheet(
@@ -203,7 +209,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   icon: Icons.check_circle,
                   title: 'Mark as Resolved',
                   subtitle: 'Patient condition has improved',
-                  color: normalGreen,
+                  color: AppColors.statusGreen,
                   onTap: () {
                     Navigator.pop(context);
                   },
@@ -311,10 +317,11 @@ class _DashboardTabState extends State<DashboardTab> {
   Widget build(BuildContext context) {
     ResponsiveSize.init(context);
 
-    final riskCounts = _riskCounts;
-    final highRiskCount = riskCounts['High Risk'] ?? 0;
-
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.transparent,
+      ),
+      child: Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -326,74 +333,9 @@ class _DashboardTabState extends State<DashboardTab> {
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.qr_code_scanner, color: Colors.white),
       ),
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Container(
-                padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                color: AppColors.card,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.local_hospital,
-                          color: AppColors.primary,
-                          size: ResponsiveSize.iconLarge,
-                        ),
-                        SizedBox(width: ResponsiveSize.paddingSmall),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'MEDIKU',
-                              style: TextStyle(
-                                fontSize: ResponsiveSize.fontLarge,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            Text(
-                              'Monitoring Dashboard',
-                              style: TextStyle(
-                                fontSize: ResponsiveSize.fontSmall,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Stack(
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            Icons.notifications_outlined,
-                            color: AppColors.textPrimary,
-                            size: ResponsiveSize.iconMedium,
-                          ),
-                          onPressed: () {},
-                        ),
-                        Positioned(
-                          right: 8,
-                          top: 8,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: AppColors.statusRed,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+      body: CustomScrollView(
+        slivers: [
+            SliverToBoxAdapter(child: _buildGreetingHeader()),
 
             SliverToBoxAdapter(
               child: Container(
@@ -405,6 +347,7 @@ class _DashboardTabState extends State<DashboardTab> {
                       children: [
                         Expanded(
                           child: Container(
+                            height: 44,
                             decoration: BoxDecoration(
                               color: AppColors.surface.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(12),
@@ -420,7 +363,9 @@ class _DashboardTabState extends State<DashboardTab> {
                                 });
                               },
                               decoration: InputDecoration(
-                                hintText: 'Search NIK or Name...',
+                                isDense: true,
+                                isCollapsed: true,
+                                hintText: 'Cari KK atau NIK...',
                                 hintStyle: TextStyle(
                                   color: AppColors.textSecondary.withValues(
                                     alpha: 0.7,
@@ -434,8 +379,8 @@ class _DashboardTabState extends State<DashboardTab> {
                                 ),
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(
-                                  horizontal: ResponsiveSize.paddingMedium,
-                                  vertical: ResponsiveSize.paddingMedium,
+                                  horizontal: ResponsiveSize.paddingSmall,
+                                  vertical: ResponsiveSize.paddingSmall,
                                 ),
                               ),
                             ),
@@ -443,9 +388,9 @@ class _DashboardTabState extends State<DashboardTab> {
                         ),
                         SizedBox(width: ResponsiveSize.paddingSmall),
                         Container(
+                          height: 44,
                           padding: EdgeInsets.symmetric(
                             horizontal: ResponsiveSize.paddingMedium,
-                            vertical: ResponsiveSize.paddingSmall,
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.surface.withValues(alpha: 0.5),
@@ -484,29 +429,13 @@ class _DashboardTabState extends State<DashboardTab> {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          _buildFilterChip(
-                            'All',
-                            riskCounts['All'] ?? 0,
-                            AppColors.textPrimary,
-                          ),
+                          _buildFilterChip('All', _totalCount, AppColors.textPrimary),
                           SizedBox(width: ResponsiveSize.paddingSmall),
-                          _buildFilterChip(
-                            'High Risk',
-                            riskCounts['High Risk'] ?? 0,
-                            AppColors.error,
-                          ),
+                          _buildFilterChip('High Risk', _totalHighRiskCount, AppColors.statusRed),
                           SizedBox(width: ResponsiveSize.paddingSmall),
-                          _buildFilterChip(
-                            'Attention',
-                            riskCounts['Attention'] ?? 0,
-                            AppColors.warning,
-                          ),
+                          _buildFilterChip('Attention', _totalAttentionCount, AppColors.statusAmber),
                           SizedBox(width: ResponsiveSize.paddingSmall),
-                          _buildFilterChip(
-                            'Normal',
-                            riskCounts['Normal'] ?? 0,
-                            normalGreen,
-                          ),
+                          _buildFilterChip('Normal', _totalNormalCount, AppColors.statusGreen),
                         ],
                       ),
                     ),
@@ -515,98 +444,9 @@ class _DashboardTabState extends State<DashboardTab> {
               ),
             ),
 
-            SliverToBoxAdapter(
-              child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveSize.paddingMedium,
-                  vertical: ResponsiveSize.spacingMedium,
-                ),
-                color: AppColors.card,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        'Total Screened',
-                        _totalCount.toString(),
-                        AppColors.textPrimary,
-                        Icons.people_outline,
-                      ),
-                    ),
-                    SizedBox(width: ResponsiveSize.paddingSmall),
-                    Expanded(
-                      child: _buildStatCard(
-                        'High Risk',
-                        highRiskCount.toString(),
-                        AppColors.error,
-                        Icons.warning_amber,
-                        isHighlighted: true,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            SliverToBoxAdapter(child: _buildStatsRow()),
 
-            SliverToBoxAdapter(
-              child: Container(
-                padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                color: AppColors.card,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Patient List',
-                      style: TextStyle(
-                        fontSize: ResponsiveSize.fontXLarge,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            if (_isLoading)
-              const SliverToBoxAdapter(
-                child: Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-              )
-            else
-              SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final patient = _filteredPatients[index];
-                  return _buildPatientCard(patient);
-                }, childCount: _filteredPatients.length),
-              ),
-
-            if (_currentPage < _totalPages)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: ResponsiveSize.paddingMedium,
-                    vertical: ResponsiveSize.spacingMedium,
-                  ),
-                  child: _isLoadingMore
-                      ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-                      : ElevatedButton(
-                          onPressed: _loadMore,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text('Muat Lebih Banyak'),
-                        ),
-                ),
-              ),
+            SliverToBoxAdapter(child: _buildListBlock()),
 
             SliverToBoxAdapter(
               child: SizedBox(height: ResponsiveSize.spacingXLarge * 2),
@@ -615,63 +455,60 @@ class _DashboardTabState extends State<DashboardTab> {
         ),
       ),
     );
-  }
+  }  // AnnotatedRegion closes Scaffold above
 
   Widget _buildFilterChip(String label, int count, Color color) {
     final isSelected = _selectedFilter == label;
+    final showDot = label != 'All';
     return InkWell(
       onTap: () {
-        setState(() {
-          _selectedFilter = label;
-        });
+        if (_selectedFilter == label) return;
+        setState(() => _selectedFilter = label);
+        _fetchPatients();
       },
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: ResponsiveSize.paddingMedium,
-          vertical: ResponsiveSize.paddingSmall,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? color : Colors.transparent,
+          color: isSelected ? color : AppColors.card,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? color : AppColors.surface,
+            color: isSelected ? color : AppColors.divider,
             width: 1,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (showDot) ...[
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.textOnPrimary : color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 6),
+            ],
             Text(
               label,
               style: TextStyle(
-                color: isSelected
-                    ? AppColors.textOnPrimary
-                    : AppColors.textPrimary,
-                fontSize: ResponsiveSize.fontMedium,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
             ),
             if (count > 0) ...[
-              SizedBox(width: ResponsiveSize.paddingSmall * 0.5),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveSize.paddingSmall * 0.5,
-                  vertical: 2,
-                ),
-                decoration: BoxDecoration(
+              const SizedBox(width: 6),
+              Text(
+                count.toString(),
+                style: TextStyle(
                   color: isSelected
                       ? AppColors.textOnPrimary
-                      : color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  count.toString(),
-                  style: TextStyle(
-                    color: isSelected ? color : color,
-                    fontSize: ResponsiveSize.fontSmall,
-                    fontWeight: FontWeight.bold,
-                  ),
+                      : AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -681,63 +518,119 @@ class _DashboardTabState extends State<DashboardTab> {
     );
   }
 
-  Widget _buildStatCard(
-    String label,
-    String value,
-    Color color,
-    IconData icon, {
-    bool isHighlighted = false,
-  }) {
+  Widget _buildGreetingHeader() {
+    final name = _userName ?? 'Pengguna';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    final role = _userRole ?? 'Kader';
+    final village = _userVillage ?? '—';
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: ResponsiveSize.paddingSmall,
-        vertical: ResponsiveSize.paddingSmall,
+        horizontal: ResponsiveSize.paddingMedium,
+        vertical: ResponsiveSize.paddingMedium,
       ),
-      decoration: BoxDecoration(
-        color: isHighlighted
-            ? color.withValues(alpha: 0.1)
-            : AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isHighlighted
-              ? color.withValues(alpha: 0.3)
-              : AppColors.surface,
-          width: 1,
-        ),
-      ),
+      color: AppColors.card,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: ResponsiveSize.iconMedium),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: const BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              initial,
+              style: const TextStyle(
+                color: AppColors.textOnPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
           SizedBox(width: ResponsiveSize.paddingSmall),
-          Flexible(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: ResponsiveSize.fontXLarge,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 2),
                 Text(
-                  label,
+                  'Hai,',
                   style: TextStyle(
                     fontSize: ResponsiveSize.fontSmall,
                     color: AppColors.textSecondary,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
+                ),
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: ResponsiveSize.fontLarge,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  '$role · $village',
+                  style: TextStyle(
+                    fontSize: ResponsiveSize.fontSmall,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () {},
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(
+                      Icons.notifications_outlined,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
+                    if (_totalHighRiskCount > 0)
+                      Positioned(
+                        top: -4,
+                        right: -4,
+                        child: Container(
+                          width: 16,
+                          height: 16,
+                          decoration: const BoxDecoration(
+                            color: AppColors.statusRed,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              _totalHighRiskCount > 9
+                                  ? '9+'
+                                  : '$_totalHighRiskCount',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -745,16 +638,70 @@ class _DashboardTabState extends State<DashboardTab> {
     );
   }
 
-  Widget _buildPatientCard(Map<String, dynamic> patient) {
-    final riskCategory = _getRiskCategory(patient);
-    final riskLevel = riskCategory ?? 'normal';
-    final riskColor = riskLevel == 'high'
-        ? AppColors.error
-        : riskLevel == 'attention'
-        ? AppColors.warning
-        : normalGreen;
-    final riskLabel = PatientUtils.riskLabel(riskLevel);
+  Widget _buildStatsRow() {
+    return Container(
+      color: AppColors.card,
+      padding: EdgeInsets.symmetric(
+        horizontal: ResponsiveSize.paddingMedium,
+        vertical: ResponsiveSize.paddingMedium,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _statCell(
+              _totalCount,
+              'Total Pasien',
+              AppColors.textPrimary,
+            ),
+          ),
+          Expanded(
+            child: _statCell(
+              _totalHighRiskCount,
+              'High Risk',
+              AppColors.statusRed,
+            ),
+          ),
+          Expanded(
+            child: _statCell(
+              _totalAttentionCount,
+              'Attn',
+              AppColors.statusAmber,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Widget _statCell(int value, String label, Color valueColor) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value.toString(),
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: valueColor,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: ResponsiveSize.fontSmall,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildListBlock() {
     return Container(
       margin: EdgeInsets.symmetric(
         horizontal: ResponsiveSize.paddingMedium,
@@ -763,98 +710,253 @@ class _DashboardTabState extends State<DashboardTab> {
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surface, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textPrimary.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppColors.divider, width: 1),
       ),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AdminPatientDetailScreen(patient: patient),
-            ),
-          );
-        },
-        onLongPress: () => _showActionModal(patient),
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          patient['name'] ?? '-',
-                          style: TextStyle(
-                            fontSize: ResponsiveSize.fontLarge,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
-                        Text(
-                          'NIK: ${patient['nik'] ?? '-'}',
-                          style: TextStyle(
-                            fontSize: ResponsiveSize.fontSmall,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: ResponsiveSize.paddingSmall,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: riskColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      riskLabel,
-                      style: TextStyle(
-                        fontSize: ResponsiveSize.fontSmall,
-                        color: riskColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: ResponsiveSize.spacingMedium),
-              if (patient['village'] != null)
-                Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_patients.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 48),
+                child: Column(
                   children: [
-                    Icon(
-                      Icons.location_on_outlined,
-                      color: AppColors.textSecondary,
-                      size: ResponsiveSize.iconSmall,
-                    ),
-                    SizedBox(width: ResponsiveSize.paddingSmall * 0.5),
+                    Icon(Icons.person_search,
+                        size: 48, color: AppColors.textSecondary),
+                    const SizedBox(height: 12),
                     Text(
-                      patient['village'],
+                      'Tidak ada warga ditemukan',
                       style: TextStyle(
-                        fontSize: ResponsiveSize.fontMedium,
                         color: AppColors.textSecondary,
+                        fontSize: ResponsiveSize.fontMedium,
                       ),
                     ),
                   ],
                 ),
-            ],
+              )
+            else
+              _selectedFilter == 'All'
+                  ? _buildGroupedList()
+                  : _buildFlatList(),
+            if (!_isLoading && _patients.isNotEmpty && _currentPage < _totalPages)
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: ElevatedButton(
+                  onPressed: _isLoadingMore ? null : _loadMore,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _isLoadingMore
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Muat Lebih Banyak'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFlatList() {
+    return Column(
+      children: [
+        for (var i = 0; i < _patients.length; i++) ...[
+          _buildPatientCard(_patients[i]),
+          if (i != _patients.length - 1)
+            Container(height: 1, color: AppColors.divider),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildGroupedList() {
+    final highRisk = _patients
+        .where((p) => _getRiskCategory(p) == 'high')
+        .toList();
+    final attention = _patients
+        .where((p) => _getRiskCategory(p) == 'attention')
+        .toList();
+    final normal = _patients
+        .where((p) => _getRiskCategory(p) == 'normal')
+        .toList();
+    final other = _patients
+        .where((p) {
+          final c = _getRiskCategory(p);
+          return c != 'high' && c != 'attention' && c != 'normal';
+        })
+        .toList();
+
+    final sections = <Widget>[];
+    void addSection(String label, Color color, List<Map<String, dynamic>> list) {
+      if (list.isEmpty) return;
+      sections.add(_buildSectionHeader(label, list.length, color));
+      for (var i = 0; i < list.length; i++) {
+        sections.add(_buildPatientCard(list[i]));
+        if (i != list.length - 1) {
+          sections.add(Container(height: 1, color: AppColors.divider));
+        }
+      }
+    }
+
+    addSection('High Risk', AppColors.statusRed, highRisk);
+    addSection('Attention', AppColors.statusAmber, attention);
+    addSection('Normal', AppColors.statusGreen, normal);
+    addSection('Lainnya', AppColors.textSecondary, other);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: sections,
+    );
+  }
+
+  Widget _buildSectionHeader(String label, int count, Color color) {
+    return Container(
+      color: AppColors.card,
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 8),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 18,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: ResponsiveSize.fontMedium,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '· $count keluarga',
+            style: TextStyle(
+              fontSize: ResponsiveSize.fontSmall,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  String _formatScreeningDate(Map<String, dynamic> patient) {
+    final latestIrd = patient['latestIrd'];
+    if (latestIrd is! Map) return '';
+    final raw = latestIrd['screeningAt']?.toString() ?? '';
+    if (raw.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(raw).toLocal();
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  Widget _buildPatientCard(Map<String, dynamic> patient) {
+    final riskLevel = _getRiskCategory(patient) ?? 'normal';
+    final riskColor = PatientUtils.riskColor(riskLevel);
+    final name = (patient['name'] as String?) ?? '-';
+    final initial = name.isNotEmpty && name != '-'
+        ? name.replaceFirst(RegExp(r'^Keluarga\s+', caseSensitive: false), '')[0]
+            .toUpperCase()
+        : '?';
+    final nik = (patient['nik'] as String?) ?? '';
+    final nikTail = nik.length > 3 ? nik.substring(nik.length - 3) : nik;
+    final lastScreened = _formatScreeningDate(patient);
+    final subtitle = [
+      if (nikTail.isNotEmpty) 'NIK …$nikTail',
+      if (lastScreened.isNotEmpty) lastScreened,
+    ].join(' · ');
+
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AdminPatientDetailScreen(patient: patient),
+          ),
+        );
+      },
+      onLongPress: () => _showActionModal(patient),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: riskColor.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                initial,
+                style: TextStyle(
+                  color: riskColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: ResponsiveSize.fontMedium,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: ResponsiveSize.fontSmall,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: AppColors.textSecondary,
+              size: ResponsiveSize.iconSmall,
+            ),
+          ],
         ),
       ),
     );
