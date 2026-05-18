@@ -637,8 +637,16 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
       if (age != null) '$age th',
     ].join(' · ');
 
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     return SingleChildScrollView(
-      padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+      physics: const ClampingScrollPhysics(),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: EdgeInsets.fromLTRB(
+        ResponsiveSize.paddingMedium,
+        ResponsiveSize.paddingMedium,
+        ResponsiveSize.paddingMedium,
+        ResponsiveSize.paddingMedium + bottomInset,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
