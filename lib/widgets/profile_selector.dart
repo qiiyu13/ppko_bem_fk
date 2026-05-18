@@ -132,7 +132,7 @@ class ProfileSwitcherSheet extends StatelessWidget {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: profiles.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final profile = profiles[index];
                     return _ProfileListTile(profile: profile);
@@ -236,6 +236,7 @@ class _ProfileListTile extends StatelessWidget {
               : null,
           onTap: () async {
             await ProfileService.instance.setActiveProfile(profile.id);
+            if (!context.mounted) return;
             Navigator.pop(context);
           },
         );
