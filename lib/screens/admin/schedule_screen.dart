@@ -35,7 +35,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
       final today = DateTime(now.year, now.month, now.day);
 
       final mapped = appointments.map((a) {
-        final date = DateTime.parse(a['date'] as String);
+        final date = DateTime.parse(a['date'] as String).toLocal();
         final dateOnly = DateTime(date.year, date.month, date.day);
         final isToday = dateOnly == today;
         return {
@@ -45,7 +45,6 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           'timeRange': isToday ? '${date.hour.toString().padLeft(2, '0')}:00 - ${(date.hour + 2).toString().padLeft(2, '0')}:00' : '${date.hour.toString().padLeft(2, '0')}:00 - ${(date.hour + 2).toString().padLeft(2, '0')}:00',
           'time': '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}',
           'location': a['location'] ?? 'Lokasi belum ditentukan',
-          'village': a['type'] ?? 'Desa',
           'doctor': a['notes'],
           'patientsCount': 0,
           'highRiskCount': 0,

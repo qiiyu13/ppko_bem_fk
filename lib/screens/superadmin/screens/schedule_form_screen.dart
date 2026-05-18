@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/appointment_service.dart';
 import '../../../utils/responsive_size.dart';
@@ -14,14 +15,23 @@ class ScheduleFormScreen extends StatefulWidget {
 }
 
 class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
-  final _timeController = TextEditingController();
   final _locationController = TextEditingController();
-  final _villageController = TextEditingController();
+  final _mapsUrlController = TextEditingController();
   final _dateDisplayController = TextEditingController();
+  final _timeDisplayController = TextEditingController();
 
   DateTime? _selectedDate;
+  TimeOfDay? _startTime;
+  TimeOfDay? _endTime;
+  DateTime? _originalDate;
   bool _isLoading = false;
+
+  static final _mapsUrlPattern = RegExp(
+    r'^https?://(www\.)?(google\.[a-z.]+/maps|maps\.app\.goo\.gl|goo\.gl/maps)',
+    caseSensitive: false,
+  );
 
   @override
   void initState() {
@@ -33,38 +43,63 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
 
       final rawDate = s['date'];
       if (rawDate is DateTime) {
-        _selectedDate = rawDate;
+        _selectedDate = rawDate.toLocal();
       } else if (rawDate is String) {
-        _selectedDate = DateTime.tryParse(rawDate);
+        _selectedDate = DateTime.tryParse(rawDate)?.toLocal();
       }
+      _originalDate = _selectedDate;
       if (_selectedDate != null) {
         _dateDisplayController.text = _formatDate(_selectedDate!);
       }
 
       final notes = s['notes'];
-      if (notes != null) {
+      if (notes is String && notes.isNotEmpty) {
         try {
-          final parsed = jsonDecode(notes as String) as Map<String, dynamic>;
-          _timeController.text = parsed['time'] ?? '';
-          _villageController.text = parsed['village'] ?? '';
-        } catch (_) {}
+          final parsed = jsonDecode(notes) as Map<String, dynamic>;
+          final time = parsed['time'] as String? ?? '';
+          _parseTimeRange(time);
+          _mapsUrlController.text = parsed['mapsUrl'] as String? ?? '';
+        } catch (e) {
+          debugPrint('schedule notes parse failed: $e');
+        }
       }
-      _timeController.text = _timeController.text.isNotEmpty
-          ? _timeController.text
-          : (s['time'] ?? '');
-      _villageController.text = _villageController.text.isNotEmpty
-          ? _villageController.text
-          : (s['village'] ?? '');
     }
   }
+
+  void _parseTimeRange(String range) {
+    final parts = range.split('-').map((e) => e.trim()).toList();
+    if (parts.length != 2) return;
+    final start = _parseTime(parts[0]);
+    final end = _parseTime(parts[1]);
+    if (start != null && end != null) {
+      _startTime = start;
+      _endTime = end;
+      _timeDisplayController.text = _formatTimeRange(start, end);
+    }
+  }
+
+  TimeOfDay? _parseTime(String value) {
+    final m = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(value);
+    if (m == null) return null;
+    final h = int.parse(m.group(1)!);
+    final min = int.parse(m.group(2)!);
+    if (h > 23 || min > 59) return null;
+    return TimeOfDay(hour: h, minute: min);
+  }
+
+  String _formatTime(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  String _formatTimeRange(TimeOfDay start, TimeOfDay end) =>
+      '${_formatTime(start)} - ${_formatTime(end)}';
 
   @override
   void dispose() {
     _titleController.dispose();
-    _timeController.dispose();
     _locationController.dispose();
-    _villageController.dispose();
+    _mapsUrlController.dispose();
     _dateDisplayController.dispose();
+    _timeDisplayController.dispose();
     super.dispose();
   }
 
@@ -72,11 +107,19 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
   Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final floor = _originalDate != null && _originalDate!.isBefore(today)
+        ? _originalDate!
+        : today;
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
+      locale: const Locale('id', 'ID'),
+      initialDate: _selectedDate != null && _selectedDate!.isAfter(floor)
+          ? _selectedDate!
+          : floor,
+      firstDate: floor,
+      lastDate: DateTime(now.year + 5),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: ColorScheme.light(primary: AppColors.primary),
@@ -92,16 +135,69 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
     }
   }
 
-  Future<void> _save() async {
-    final title = _titleController.text.trim();
-    final location = _locationController.text.trim();
-    final time = _timeController.text.trim();
-    final village = _villageController.text.trim();
+  Future<void> _pickTimeRange() async {
+    final start = await showTimePicker(
+      context: context,
+      initialTime: _startTime ?? const TimeOfDay(hour: 8, minute: 0),
+      helpText: 'Pilih waktu mulai',
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
+    );
+    if (start == null || !mounted) return;
 
-    if (title.isEmpty || _selectedDate == null || location.isEmpty) {
+    final end = await showTimePicker(
+      context: context,
+      initialTime: _endTime ??
+          TimeOfDay(hour: (start.hour + 2) % 24, minute: start.minute),
+      helpText: 'Pilih waktu selesai',
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
+    );
+    if (end == null) return;
+
+    final startMin = start.hour * 60 + start.minute;
+    final endMin = end.hour * 60 + end.minute;
+    if (endMin <= startMin) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Judul, tanggal, dan lokasi wajib diisi'),
+          content: Text('Waktu selesai harus setelah waktu mulai'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _startTime = start;
+      _endTime = end;
+      _timeDisplayController.text = _formatTimeRange(start, end);
+    });
+  }
+
+  Future<void> _openGoogleMaps() async {
+    final uri = Uri.parse('https://www.google.com/maps');
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tidak dapat membuka Google Maps'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tanggal wajib diisi'),
           backgroundColor: Colors.red,
         ),
       );
@@ -111,7 +207,14 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final notes = jsonEncode({'time': time, 'village': village});
+      final time = _startTime != null && _endTime != null
+          ? _formatTimeRange(_startTime!, _endTime!)
+          : '';
+      final mapsUrl = _mapsUrlController.text.trim();
+      final notes = jsonEncode({
+        'time': time,
+        if (mapsUrl.isNotEmpty) 'mapsUrl': mapsUrl,
+      });
       final isEdit = widget.schedule != null;
 
       if (isEdit) {
@@ -122,18 +225,18 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
             : DateTime.now();
         await AppointmentService.updateAppointment(
           id,
-          title: title,
+          title: _titleController.text.trim(),
           date: _selectedDate,
-          location: location,
+          location: _locationController.text.trim(),
           notes: notes,
           type: 'JADWAL',
           updatedAt: updatedAt,
         );
       } else {
         await AppointmentService.createAppointment(
-          title: title,
+          title: _titleController.text.trim(),
           date: _selectedDate!,
-          location: location,
+          location: _locationController.text.trim(),
           notes: notes,
           type: 'JADWAL',
         );
@@ -167,107 +270,133 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
     ResponsiveSize.init(context);
     final isEdit = widget.schedule != null;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
         backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          isEdit ? 'Edit Jadwal' : 'Tambah Jadwal',
-          style: TextStyle(
-            color: AppColors.primary,
-            fontSize: ResponsiveSize.fontXLarge,
-            fontWeight: FontWeight.w600,
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            onPressed: () => Navigator.pop(context),
           ),
+          title: Text(
+            isEdit ? 'Edit Jadwal' : 'Tambah Jadwal',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontSize: ResponsiveSize.fontXLarge,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTextField(
-                label: 'Judul Kegiatan',
-                hint: 'Contoh: Screening Massal RW 01',
-                controller: _titleController,
-              ),
-
-              SizedBox(height: ResponsiveSize.spacingLarge),
-
-              _buildTextField(
-                label: 'Tanggal',
-                hint: 'Pilih Tanggal',
-                controller: _dateDisplayController,
-                readOnly: true,
-                suffixIcon: Icon(Icons.calendar_today, color: AppColors.primary),
-                onTap: _pickDate,
-              ),
-
-              SizedBox(height: ResponsiveSize.spacingLarge),
-
-              _buildTextField(
-                label: 'Waktu',
-                hint: 'Contoh: 08:00 - 12:00',
-                controller: _timeController,
-              ),
-
-              SizedBox(height: ResponsiveSize.spacingLarge),
-
-              _buildTextField(
-                label: 'Lokasi',
-                hint: 'Contoh: Balai Desa Sukamaju',
-                controller: _locationController,
-              ),
-
-              SizedBox(height: ResponsiveSize.spacingLarge),
-
-              _buildTextField(
-                label: 'Desa',
-                hint: 'Contoh: Sukamaju',
-                controller: _villageController,
-              ),
-
-              SizedBox(height: ResponsiveSize.spacingXLarge * 2),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.textOnPrimary,
-                    padding: EdgeInsets.symmetric(
-                      vertical: ResponsiveSize.paddingMedium,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+        body: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTextField(
+                    label: 'Judul Kegiatan',
+                    hint: 'Contoh: Screening Massal RW 01',
+                    controller: _titleController,
+                    textCapitalization: TextCapitalization.sentences,
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                  ),
+                  SizedBox(height: ResponsiveSize.spacingLarge),
+                  _buildTextField(
+                    label: 'Tanggal',
+                    hint: 'Pilih Tanggal',
+                    controller: _dateDisplayController,
+                    readOnly: true,
+                    suffixIcon:
+                        Icon(Icons.calendar_today, color: AppColors.primary),
+                    onTap: _pickDate,
+                    validator: (_) =>
+                        _selectedDate == null ? 'Wajib diisi' : null,
+                  ),
+                  SizedBox(height: ResponsiveSize.spacingLarge),
+                  _buildTextField(
+                    label: 'Waktu',
+                    hint: 'Pilih rentang waktu',
+                    controller: _timeDisplayController,
+                    readOnly: true,
+                    suffixIcon:
+                        Icon(Icons.access_time, color: AppColors.primary),
+                    onTap: _pickTimeRange,
+                  ),
+                  SizedBox(height: ResponsiveSize.spacingLarge),
+                  _buildTextField(
+                    label: 'Lokasi',
+                    hint: 'Contoh: Balai Desa Sukamaju',
+                    controller: _locationController,
+                    textCapitalization: TextCapitalization.sentences,
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                  ),
+                  SizedBox(height: ResponsiveSize.spacingLarge),
+                  _buildTextField(
+                    label: 'Link Google Maps (opsional)',
+                    hint: 'Tempel link dari Google Maps',
+                    controller: _mapsUrlController,
+                    keyboardType: TextInputType.url,
+                    validator: (v) {
+                      final value = v?.trim() ?? '';
+                      if (value.isEmpty) return null;
+                      return _mapsUrlPattern.hasMatch(value)
+                          ? null
+                          : 'Link Google Maps tidak valid';
+                    },
+                  ),
+                  SizedBox(height: ResponsiveSize.spacingSmall),
+                  TextButton.icon(
+                    onPressed: _openGoogleMaps,
+                    icon: Icon(Icons.map_outlined, color: AppColors.primary),
+                    label: Text(
+                      'Buka Google Maps untuk salin link',
+                      style: TextStyle(color: AppColors.primary),
                     ),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          isEdit ? 'Simpan Perubahan' : 'Tambah Jadwal',
-                          style: TextStyle(
-                            fontSize: ResponsiveSize.fontLarge,
-                            fontWeight: FontWeight.bold,
-                          ),
+                  SizedBox(height: ResponsiveSize.spacingXLarge * 2),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _save,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.textOnPrimary,
+                        padding: EdgeInsets.symmetric(
+                          vertical: ResponsiveSize.paddingMedium,
                         ),
-                ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              isEdit ? 'Simpan Perubahan' : 'Tambah Jadwal',
+                              style: TextStyle(
+                                fontSize: ResponsiveSize.fontLarge,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -281,6 +410,9 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
     bool readOnly = false,
     Widget? suffixIcon,
     VoidCallback? onTap,
+    String? Function(String?)? validator,
+    TextCapitalization textCapitalization = TextCapitalization.none,
+    TextInputType? keyboardType,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,13 +426,17 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
           ),
         ),
         SizedBox(height: ResponsiveSize.spacingSmall),
-        TextField(
+        TextFormField(
           controller: controller,
           readOnly: readOnly,
           onTap: onTap,
+          validator: validator,
+          textCapitalization: textCapitalization,
+          keyboardType: keyboardType,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: AppColors.surface),
+            hintStyle: TextStyle(color: AppColors.textSecondary),
             suffixIcon: suffixIcon,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

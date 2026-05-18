@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../constants/app_colors.dart';
 import '../../services/appointment_service.dart';
 import '../../services/profile_service.dart';
@@ -57,17 +59,35 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
       final today = DateTime(now.year, now.month, now.day);
 
       final mapped = appointments.map((a) {
-        final date = DateTime.parse(a['date'] as String);
+        final date = DateTime.parse(a['date'] as String).toLocal();
         final dateOnly = DateTime(date.year, date.month, date.day);
         final isToday = dateOnly == today;
+
+        String notesTime = '';
+        String? mapsUrl;
+        final rawNotes = a['notes'];
+        if (rawNotes is String && rawNotes.isNotEmpty) {
+          try {
+            final parsed = jsonDecode(rawNotes) as Map<String, dynamic>;
+            notesTime = parsed['time'] as String? ?? '';
+            mapsUrl = parsed['mapsUrl'] as String?;
+          } catch (_) {}
+        }
+
+        final fallbackRange =
+            '${date.hour.toString().padLeft(2, '0')}:00 - ${(date.hour + 2).toString().padLeft(2, '0')}:00';
+        final fallbackTime =
+            '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+
         return {
           'id': a['id'],
           'title': a['title'],
           'date': date,
-          'timeRange': isToday ? '${date.hour.toString().padLeft(2, '0')}:00 - ${(date.hour + 2).toString().padLeft(2, '0')}:00' : null,
-          'time': '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}',
+          'timeRange':
+              notesTime.isNotEmpty ? notesTime : (isToday ? fallbackRange : null),
+          'time': notesTime.isNotEmpty ? notesTime : fallbackTime,
           'location': a['location'] ?? 'Lokasi belum ditentukan',
-          'doctor': a['notes'],
+          'mapsUrl': mapsUrl,
           'status': isToday ? 'Segera' : null,
           'type': isToday ? 'today' : 'upcoming',
         };
@@ -286,10 +306,24 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
     );
   }
 
+  Future<void> _openMaps(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak dapat membuka Google Maps')),
+      );
+    }
+  }
+
   Widget _buildEventCard(Map<String, dynamic> schedule, bool isToday) {
     final date = schedule['date'] as DateTime;
     final hasStatus = schedule['status'] != null;
-    final hasDoctor = schedule['doctor'] != null;
+    final mapsUrl = schedule['mapsUrl'] as String?;
+    final hasMaps = mapsUrl != null && mapsUrl.isNotEmpty;
+    final timeRange = schedule['timeRange'] as String?;
+    final timeText = timeRange ?? schedule['time'] as String;
 
     return Container(
       margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
@@ -392,7 +426,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
                     ),
                     SizedBox(width: 6),
                     Text(
-                      isToday ? schedule['timeRange'] : schedule['time'],
+                      timeText,
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 13,
@@ -422,23 +456,23 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
                     ),
                   ],
                 ),
-                if (hasDoctor) ...[
+                if (hasMaps) ...[
                   SizedBox(height: ResponsiveSize.spacingSmall),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        schedule['doctor'],
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Row(
+                  InkWell(
+                    onTap: () => _openMaps(mapsUrl),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
                         children: [
+                          Icon(
+                            Icons.map_outlined,
+                            size: 14,
+                            color: AppColors.primary,
+                          ),
+                          SizedBox(width: 6),
                           Text(
-                            'Detail',
+                            'Lihat di Google Maps',
                             style: TextStyle(
                               color: AppColors.primary,
                               fontSize: 13,
@@ -453,7 +487,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ],
