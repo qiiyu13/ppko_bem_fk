@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../services/appointment_service.dart';
 import '../../services/profile_service.dart';
+import '../../services/websocket_service.dart';
 import '../../utils/date_utils.dart';
 import '../../utils/responsive_size.dart';
 
@@ -20,19 +22,31 @@ class JadwalSayaScreen extends StatefulWidget {
 }
 
 class _JadwalSayaScreenState extends State<JadwalSayaScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
   DateTime _focusedDate = DateTime.now();
   DateTime? _selectedDate;
 
   List<Map<String, dynamic>> _schedules = [];
+  StreamSubscription<Map<String, dynamic>>? _wsSub;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _selectedDate = _focusedDate;
+    WidgetsBinding.instance.addObserver(this);
     _loadAppointments();
+    _wsSub = WebSocketService.instance.dataUpdateStream.listen((payload) {
+      if (payload['type'] == 'appointments' && mounted) {
+        _loadAppointments();
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadAppointments();
   }
 
   Future<void> _loadAppointments() async {
@@ -67,6 +81,8 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
 
   @override
   void dispose() {
+    _wsSub?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _tabController.dispose();
     super.dispose();
   }
