@@ -60,7 +60,7 @@ class _SuperadminMainScreenState extends State<SuperadminMainScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SyncStatusBanner(
-        child: SafeArea(child: _screens[_currentIndex]),
+        child: SafeArea(top: false, child: _screens[_currentIndex]),
       ),
       bottomNavigationBar: AnimatedLineNavBar(
         currentIndex: _currentIndex,

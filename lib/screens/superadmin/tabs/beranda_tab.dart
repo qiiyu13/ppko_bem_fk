@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/screening_service.dart';
 import '../../../services/admin_service.dart';
-import '../../../utils/date_utils.dart';
+import '../../../services/auth_service.dart';
+import '../../../services/token_service.dart';
+import '../../../services/notification_service.dart';
+import '../../../models/notification_model.dart';
 import '../../../utils/responsive_size.dart';
+import '../../patient/notification_screen.dart';
 
 class BerandaTab extends StatefulWidget {
   const BerandaTab({super.key});
@@ -13,7 +19,8 @@ class BerandaTab extends StatefulWidget {
 }
 
 class _BerandaTabState extends State<BerandaTab> {
-  static const Color purpleAccent = Color(0xFF9C27B0);
+  static const Color purpleAccent = Color(0xFF7B1FA2);
+  static const Color blueAccent = Color(0xFF1976D2);
   static const Color orangeAccent = Color(0xFFFF9800);
 
   bool _isLoading = true;
@@ -21,11 +28,27 @@ class _BerandaTabState extends State<BerandaTab> {
   int _todayScreenings = 0;
   int _activeSchedules = 0;
   int _needAttention = 0;
+  String? _userName;
 
   @override
   void initState() {
     super.initState();
     _loadStats();
+    _loadUser();
+    NotificationService.instance.fetchFromApi();
+  }
+
+  Future<void> _loadUser() async {
+    final cachedName = await TokenService.getResponsibleName();
+    if (mounted && cachedName != null && cachedName.isNotEmpty) {
+      setState(() => _userName = cachedName);
+    }
+    final me = await AuthService.getMe();
+    if (!mounted || me == null) return;
+    final name = (me['name'] ?? me['responsibleName']) as String? ?? _userName;
+    setState(() {
+      _userName = name;
+    });
   }
 
   Future<void> _loadStats() async {
@@ -41,7 +64,7 @@ class _BerandaTabState extends State<BerandaTab> {
       setState(() {
         _totalPatients = totalPatients;
         _todayScreenings = (stats['total'] as num?)?.toInt() ?? 0;
-        _activeSchedules = 0; // Could be fetched from appointments API
+        _activeSchedules = 0;
         _needAttention = attentionCount + highRiskCount;
         _isLoading = false;
       });
@@ -63,196 +86,63 @@ class _BerandaTabState extends State<BerandaTab> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.transparent,
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: ResponsiveSize.spacingMedium),
+              _buildGreetingHeader(),
+              Padding(
+                padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildStatsCard(),
 
-              // Header with greeting and date
-              Row(
-                children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.primary, width: 3),
-                    ),
-                    child: Icon(
-                      Icons.person,
-                      color: AppColors.primary,
-                      size: 30,
-                    ),
-                  ),
-                  SizedBox(width: ResponsiveSize.paddingMedium),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    SizedBox(height: ResponsiveSize.spacingXLarge),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Selamat Pagi,',
-                          style: TextStyle(
-                            fontSize: ResponsiveSize.fontMedium,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
-                        Text(
-                          'Admin Desa',
+                          'Aktivitas Terbaru',
                           style: TextStyle(
                             fontSize: ResponsiveSize.fontXLarge,
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
                           ),
                         ),
-                        SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: ResponsiveSize.paddingMedium,
-                            vertical: ResponsiveSize.paddingSmall * 0.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primarySurface.withValues(
-                              alpha: 0.2,
+                        TextButton(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const NotificationScreen(),
                             ),
-                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            '${DateTime.now().day} ${IndonesianDate.fullMonth(DateTime.now().month)} ${DateTime.now().year}',
+                            'Lihat Semua',
                             style: TextStyle(
-                              fontSize: ResponsiveSize.fontSmall,
                               color: AppColors.primary,
-                              fontWeight: FontWeight.w500,
+                              fontSize: ResponsiveSize.fontMedium,
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
 
-              SizedBox(height: ResponsiveSize.spacingXLarge),
+                    SizedBox(height: ResponsiveSize.spacingMedium),
 
-              // Section Title
-              Text(
-                'Ringkasan Desa',
-                style: TextStyle(
-                  fontSize: ResponsiveSize.fontXLarge,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                    _buildActivityList(),
+
+                    SizedBox(height: ResponsiveSize.spacingXLarge * 2),
+                  ],
                 ),
               ),
-
-              SizedBox(height: ResponsiveSize.spacingMedium),
-
-              // Stats Grid (2x2)
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      'Total Pasien',
-                      _totalPatients.toString(),
-                      Icons.people,
-                      AppColors.primary,
-                    ),
-                  ),
-                  SizedBox(width: ResponsiveSize.paddingSmall),
-                  Expanded(
-                    child: _buildStatCard(
-                      'Total Screening',
-                      _todayScreenings.toString(),
-                      Icons.medical_services,
-                      AppColors.primarySurface,
-                    ),
-                  ),
-                ],
-              ),
-
-              SizedBox(height: ResponsiveSize.paddingSmall),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      'Jadwal Aktif',
-                      _activeSchedules.toString(),
-                      Icons.calendar_today,
-                      purpleAccent,
-                    ),
-                  ),
-                  SizedBox(width: ResponsiveSize.paddingSmall),
-                  Expanded(
-                    child: _buildStatCard(
-                      'Perlu Perhatian',
-                      _needAttention.toString(),
-                      Icons.warning,
-                      orangeAccent,
-                    ),
-                  ),
-                ],
-              ),
-
-              SizedBox(height: ResponsiveSize.spacingXLarge),
-
-              // Recent Activity Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Aktivitas Terbaru',
-                    style: TextStyle(
-                      fontSize: ResponsiveSize.fontXLarge,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    child: Text(
-                      'Lihat Semua',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: ResponsiveSize.fontMedium,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              SizedBox(height: ResponsiveSize.spacingMedium),
-
-              // Activity List (still placeholder - would need a real activity API)
-              _buildActivityItem(
-                'Pasien Baru Terdaftar',
-                'Data pasien telah terdaftar',
-                '2 jam lalu',
-                Icons.person_add,
-                AppColors.primary,
-              ),
-              _buildActivityItem(
-                'Screening Selesai',
-                'Pasien selesai screening',
-                '4 jam lalu',
-                Icons.check_circle,
-                AppColors.success,
-              ),
-              _buildActivityItem(
-                'Jadwal Baru',
-                'Screening massal dijadwalkan',
-                '1 hari lalu',
-                Icons.calendar_today,
-                purpleAccent,
-              ),
-
-              // Bottom spacing
-              SizedBox(height: ResponsiveSize.spacingXLarge * 2),
             ],
           ),
         ),
@@ -260,62 +150,173 @@ class _BerandaTabState extends State<BerandaTab> {
     );
   }
 
-
-  Widget _buildStatCard(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildGreetingHeader() {
+    final name = _userName ?? 'Admin Desa';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: ResponsiveSize.paddingMedium,
-        vertical: ResponsiveSize.paddingSmall,
+      padding: EdgeInsets.fromLTRB(
+        ResponsiveSize.paddingMedium,
+        MediaQuery.of(context).padding.top + ResponsiveSize.paddingMedium,
+        ResponsiveSize.paddingMedium,
+        ResponsiveSize.paddingMedium,
       ),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surface, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      color: AppColors.card,
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(ResponsiveSize.paddingSmall),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+            width: 44,
+            height: 44,
+            decoration: const BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: ResponsiveSize.iconSmall),
+            alignment: Alignment.center,
+            child: Text(
+              initial,
+              style: const TextStyle(
+                color: AppColors.textOnPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           SizedBox(width: ResponsiveSize.paddingSmall),
           Expanded(
-            child: Row(
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: ResponsiveSize.fontLarge,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+            child: Text(
+              name,
+              style: TextStyle(
+                fontSize: ResponsiveSize.fontLarge,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          ValueListenableBuilder<int>(
+            valueListenable: NotificationService.instance.unreadCount,
+            builder: (_, count, _) => GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationScreen()),
+              ),
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Icon(
+                        Icons.notifications_outlined,
+                        color: AppColors.primary,
+                        size: 24,
+                      ),
+                      if (count > 0)
+                        Positioned(
+                          top: -4,
+                          right: -4,
+                          child: Container(
+                            width: 16,
+                            height: 16,
+                            decoration: const BoxDecoration(
+                              color: AppColors.statusRed,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                count > 9 ? '9+' : '$count',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                SizedBox(width: ResponsiveSize.paddingSmall * 0.5),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: ResponsiveSize.fontSmall,
-                      color: AppColors.textSecondary,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsCard() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.surface, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  'Jumlah Keluarga Terdaftar',
+                  style: TextStyle(
+                    fontSize: ResponsiveSize.fontMedium,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
                   ),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      NumberFormat('#,##0', 'id_ID').format(_totalPatients),
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                        height: 1.0,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(height: 1, color: AppColors.surface),
+          Padding(
+            padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildMiniStat(_todayScreenings, 'Screening', AppColors.primary),
+                ),
+                Container(width: 1, height: 40, color: AppColors.surface),
+                Expanded(
+                  child: _buildMiniStat(_activeSchedules, 'Jadwal', purpleAccent),
+                ),
+                Container(width: 1, height: 40, color: AppColors.surface),
+                Expanded(
+                  child: _buildMiniStat(_needAttention, 'Perhatian', orangeAccent),
                 ),
               ],
             ),
@@ -325,61 +326,205 @@ class _BerandaTabState extends State<BerandaTab> {
     );
   }
 
-  Widget _buildActivityItem(
-    String title,
-    String subtitle,
-    String time,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
-      padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surface, width: 1),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(ResponsiveSize.paddingSmall),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: ResponsiveSize.iconSmall),
+  Widget _buildMiniStat(int value, String label, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 24,
+          height: 3,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
           ),
-          SizedBox(width: ResponsiveSize.paddingMedium),
-          Expanded(
+        ),
+        SizedBox(height: ResponsiveSize.spacingSmall),
+        Text(
+          value.toString(),
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: ResponsiveSize.spacingSmall * 0.25),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: ResponsiveSize.fontSmall,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActivityList() {
+    return ValueListenableBuilder<List<NotificationModel>>(
+      valueListenable: NotificationService.instance.notifications,
+      builder: (_, notifs, _) {
+        if (notifs.isEmpty) {
+          return Container(
+            padding: EdgeInsets.symmetric(vertical: ResponsiveSize.spacingXLarge),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.notifications_none_outlined,
+                    size: 40,
+                    color: AppColors.textSecondary.withValues(alpha: 0.5),
+                  ),
+                  SizedBox(height: ResponsiveSize.spacingSmall),
+                  Text(
+                    'Belum ada aktivitas',
+                    style: TextStyle(
+                      fontSize: ResponsiveSize.fontMedium,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final recent = notifs.take(5).toList();
+        return Column(
+          children: [
+            for (var i = 0; i < recent.length; i++)
+              _buildTimelineItem(recent[i], isLast: i == recent.length - 1),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTimelineItem(NotificationModel notif, {required bool isLast}) {
+    final (icon, color) = switch (notif.type) {
+      NotificationType.appointment => (Icons.calendar_today, blueAccent),
+      NotificationType.screeningResult => (Icons.assignment, purpleAccent),
+      NotificationType.general => (Icons.info_outline, AppColors.primary),
+    };
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 40,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: ResponsiveSize.fontMedium,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
                   ),
+                  child: Icon(icon, color: color, size: 16),
                 ),
-                SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: ResponsiveSize.fontSmall,
-                    color: AppColors.textSecondary,
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 1,
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      color: AppColors.divider,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
-          Text(
-            time,
-            style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+          SizedBox(width: ResponsiveSize.paddingSmall),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: isLast ? 0 : ResponsiveSize.spacingMedium,
+              ),
+              child: Container(
+                padding: EdgeInsets.all(ResponsiveSize.paddingSmall),
+                decoration: BoxDecoration(
+                  color: notif.isRead
+                      ? AppColors.card
+                      : AppColors.primary.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.surface, width: 1),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            notif.title,
+                            style: TextStyle(
+                              fontSize: ResponsiveSize.fontMedium,
+                              fontWeight: notif.isRead
+                                  ? FontWeight.w500
+                                  : FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          if (notif.body.isNotEmpty) ...[
+                            SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
+                            Text(
+                              notif.body,
+                              style: TextStyle(
+                                fontSize: ResponsiveSize.fontSmall,
+                                color: AppColors.textSecondary,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: ResponsiveSize.paddingSmall),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          _relativeTime(notif.createdAt),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        if (!notif.isRead) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  String _relativeTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'Baru saja';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} mnt lalu';
+    if (diff.inHours < 24) return '${diff.inHours} jam lalu';
+    if (diff.inDays < 7) return '${diff.inDays} hari lalu';
+    return '${(diff.inDays / 7).floor()} mgg lalu';
   }
 }
