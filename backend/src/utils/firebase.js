@@ -8,8 +8,8 @@ if (serviceAccount) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
-} else if (process.env.NODE_ENV !== 'production') {
-  console.warn('WARNING: FIREBASE_SERVICE_ACCOUNT not set. OTP verification will fail.');
+} else {
+  console.warn('WARNING: FIREBASE_SERVICE_ACCOUNT not set. Password reset (OTP) will be unavailable.');
 }
 
 async function verifyFirebaseToken(idToken) {
