@@ -21,6 +21,8 @@ class AuthService {
     await TokenService.setKKNumber(kkNumber);
     await TokenService.setResponsibleName(responsibleName);
 
+    WebSocketService.instance.connect();
+
     return data;
   }
 
