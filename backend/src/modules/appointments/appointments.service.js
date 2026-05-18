@@ -1,14 +1,19 @@
 const { broadcastToUsers, broadcastToAll, events } = require('../../websocket');
-const { createAndSend } = require('../notifications/notifications.service');
+const { createAndSend, createAndSendToAllPatients } = require('../notifications/notifications.service');
 
 const prisma = require('../../utils/prisma');
 
 const getAppointments = async (userId, profileId) => {
-  const where = { userId };
-  if (profileId) where.profileId = profileId;
+  const personalWhere = { userId };
+  if (profileId) personalWhere.profileId = profileId;
 
   return prisma.appointment.findMany({
-    where,
+    where: {
+      OR: [
+        personalWhere,
+        { type: 'JADWAL' },
+      ],
+    },
     orderBy: { date: 'asc' },
   });
 };
@@ -25,15 +30,35 @@ const createAppointment = async (data, userId) => {
       type: data.type || 'GENERAL',
     },
   });
-  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'appointments', action: 'create', id: result.id }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
+
+  const isJadwal = result.type === 'JADWAL';
+  const dateStr = new Date(result.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const notifBody = `${result.title} pada ${dateStr}${result.location ? ' di ' + result.location : ''}`;
+
   try {
-    const dateStr = new Date(result.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    await createAndSend(userId, {
-      title: 'Jadwal Baru Ditambahkan',
-      body: `${result.title} pada ${dateStr}${result.location ? ' di ' + result.location : ''}`,
-      type: 'appointment',
-      data: { appointmentId: result.id },
-    });
+    if (isJadwal) {
+      broadcastToAll(events.DATA_UPDATE, { type: 'appointments', action: 'create', id: result.id });
+    } else {
+      broadcastToUsers([userId], events.DATA_UPDATE, { type: 'appointments', action: 'create', id: result.id });
+    }
+  } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
+
+  try {
+    if (isJadwal) {
+      await createAndSendToAllPatients({
+        title: 'Jadwal Skrining Baru',
+        body: notifBody,
+        type: 'appointment',
+        data: { appointmentId: result.id },
+      });
+    } else {
+      await createAndSend(userId, {
+        title: 'Jadwal Baru Ditambahkan',
+        body: notifBody,
+        type: 'appointment',
+        data: { appointmentId: result.id },
+      });
+    }
   } catch (e) { console.error('Notification send failed:', e.message); }
   return result;
 };
@@ -55,7 +80,13 @@ const updateAppointment = async (id, data, userId) => {
     where: { id },
     data: updateData,
   });
-  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'appointments', action: 'update', id }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
+  try {
+    if (result.type === 'JADWAL') {
+      broadcastToAll(events.DATA_UPDATE, { type: 'appointments', action: 'update', id });
+    } else {
+      broadcastToUsers([userId], events.DATA_UPDATE, { type: 'appointments', action: 'update', id });
+    }
+  } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
   return result;
 };
 
@@ -66,7 +97,13 @@ const deleteAppointment = async (id, userId) => {
   if (!appointment) throw Object.assign(new Error('Appointment not found'), { statusCode: 404 });
 
   await prisma.appointment.delete({ where: { id } });
-  try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'appointments', action: 'delete', id }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
+  try {
+    if (appointment.type === 'JADWAL') {
+      broadcastToAll(events.DATA_UPDATE, { type: 'appointments', action: 'delete', id });
+    } else {
+      broadcastToUsers([userId], events.DATA_UPDATE, { type: 'appointments', action: 'delete', id });
+    }
+  } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
   return { message: 'Appointment deleted successfully' };
 };
 

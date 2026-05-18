@@ -1,5 +1,5 @@
 const prisma = require('../../utils/prisma');
-const { sendToUser } = require('../../utils/fcm');
+const { sendToUser, sendToUsers } = require('../../utils/fcm');
 
 const registerToken = async (userId, fcmToken) => {
   await prisma.user.update({
@@ -44,4 +44,28 @@ const createAndSend = async (userId, { title, body, type, data = {} }) => {
   return notif;
 };
 
-module.exports = { registerToken, getNotifications, markAllRead, markRead, createAndSend };
+const createAndSendToAllPatients = async ({ title, body, type, data = {} }) => {
+  const users = await prisma.user.findMany({
+    where: { role: 'PATIENT', isActive: true },
+    select: { id: true },
+  });
+  if (!users.length) return [];
+
+  await prisma.notification.createMany({
+    data: users.map((u) => ({ userId: u.id, title, body, type, data })),
+  });
+
+  try {
+    await sendToUsers(users.map((u) => u.id), {
+      title,
+      body,
+      data: { type, ...data },
+    });
+  } catch (e) {
+    console.error('FCM bulk send failed:', e.message);
+  }
+
+  return users.map((u) => u.id);
+};
+
+module.exports = { registerToken, getNotifications, markAllRead, markRead, createAndSend, createAndSendToAllPatients };
