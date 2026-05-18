@@ -20,6 +20,7 @@ router.post('/users', [
   body('responsibleName').isString().notEmpty(),
   body('password').isString().isLength({ min: 6 }),
   body('role').optional().isIn(['ADMIN', 'SUPERADMIN', 'PATIENT']),
+  body('regionId').optional({ nullable: true }).isString(),
   validate,
 ], usersController.createUser);
 

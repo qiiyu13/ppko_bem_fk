@@ -8,8 +8,13 @@ const getRegions = async (query) => {
       skip, take: limit,
       include: {
         parent: { select: { id: true, name: true, type: true } },
-        children: { select: { id: true, name: true, type: true } },
-        _count: { select: { residents: true } },
+        children: {
+          select: {
+            id: true, name: true, type: true,
+            _count: { select: { users: true } },
+          },
+        },
+        _count: { select: { users: true } },
       },
       orderBy: { createdAt: 'asc' },
     }),
@@ -28,45 +33,38 @@ const createRegion = async (data) => {
   });
 };
 
-const getResidents = async (regionId, query) => {
+const getStats = async () => {
+  const [rwCount, rtCount, familyCount, profileCount] = await Promise.all([
+    prisma.region.count({ where: { type: 'RW' } }),
+    prisma.region.count({ where: { type: 'RT' } }),
+    prisma.user.count({ where: { role: 'PATIENT' } }),
+    prisma.familyProfile.count(),
+  ]);
+  return { rwCount, rtCount, familyCount, profileCount };
+};
+
+const getUsersByRegion = async (regionId, query) => {
   const { page, limit, skip } = parsePagination(query);
-  const where = regionId ? { regionId } : {};
+  const where = { regionId };
   const [data, total] = await Promise.all([
-    prisma.resident.findMany({
+    prisma.user.findMany({
       where, skip, take: limit,
-      include: { region: { select: { name: true, type: true } } },
       orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        kkNumber: true,
+        responsibleName: true,
+        phone: true,
+        isActive: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: { select: { familyProfiles: true } },
+      },
     }),
-    prisma.resident.count({ where }),
+    prisma.user.count({ where }),
   ]);
   return { data, total, page, limit };
 };
 
-const createResident = async (data) => {
-  return prisma.resident.create({
-    data: {
-      regionId: data.regionId,
-      name: data.name,
-      nik: data.nik,
-      gender: data.gender,
-      birthDate: new Date(data.birthDate),
-      phone: data.phone || null,
-      address: data.address || null,
-    },
-  });
-};
-
-const updateResident = async (id, data) => {
-  const updateData = {};
-  if (data.regionId !== undefined) updateData.regionId = data.regionId;
-  if (data.name !== undefined) updateData.name = data.name;
-  if (data.nik !== undefined) updateData.nik = data.nik;
-  if (data.gender !== undefined) updateData.gender = data.gender;
-  if (data.birthDate !== undefined) updateData.birthDate = new Date(data.birthDate);
-  if (data.phone !== undefined) updateData.phone = data.phone || null;
-  if (data.address !== undefined) updateData.address = data.address || null;
-
-  return prisma.resident.update({ where: { id }, data: updateData });
-};
-
-module.exports = { getRegions, createRegion, getResidents, createResident, updateResident };
+module.exports = { getRegions, createRegion, getStats, getUsersByRegion };

@@ -14,8 +14,8 @@ async function main() {
   await prisma.medicalScreening.deleteMany();
   await prisma.appointment.deleteMany();
   await prisma.familyProfile.deleteMany();
+  await prisma.notification.deleteMany();
   await prisma.article.deleteMany();
-  await prisma.resident.deleteMany();
   await prisma.region.deleteMany();
   await prisma.user.deleteMany();
 
@@ -251,32 +251,13 @@ async function main() {
 
   console.log('✅ Created RW/RT structure');
 
-  // ─── Residents ───
-  await prisma.resident.create({
-    data: {
-      regionId: rt.id,
-      name: 'Pak Budi',
-      nik: '1111222233334444',
-      gender: 'pria',
-      birthDate: new Date('1970-01-01'),
-      phone: '08111111111',
-      address: 'Jl. Melati No. 5',
-    },
+  // ─── Link PATIENT user to RT ───
+  await prisma.user.update({
+    where: { id: patient.id },
+    data: { regionId: rt.id },
   });
 
-  await prisma.resident.create({
-    data: {
-      regionId: rt.id,
-      name: 'Ibu Ani',
-      nik: '5555666677778888',
-      gender: 'wanita',
-      birthDate: new Date('1975-05-10'),
-      phone: '08222222222',
-      address: 'Jl. Melati No. 7',
-    },
-  });
-
-  console.log('✅ Created 2 residents');
+  console.log('✅ Linked patient account to RT');
 
   // ─── Appointments ───
   const startOfToday = new Date();

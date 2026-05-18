@@ -22,9 +22,11 @@ model User {
   role            Role     @default(PATIENT)
   isActive        Boolean  @default(true) @map("is_active")
   fcmToken        String?  @map("fcm_token")
+  regionId        String?  @map("region_id")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
+  region          Region?            @relation(fields: [regionId], references: [id])
   familyProfiles  FamilyProfile[]
   screenings      MedicalScreening[] @relation("Screener")
   createdArticles Article[]          @relation("Author")
@@ -32,6 +34,7 @@ model User {
   conversations   ChatConversation[]
   notifications   Notification[]
 
+  @@index([regionId])
   @@map("users")
 }
 
@@ -156,29 +159,11 @@ model Region {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  parent    Region?    @relation("RegionHierarchy", fields: [parentId], references: [id])
-  children  Region[]   @relation("RegionHierarchy")
-  residents Resident[]
+  parent   Region?  @relation("RegionHierarchy", fields: [parentId], references: [id])
+  children Region[] @relation("RegionHierarchy")
+  users    User[]
 
   @@map("regions")
-}
-
-model Resident {
-  id        String   @id @default(uuid())
-  regionId  String   @map("region_id")
-  name      String
-  nik       String   @unique
-  gender    String
-  birthDate DateTime @map("birth_date")
-  phone     String?
-  address   String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  region Region @relation(fields: [regionId], references: [id])
-
-  @@index([regionId])
-  @@map("residents")
 }
 
 model ChatConversation {

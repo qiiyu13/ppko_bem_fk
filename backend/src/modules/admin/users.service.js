@@ -9,7 +9,11 @@ const getUsers = async (role) => {
   return prisma.user.findMany({
     where,
     orderBy: { createdAt: 'desc' },
-    select: { id: true, kkNumber: true, responsibleName: true, role: true, isActive: true, createdAt: true, updatedAt: true },
+    select: {
+      id: true, kkNumber: true, responsibleName: true, role: true, isActive: true,
+      regionId: true, createdAt: true, updatedAt: true,
+      region: { select: { id: true, name: true, type: true } },
+    },
   });
 };
 
@@ -26,8 +30,13 @@ const createUser = async (data) => {
       phone: data.phone || null,
       role: data.role || 'ADMIN',
       isActive: data.isActive !== undefined ? data.isActive : true,
+      regionId: data.regionId || null,
     },
-    select: { id: true, kkNumber: true, responsibleName: true, role: true, isActive: true, createdAt: true },
+    select: {
+      id: true, kkNumber: true, responsibleName: true, role: true, isActive: true,
+      regionId: true, createdAt: true,
+      region: { select: { id: true, name: true, type: true } },
+    },
   });
 };
 
@@ -38,11 +47,16 @@ const updateUser = async (id, data) => {
   if (data.role !== undefined) updateData.role = data.role;
   if (data.isActive !== undefined) updateData.isActive = data.isActive;
   if (data.password) updateData.password = await hashPassword(data.password);
+  if (data.regionId !== undefined) updateData.regionId = data.regionId || null;
 
   return prisma.user.update({
     where: { id },
     data: updateData,
-    select: { id: true, kkNumber: true, responsibleName: true, role: true, isActive: true, createdAt: true },
+    select: {
+      id: true, kkNumber: true, responsibleName: true, role: true, isActive: true,
+      regionId: true, createdAt: true,
+      region: { select: { id: true, name: true, type: true } },
+    },
   });
 };
 
