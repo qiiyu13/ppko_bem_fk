@@ -15,7 +15,7 @@ class RegionService {
     final response = await ApiService.post('/regions', data: {
       'type': type,
       'name': name,
-      if (parentId != null) 'parentId': parentId,
+      'parentId': ?parentId,
     });
     return response.data['data'] as Map<String, dynamic>;
   }
@@ -43,8 +43,8 @@ class RegionService {
       'nik': nik,
       'gender': gender,
       'birthDate': birthDate.toIso8601String(),
-      if (phone != null) 'phone': phone,
-      if (address != null) 'address': address,
+      'phone': ?phone,
+      'address': ?address,
     });
     return response.data['data'] as Map<String, dynamic>;
   }
@@ -59,13 +59,13 @@ class RegionService {
     String? address,
   }) async {
     final response = await ApiService.put('/regions/residents/$id', data: {
-      if (regionId != null) 'regionId': regionId,
-      if (name != null) 'name': name,
-      if (nik != null) 'nik': nik,
-      if (gender != null) 'gender': gender,
+      'regionId': ?regionId,
+      'name': ?name,
+      'nik': ?nik,
+      'gender': ?gender,
       if (birthDate != null) 'birthDate': birthDate.toIso8601String(),
-      if (phone != null) 'phone': phone,
-      if (address != null) 'address': address,
+      'phone': ?phone,
+      'address': ?address,
     });
     return response.data['data'] as Map<String, dynamic>;
   }

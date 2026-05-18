@@ -65,7 +65,7 @@ class _TanamanTogaTabState extends State<TanamanTogaTab> {
             if (_error != null)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                color: AppColors.warning.withOpacity(0.1),
+                color: AppColors.warning.withValues(alpha: 0.1),
                 child: Row(
                   children: [
                     Icon(Icons.warning_amber, color: AppColors.warning, size: 16),
@@ -173,7 +173,7 @@ class _ArticleCard extends StatelessWidget {
                         color: AppColors.background,
                         child: Icon(
                           Icons.image_not_supported,
-                          color: AppColors.textSecondary.withOpacity(0.5),
+                          color: AppColors.textSecondary.withValues(alpha: 0.5),
                           size: 32,
                         ),
                       ),

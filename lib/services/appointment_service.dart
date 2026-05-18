@@ -30,9 +30,9 @@ class AppointmentService {
     final data = <String, dynamic>{
       'title': title,
       'date': date.toIso8601String(),
-      if (profileId != null) 'profileId': profileId,
-      if (location != null) 'location': location,
-      if (notes != null) 'notes': notes,
+      'profileId': ?profileId,
+      'location': ?location,
+      'notes': ?notes,
       'type': type,
     };
 
@@ -58,11 +58,11 @@ class AppointmentService {
     required DateTime updatedAt,
   }) async {
     final data = <String, dynamic>{
-      if (title != null) 'title': title,
+      'title': ?title,
       if (date != null) 'date': date.toIso8601String(),
-      if (location != null) 'location': location,
-      if (notes != null) 'notes': notes,
-      if (type != null) 'type': type,
+      'location': ?location,
+      'notes': ?notes,
+      'type': ?type,
       'updatedAt': updatedAt.toIso8601String(),
     };
 

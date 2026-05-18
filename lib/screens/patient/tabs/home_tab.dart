@@ -108,7 +108,7 @@ class _SparklinePainter extends CustomPainter {
 }
 
 class HomeTab extends StatefulWidget {
-  HomeTab({super.key});
+  const HomeTab({super.key});
 
   @override
   State<HomeTab> createState() => _HomeTabState();
@@ -676,7 +676,7 @@ class _HomeTabState extends State<HomeTab> {
                                     final cardHeight = cardWidth;
                                     final gridHeight = (cardHeight * 2) + 16;
 
-                                    return Container(
+                                    return SizedBox(
                                       height: gridHeight,
                                       child: GridView.count(
                                         crossAxisCount: 2,

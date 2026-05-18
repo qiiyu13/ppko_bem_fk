@@ -1,6 +1,4 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../constants/app_colors.dart';
 
 enum MetricType { bloodPressure, cholesterol, bloodSugar, uricAcid }

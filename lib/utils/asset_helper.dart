@@ -6,7 +6,7 @@ class AssetHelper {
   AssetHelper._();
 
   /// Returns the correct asset path based on platform.
-  /// On web when imported as a package, assets are prefixed with 'packages/<package>/'
+  /// On web when imported as a package, assets are prefixed with `packages/<package>/`
   static String getSvgPath(String assetName) {
     if (kIsWeb) {
       return 'packages/mediku/assets/svg/$assetName';
@@ -42,7 +42,7 @@ class AssetHelper {
   }
 
   /// Returns the correct font family name based on platform.
-  /// On web when imported as a package, fonts are prefixed with 'packages/<package>/'
+  /// On web when imported as a package, fonts are prefixed with `packages/<package>/`
   static String getFontFamily(String fontFamily) {
     if (kIsWeb) {
       return 'packages/mediku/$fontFamily';
@@ -59,7 +59,7 @@ class AssetHelper {
     return getImagePath(filename);
   }
 
-  /// Normalizes article/tanaman image paths stored as 'assets/images/<name>'
+  /// Normalizes article/tanaman image paths stored as `assets/images/<name>`
   /// and returns the correct platform-aware path via [getImagePath].
   static String getArticleImagePath(String rawPath) {
     final filename = rawPath.replaceFirst('assets/images/', '');

@@ -207,7 +207,7 @@ class _MetricChartState extends State<MetricChart> {
     final zones = <LineChartBarData>[];
 
     // Helper to clip zone to chart bounds
-    LineChartBarData? _createClippedZone(
+    LineChartBarData? createClippedZone(
       double zoneMin,
       double zoneMax,
       Color color,
@@ -225,7 +225,7 @@ class _MetricChartState extends State<MetricChart> {
     switch (widget.type) {
       case MetricType.bloodPressure:
         // Normal zone: 90-120 (systolic) - clipped to chart bounds
-        final normalZone = _createClippedZone(
+        final normalZone = createClippedZone(
           90,
           120,
           AppColors.success.withValues(alpha: 0.15),
@@ -233,7 +233,7 @@ class _MetricChartState extends State<MetricChart> {
         if (normalZone != null) zones.add(normalZone);
 
         // Warning zone: 120-140 - clipped to chart bounds
-        final warningZone = _createClippedZone(
+        final warningZone = createClippedZone(
           120,
           140,
           AppColors.warning.withValues(alpha: 0.15),
@@ -241,7 +241,7 @@ class _MetricChartState extends State<MetricChart> {
         if (warningZone != null) zones.add(warningZone);
 
         // Critical zone: 140+ - clipped to chart bounds
-        final criticalZone = _createClippedZone(
+        final criticalZone = createClippedZone(
           140,
           chartMaxY,
           AppColors.error.withValues(alpha: 0.15),
@@ -250,7 +250,7 @@ class _MetricChartState extends State<MetricChart> {
         break;
       case MetricType.cholesterol:
         // Normal: <200 - clipped to chart bounds
-        final normalZone = _createClippedZone(
+        final normalZone = createClippedZone(
           chartMinY,
           200,
           AppColors.success.withValues(alpha: 0.15),
@@ -258,7 +258,7 @@ class _MetricChartState extends State<MetricChart> {
         if (normalZone != null) zones.add(normalZone);
 
         // Warning: 200-240 - clipped to chart bounds
-        final warningZone = _createClippedZone(
+        final warningZone = createClippedZone(
           200,
           240,
           AppColors.warning.withValues(alpha: 0.15),
@@ -266,7 +266,7 @@ class _MetricChartState extends State<MetricChart> {
         if (warningZone != null) zones.add(warningZone);
 
         // Critical: >240 - clipped to chart bounds
-        final criticalZone = _createClippedZone(
+        final criticalZone = createClippedZone(
           240,
           chartMaxY,
           AppColors.error.withValues(alpha: 0.15),
@@ -275,7 +275,7 @@ class _MetricChartState extends State<MetricChart> {
         break;
       case MetricType.bloodSugar:
         // Low: <70 - clipped to chart bounds
-        final lowZone = _createClippedZone(
+        final lowZone = createClippedZone(
           chartMinY,
           70,
           AppColors.error.withValues(alpha: 0.15),
@@ -283,7 +283,7 @@ class _MetricChartState extends State<MetricChart> {
         if (lowZone != null) zones.add(lowZone);
 
         // Normal: 70-100 - clipped to chart bounds
-        final normalZone = _createClippedZone(
+        final normalZone = createClippedZone(
           70,
           100,
           AppColors.success.withValues(alpha: 0.15),
@@ -291,7 +291,7 @@ class _MetricChartState extends State<MetricChart> {
         if (normalZone != null) zones.add(normalZone);
 
         // Warning: 100-126 - clipped to chart bounds
-        final warningZone = _createClippedZone(
+        final warningZone = createClippedZone(
           100,
           126,
           AppColors.warning.withValues(alpha: 0.15),
@@ -299,7 +299,7 @@ class _MetricChartState extends State<MetricChart> {
         if (warningZone != null) zones.add(warningZone);
 
         // Critical: >126 - clipped to chart bounds
-        final criticalZone = _createClippedZone(
+        final criticalZone = createClippedZone(
           126,
           chartMaxY,
           AppColors.error.withValues(alpha: 0.15),
@@ -308,7 +308,7 @@ class _MetricChartState extends State<MetricChart> {
         break;
       case MetricType.uricAcid:
         // Male: 3.5-7.2 - clipped to chart bounds
-        final normalZone = _createClippedZone(
+        final normalZone = createClippedZone(
           3.5,
           7.2,
           AppColors.success.withValues(alpha: 0.15),
@@ -316,7 +316,7 @@ class _MetricChartState extends State<MetricChart> {
         if (normalZone != null) zones.add(normalZone);
 
         // Above normal: >7.2 - clipped to chart bounds
-        final warningZone = _createClippedZone(
+        final warningZone = createClippedZone(
           7.2,
           chartMaxY,
           AppColors.warning.withValues(alpha: 0.15),

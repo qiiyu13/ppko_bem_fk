@@ -44,9 +44,9 @@ class AdminService {
       'name': name,
       'nik': nik,
       'password': password,
-      if (gender != null) 'gender': gender,
+      'gender': ?gender,
       if (birthDate != null) 'birthDate': birthDate.toIso8601String(),
-      if (phone != null) 'phone': phone,
+      'phone': ?phone,
       'role': role,
       'isActive': isActive,
     });
@@ -64,13 +64,13 @@ class AdminService {
     required DateTime updatedAt,
   }) async {
     final response = await ApiService.put('/admin/users/$id', data: {
-      if (name != null) 'name': name,
-      if (gender != null) 'gender': gender,
+      'name': ?name,
+      'gender': ?gender,
       if (birthDate != null) 'birthDate': birthDate.toIso8601String(),
-      if (phone != null) 'phone': phone,
-      if (role != null) 'role': role,
-      if (isActive != null) 'isActive': isActive,
-      if (password != null) 'password': password,
+      'phone': ?phone,
+      'role': ?role,
+      'isActive': ?isActive,
+      'password': ?password,
       'updatedAt': updatedAt.toIso8601String(),
     });
     return response.data['data'] as Map<String, dynamic>;

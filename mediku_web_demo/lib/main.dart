@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
-import 'package:device_frame/device_frame.dart';
 
 // Import from main Mediku app
 import 'package:mediku/constants/app_theme.dart';

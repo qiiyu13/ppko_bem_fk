@@ -167,9 +167,9 @@ class ProfileService {
         _activeProfileController.add(_activeProfile);
       }
       await CacheService.saveProfile(profile.id, profile.toJson());
-    } on SyncConflictException catch (e) {
+    } on SyncConflictException {
       rethrow;
-    } catch (e) {
+    } catch (_) {
       final index = _profiles.indexWhere((p) => p.id == profile.id);
       if (index != -1) {
         _profiles[index] = profile;
@@ -187,9 +187,9 @@ class ProfileService {
       await ApiService.delete('/profiles/$id', data: {
         'updatedAt': updatedAt.toIso8601String(),
       });
-    } on SyncConflictException catch (e) {
+    } on SyncConflictException {
       rethrow;
-    } catch (e) {
+    } catch (_) {
       await CacheService.queueSync('/profiles/$id', 'DELETE', {
         'updatedAt': updatedAt.toIso8601String(),
       });

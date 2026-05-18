@@ -267,7 +267,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             fontWeight: FontWeight.w600,
           ),
         ),
-        if (trailing != null) trailing,
+        ?trailing,
       ],
     );
   }

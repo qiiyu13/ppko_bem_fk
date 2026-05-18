@@ -26,7 +26,6 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
   File? _selectedImage;
   String? _existingImagePath;
   DateTime _publishDate = DateTime.now();
-  bool _isDraft = false;
   bool _isLoading = false;
 
   @override
@@ -44,7 +43,6 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
           ? widget.article!.imagePath
           : null;
       _publishDate = widget.article!.publishDate;
-      _isDraft = widget.article!.isDraft;
 
       // Parse content for Quill
       try {
@@ -52,7 +50,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
           widget.article!.content.startsWith('[')
               ? widget.article!.content as List<dynamic>
               : [
-                  {"insert": widget.article!.content + "\n"},
+                  {"insert": "${widget.article!.content}\n"},
                 ],
         );
         _quillController = QuillController(
@@ -66,7 +64,6 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
     } else {
       // Create mode
       _quillController = QuillController.basic();
-      _isDraft = true;
     }
   }
 
@@ -124,7 +121,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(Icons.camera_alt, color: AppColors.primary),
@@ -141,7 +138,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(Icons.photo_library, color: AppColors.primary),
@@ -159,7 +156,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.delete, color: Colors.red),
@@ -415,7 +412,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
           color: AppColors.background,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppColors.textSecondary.withOpacity(0.2),
+            color: AppColors.textSecondary.withValues(alpha: 0.2),
             width: 2,
           ),
         ),
@@ -447,7 +444,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
         Icon(
           Icons.add_photo_alternate,
           size: 48,
-          color: AppColors.textSecondary.withOpacity(0.5),
+          color: AppColors.textSecondary.withValues(alpha: 0.5),
         ),
         const SizedBox(height: 8),
         Text(
@@ -476,7 +473,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
           decoration: InputDecoration(
             hintText: 'Masukkan judul artikel...',
             hintStyle: TextStyle(
-              color: AppColors.textSecondary.withOpacity(0.5),
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
             ),
             filled: true,
             fillColor: AppColors.card,
@@ -558,7 +555,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
           decoration: InputDecoration(
             hintText: 'TipsSehat, TanamanObat, Jahe (pisahkan dengan koma)',
             hintStyle: TextStyle(
-              color: AppColors.textSecondary.withOpacity(0.5),
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
               fontSize: 13,
             ),
             filled: true,
@@ -593,7 +590,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
           decoration: BoxDecoration(
             color: AppColors.card,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.textSecondary.withOpacity(0.1)),
+            border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.1)),
           ),
           child: Column(
             children: [
@@ -667,7 +664,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
         color: AppColors.card,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),

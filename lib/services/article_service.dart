@@ -52,8 +52,8 @@ class ArticleService {
     final requestData = <String, dynamic>{
       'title': title,
       'content': content,
-      if (imagePath != null) 'imagePath': imagePath,
-      if (tags != null) 'tags': tags,
+      'imagePath': ?imagePath,
+      'tags': ?tags,
       'isDraft': isDraft,
       'isPublished': isPublished,
     };
@@ -88,12 +88,12 @@ class ArticleService {
     required DateTime updatedAt,
   }) async {
     final requestData = <String, dynamic>{
-      if (title != null) 'title': title,
-      if (content != null) 'content': content,
-      if (imagePath != null) 'imagePath': imagePath,
-      if (tags != null) 'tags': tags,
-      if (isDraft != null) 'isDraft': isDraft,
-      if (isPublished != null) 'isPublished': isPublished,
+      'title': ?title,
+      'content': ?content,
+      'imagePath': ?imagePath,
+      'tags': ?tags,
+      'isDraft': ?isDraft,
+      'isPublished': ?isPublished,
       'updatedAt': updatedAt.toIso8601String(),
     };
 

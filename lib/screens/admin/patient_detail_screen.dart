@@ -71,8 +71,9 @@ class PatientDetailScreen extends StatelessWidget {
   String _getBPStatus(int systolic, int diastolic) {
     if (systolic <= 90 && diastolic <= 60) return 'RENDAH';
     if (systolic >= 140 || diastolic >= 90) return 'TINGGI';
-    if (systolic >= 120 && systolic <= 129 && diastolic <= 80)
+    if (systolic >= 120 && systolic <= 129 && diastolic <= 80) {
       return 'ELEVATED';
+    }
     if ((systolic >= 130 && systolic <= 139) ||
         (diastolic >= 81 && diastolic <= 89)) {
       return 'TINGGI STAGE 1';

@@ -39,12 +39,12 @@ class ScreeningService {
       'profileId': profileId,
       'systolic': systolic,
       'diastolic': diastolic,
-      if (bloodSugar != null) 'bloodSugar': bloodSugar,
-      if (cholesterol != null) 'cholesterol': cholesterol,
-      if (uricAcid != null) 'uricAcid': uricAcid,
-      if (height != null) 'height': height,
-      if (weight != null) 'weight': weight,
-      if (notes != null) 'notes': notes,
+      'bloodSugar': ?bloodSugar,
+      'cholesterol': ?cholesterol,
+      'uricAcid': ?uricAcid,
+      'height': ?height,
+      'weight': ?weight,
+      'notes': ?notes,
     };
 
     try {

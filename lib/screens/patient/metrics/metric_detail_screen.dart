@@ -225,8 +225,8 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                           else
                             LayoutBuilder(
                               builder: (context, constraints) {
-                                const _kTallScreenThreshold = 750.0;
-                                final chartHeight = constraints.maxHeight > _kTallScreenThreshold
+                                const kTallScreenThreshold = 750.0;
+                                final chartHeight = constraints.maxHeight > kTallScreenThreshold
                                     ? 450.0
                                     : 280.0;
                                 return SizedBox(

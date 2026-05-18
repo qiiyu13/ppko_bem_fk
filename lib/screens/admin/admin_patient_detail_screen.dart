@@ -255,7 +255,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
               width: 90,
               height: 90,
               decoration: BoxDecoration(
-                color: AppColors.surface.withOpacity(0.5),
+                color: AppColors.surface.withValues(alpha: 0.5),
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.surface, width: 2),
               ),
@@ -446,7 +446,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
+              color: statusColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -501,7 +501,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
+              color: statusColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(statusIcon, color: statusColor, size: 22),

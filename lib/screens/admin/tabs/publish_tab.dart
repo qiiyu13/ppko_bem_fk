@@ -250,7 +250,7 @@ class _PublishTabState extends State<PublishTab> {
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
               sliver: SliverList.separated(
                 itemCount: articles.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, index) =>
                     _buildArticleCard(articles[index]),
               ),
@@ -282,7 +282,7 @@ class _PublishTabState extends State<PublishTab> {
         color: AppColors.card,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -347,7 +347,7 @@ class _PublishTabState extends State<PublishTab> {
     return Container(
       height: 42,
       decoration: BoxDecoration(
-        color: AppColors.surface.withOpacity(0.5),
+        color: AppColors.surface.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
@@ -357,7 +357,7 @@ class _PublishTabState extends State<PublishTab> {
           isCollapsed: true,
           hintText: 'Cari artikel...',
           hintStyle: TextStyle(
-            color: AppColors.textSecondary.withOpacity(0.7),
+            color: AppColors.textSecondary.withValues(alpha: 0.7),
             fontSize: ResponsiveSize.fontMedium,
           ),
           prefixIcon: const Icon(
@@ -490,20 +490,20 @@ class _PublishTabState extends State<PublishTab> {
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
-                                color: AppColors.primary.withOpacity(0.1),
+                                color: AppColors.primary.withValues(alpha: 0.1),
                                 child: Icon(
                                   Icons.image,
-                                  color: AppColors.primary.withOpacity(0.5),
+                                  color: AppColors.primary.withValues(alpha: 0.5),
                                   size: 24,
                                 ),
                               );
                             },
                           )
                         : Container(
-                            color: AppColors.primary.withOpacity(0.1),
+                            color: AppColors.primary.withValues(alpha: 0.1),
                             child: Icon(
                               Icons.image_not_supported,
-                              color: AppColors.primary.withOpacity(0.5),
+                              color: AppColors.primary.withValues(alpha: 0.5),
                               size: 24,
                             ),
                           ),
@@ -535,7 +535,7 @@ class _PublishTabState extends State<PublishTab> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: article.statusColor.withOpacity(0.12),
+                              color: article.statusColor.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -673,7 +673,7 @@ class _PublishTabState extends State<PublishTab> {
           Icon(
             Icons.article_outlined,
             size: 72,
-            color: AppColors.textSecondary.withOpacity(0.3),
+            color: AppColors.textSecondary.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(

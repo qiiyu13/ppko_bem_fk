@@ -259,36 +259,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  void _showSuccessDialog(String message) {
-    final textScaler = MediaQuery.textScalerOf(context);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Sukses',
-          style: TextStyle(fontSize: 20 * textScaler.scale(1.0)),
-        ),
-        content: Text(
-          message,
-          style: TextStyle(fontSize: 16 * textScaler.scale(1.0)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'OK',
-              style: TextStyle(
-                fontSize: 16 * textScaler.scale(1.0),
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _navigateToPatientDashboard() async {
     await ProfileService.instance.initialize();
     if (!mounted) return;

@@ -24,7 +24,6 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
   late TabController _tabController;
   DateTime _focusedDate = DateTime.now();
   DateTime? _selectedDate;
-  bool _isLoading = true;
 
   List<Map<String, dynamic>> _schedules = [];
 
@@ -62,13 +61,8 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
 
       setState(() {
         _schedules = mapped;
-        _isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    } catch (_) {}
   }
 
   @override
@@ -245,7 +239,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
             fontWeight: FontWeight.w600,
           ),
         ),
-        if (trailing != null) trailing,
+        ?trailing,
       ],
     );
   }
