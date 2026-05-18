@@ -31,46 +31,42 @@ class AdminService {
   }
 
   static Future<Map<String, dynamic>> createUser({
-    required String name,
-    required String nik,
+    required String kkNumber,
+    required String responsibleName,
     required String password,
-    String? gender,
-    DateTime? birthDate,
     String? phone,
     String role = 'ADMIN',
     bool isActive = true,
+    String? regionId,
   }) async {
     final response = await ApiService.post('/admin/users', data: {
-      'name': name,
-      'nik': nik,
+      'kkNumber': kkNumber,
+      'responsibleName': responsibleName,
       'password': password,
-      'gender': ?gender,
-      if (birthDate != null) 'birthDate': birthDate.toIso8601String(),
       'phone': ?phone,
       'role': role,
       'isActive': isActive,
+      'regionId': ?regionId,
     });
     return response.data['data'] as Map<String, dynamic>;
   }
 
   static Future<Map<String, dynamic>> updateUser(String id, {
-    String? name,
-    String? gender,
-    DateTime? birthDate,
+    String? responsibleName,
     String? phone,
     String? role,
     bool? isActive,
     String? password,
+    String? regionId,
     required DateTime updatedAt,
   }) async {
     final response = await ApiService.put('/admin/users/$id', data: {
-      'name': ?name,
-      'gender': ?gender,
-      if (birthDate != null) 'birthDate': birthDate.toIso8601String(),
+      'responsibleName': ?responsibleName,
       'phone': ?phone,
       'role': ?role,
       'isActive': ?isActive,
       'password': ?password,
+      'regionId': ?regionId,
       'updatedAt': updatedAt.toIso8601String(),
     });
     return response.data['data'] as Map<String, dynamic>;

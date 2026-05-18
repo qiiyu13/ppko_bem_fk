@@ -96,7 +96,8 @@ class _RwListScreenState extends State<RwListScreen> {
 
   Widget _buildRwCard(BuildContext context, Map<String, dynamic> rw) {
     final children = rw['children'] as List<dynamic>? ?? [];
-    final residents = rw['residents'] as List<dynamic>? ?? [];
+    final count = rw['_count'] as Map<String, dynamic>? ?? {};
+    final userCount = count['users'] as int? ?? 0;
 
     return Container(
       margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
@@ -114,10 +115,16 @@ class _RwListScreenState extends State<RwListScreen> {
       ),
       child: InkWell(
         onTap: () {
+          final children = (rw['children'] as List<dynamic>? ?? [])
+              .cast<Map<String, dynamic>>();
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => RtListScreen(rwId: rw['id'] as String, rwName: rw['name'] as String? ?? 'RW'),
+              builder: (context) => RtListScreen(
+                rwId: rw['id'] as String,
+                rwName: rw['name'] as String? ?? 'RW',
+                rtData: children,
+              ),
             ),
           );
         },
@@ -150,7 +157,7 @@ class _RwListScreenState extends State<RwListScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'RW ${rw['name'] ?? ''}',
+                      rw['name']?.toString() ?? 'RW',
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontLarge,
                         fontWeight: FontWeight.bold,
@@ -159,7 +166,7 @@ class _RwListScreenState extends State<RwListScreen> {
                     ),
                     SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
                     Text(
-                      '${children.length} RT • ${residents.length} Penduduk',
+                      '${children.length} RT • $userCount KK',
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontSmall,
                         color: AppColors.textSecondary,

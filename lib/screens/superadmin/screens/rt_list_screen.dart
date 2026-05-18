@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../utils/responsive_size.dart';
-import 'resident_list_screen.dart';
+import 'family_accounts_screen.dart';
 
-class RtListScreen extends StatelessWidget {
+class RtListScreen extends StatefulWidget {
   final String rwId;
   final String rwName;
   final List<Map<String, dynamic>>? rtData;
@@ -15,8 +15,17 @@ class RtListScreen extends StatelessWidget {
     this.rtData,
   });
 
-  List<Map<String, dynamic>> get _rts {
-    return rtData ?? [];
+  @override
+  State<RtListScreen> createState() => _RtListScreenState();
+}
+
+class _RtListScreenState extends State<RtListScreen> {
+  List<Map<String, dynamic>> _rts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _rts = widget.rtData ?? [];
   }
 
   @override
@@ -33,7 +42,7 @@ class RtListScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Daftar RT - $rwName',
+          'Daftar RT - ${widget.rwName}',
           style: TextStyle(
             color: AppColors.primary,
             fontSize: ResponsiveSize.fontXLarge,
@@ -66,7 +75,8 @@ class RtListScreen extends StatelessWidget {
   }
 
   Widget _buildRtCard(BuildContext context, Map<String, dynamic> rt) {
-    final residents = rt['residents'] as List<dynamic>? ?? [];
+    final count = rt['_count'] as Map<String, dynamic>? ?? {};
+    final userCount = count['users'] as int? ?? 0;
 
     return Container(
       margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
@@ -87,10 +97,10 @@ class RtListScreen extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ResidentListScreen(
-                rwNumber: rwName,
-                rtNumber: rt['name']?.toString() ?? 'RT',
-                rtId: rt['id'] as String?,
+              builder: (context) => FamilyAccountsScreen(
+                rtId: rt['id'] as String,
+                rtName: rt['name']?.toString() ?? 'RT',
+                rwName: widget.rwName,
               ),
             ),
           );
@@ -124,7 +134,7 @@ class RtListScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'RT ${rt['name'] ?? ''}',
+                      rt['name']?.toString() ?? 'RT',
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontLarge,
                         fontWeight: FontWeight.bold,
@@ -133,7 +143,7 @@ class RtListScreen extends StatelessWidget {
                     ),
                     SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
                     Text(
-                      '${residents.length} Penduduk',
+                      '$userCount Keluarga',
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontSmall,
                         color: AppColors.textSecondary,

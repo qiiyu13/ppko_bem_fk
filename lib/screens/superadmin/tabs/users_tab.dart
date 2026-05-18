@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/admin_service.dart';
+import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../screens/rw_list_screen.dart';
 import '../screens/user_form_screen.dart';
@@ -18,17 +19,19 @@ class _UsersTabState extends State<UsersTab>
 
   List<Map<String, dynamic>> _admins = [];
   bool _isLoading = true;
+  Map<String, dynamic>? _regionStats;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadUsers();
+    _loadStats();
   }
 
   Future<void> _loadUsers() async {
     try {
-      final users = await AdminService.getUsers();
+      final users = await AdminService.getUsers(role: 'ADMIN');
       setState(() {
         _admins = users;
         _isLoading = false;
@@ -38,6 +41,15 @@ class _UsersTabState extends State<UsersTab>
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final stats = await RegionService.getStats();
+      setState(() {
+        _regionStats = stats;
+      });
+    } catch (_) {}
   }
 
   @override
@@ -372,7 +384,9 @@ class _UsersTabState extends State<UsersTab>
                       ),
                       SizedBox(height: 2),
                       Text(
-                        '3 RW • 8 RT • 195 Penduduk',
+                        _regionStats == null
+                            ? 'Memuat...'
+                            : '${_regionStats!['rwCount']} RW • ${_regionStats!['rtCount']} RT • ${_regionStats!['profileCount']} Penduduk',
                         style: TextStyle(
                           fontSize: ResponsiveSize.fontSmall,
                           color: AppColors.primary,

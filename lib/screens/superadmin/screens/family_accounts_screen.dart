@@ -3,37 +3,37 @@ import '../../../constants/app_colors.dart';
 import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
 
-class ResidentListScreen extends StatefulWidget {
-  final String rwNumber;
-  final String rtNumber;
-  final String? rtId;
+class FamilyAccountsScreen extends StatefulWidget {
+  final String rtId;
+  final String rtName;
+  final String rwName;
 
-  const ResidentListScreen({
+  const FamilyAccountsScreen({
     super.key,
-    required this.rwNumber,
-    required this.rtNumber,
-    this.rtId,
+    required this.rtId,
+    required this.rtName,
+    required this.rwName,
   });
 
   @override
-  State<ResidentListScreen> createState() => _ResidentListScreenState();
+  State<FamilyAccountsScreen> createState() => _FamilyAccountsScreenState();
 }
 
-class _ResidentListScreenState extends State<ResidentListScreen> {
-  List<Map<String, dynamic>> _residents = [];
+class _FamilyAccountsScreenState extends State<FamilyAccountsScreen> {
+  List<Map<String, dynamic>> _families = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadResidents();
+    _loadFamilies();
   }
 
-  Future<void> _loadResidents() async {
+  Future<void> _loadFamilies() async {
     try {
-      final residents = await RegionService.getResidents(regionId: widget.rtId);
+      final data = await RegionService.getUsersByRegion(widget.rtId);
       setState(() {
-        _residents = residents;
+        _families = data;
         _isLoading = false;
       });
     } catch (e) {
@@ -57,7 +57,7 @@ class _ResidentListScreenState extends State<ResidentListScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Penduduk RT ${widget.rtNumber}',
+          '${widget.rtName} - ${widget.rwName}',
           style: TextStyle(
             color: AppColors.primary,
             fontSize: ResponsiveSize.fontXLarge,
@@ -70,15 +70,15 @@ class _ResidentListScreenState extends State<ResidentListScreen> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
             : RefreshIndicator(
-                onRefresh: _loadResidents,
+                onRefresh: _loadFamilies,
                 color: AppColors.primary,
-                child: _residents.isEmpty
+                child: _families.isEmpty
                     ? ListView(
                         children: const [
                           SizedBox(height: 100),
                           Center(
                             child: Text(
-                              'Belum ada penduduk',
+                              'Belum ada akun keluarga',
                               style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 16,
@@ -89,10 +89,10 @@ class _ResidentListScreenState extends State<ResidentListScreen> {
                       )
                     : ListView.builder(
                         padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                        itemCount: _residents.length,
+                        itemCount: _families.length,
                         itemBuilder: (context, index) {
-                          final resident = _residents[index];
-                          return _buildResidentCard(resident);
+                          final family = _families[index];
+                          return _buildFamilyCard(family);
                         },
                       ),
               ),
@@ -100,15 +100,12 @@ class _ResidentListScreenState extends State<ResidentListScreen> {
     );
   }
 
-  Widget _buildResidentCard(Map<String, dynamic> resident) {
-    final name = resident['name'] ?? 'Unknown';
-    final nik = resident['nik'] ?? '';
-    final birthDate = resident['birthDate'] != null
-        ? DateTime.parse(resident['birthDate'])
-        : null;
-    final age = birthDate != null
-        ? DateTime.now().year - birthDate.year
-        : 0;
+  Widget _buildFamilyCard(Map<String, dynamic> family) {
+    final name = family['responsibleName'] ?? 'Unknown';
+    final kkNumber = family['kkNumber'] ?? '';
+    final count = family['_count'] as Map<String, dynamic>? ?? {};
+    final memberCount = count['familyProfiles'] as int? ?? 0;
+    final isActive = family['isActive'] == true;
 
     return Container(
       margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
@@ -128,7 +125,7 @@ class _ResidentListScreenState extends State<ResidentListScreen> {
                 color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.person, color: AppColors.primary, size: 28),
+              child: Icon(Icons.family_restroom, color: AppColors.primary, size: 28),
             ),
             SizedBox(width: ResponsiveSize.paddingMedium),
             Expanded(
@@ -145,22 +142,54 @@ class _ResidentListScreenState extends State<ResidentListScreen> {
                   ),
                   SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
                   Text(
-                    'NIK: $nik',
+                    'No. KK: $kkNumber',
                     style: TextStyle(
                       fontSize: ResponsiveSize.fontSmall,
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  if (age > 0)
-                    Text(
-                      '$age tahun',
-                      style: TextStyle(
-                        fontSize: ResponsiveSize.fontSmall,
-                        color: AppColors.textSecondary,
+                  SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: ResponsiveSize.paddingSmall,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? AppColors.statusGreen.withValues(alpha: 0.1)
+                              : AppColors.textSecondary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          isActive ? 'Aktif' : 'Nonaktif',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isActive
+                                ? AppColors.statusGreen
+                                : AppColors.textSecondary,
+                          ),
+                        ),
                       ),
-                    ),
+                      SizedBox(width: ResponsiveSize.paddingSmall),
+                      Text(
+                        '$memberCount anggota',
+                        style: TextStyle(
+                          fontSize: ResponsiveSize.fontSmall,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: AppColors.textSecondary,
+              size: 16,
             ),
           ],
         ),
