@@ -24,17 +24,21 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
   final TextEditingController _cholesterolController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
 
-  Map<String, dynamic>? _selectedPatient;
+  Map<String, dynamic>? _selectedFamily;
+  List<Map<String, dynamic>> _familyProfiles = [];
+  bool _isLoadingFamily = false;
+
+  Map<String, dynamic>? _selectedProfile;
   bool _isLoading = false;
-  List<Map<String, dynamic>> _patients = [];
+  List<Map<String, dynamic>> _families = [];
 
   @override
   void initState() {
     super.initState();
     if (widget.initialPatient != null) {
-      _selectedPatient = widget.initialPatient;
+      _selectedProfile = widget.initialPatient;
     } else {
-      _fetchPatients();
+      _fetchFamilies();
     }
   }
 
@@ -52,7 +56,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchPatients() async {
+  Future<void> _fetchFamilies() async {
     setState(() => _isLoading = true);
     try {
       final queryParams = <String, dynamic>{};
@@ -65,12 +69,65 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
       );
       final List<dynamic> data = response.data['data'] ?? [];
       setState(() {
-        _patients = data.cast<Map<String, dynamic>>();
+        _families = data.cast<Map<String, dynamic>>();
       });
     } catch (e) {
-      setState(() => _patients = []);
+      setState(() => _families = []);
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _selectFamily(Map<String, dynamic> family) async {
+    setState(() {
+      _selectedFamily = family;
+      _isLoadingFamily = true;
+      _familyProfiles = [];
+    });
+    try {
+      final response =
+          await ApiService.get('/admin/patients/${family['id']}');
+      final data = response.data['data'] as Map<String, dynamic>? ?? {};
+      final profiles =
+          (data['familyProfiles'] as List<dynamic>? ?? [])
+              .cast<Map<String, dynamic>>();
+      if (!mounted) return;
+      setState(() {
+        _familyProfiles = profiles;
+        _selectedFamily = {
+          ...family,
+          'responsibleName': data['responsibleName'] ?? family['name'],
+          'kkNumber': data['kkNumber'] ?? family['nik'],
+        };
+        _isLoadingFamily = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoadingFamily = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal memuat anggota keluarga')),
+      );
+    }
+  }
+
+  String _maskKk(String kk) {
+    if (kk.length <= 4) return kk;
+    return '${'•' * (kk.length - 4)}${kk.substring(kk.length - 4)}';
+  }
+
+  int? _ageFromBirthDate(dynamic raw) {
+    if (raw == null) return null;
+    try {
+      final dt = DateTime.parse(raw.toString());
+      final now = DateTime.now();
+      var age = now.year - dt.year;
+      if (now.month < dt.month ||
+          (now.month == dt.month && now.day < dt.day)) {
+        age--;
+      }
+      return age >= 0 ? age : null;
+    } catch (_) {
+      return null;
     }
   }
 
@@ -113,9 +170,10 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
   }
 
   Future<void> _submitScreening() async {
-    if (_selectedPatient == null) return;
+    if (_selectedProfile == null) return;
 
-    final profileId = _selectedPatient!['profileId'] ?? _selectedPatient!['id'];
+    final profileId =
+        _selectedProfile!['profileId'] ?? _selectedProfile!['id'];
     if (profileId == null) return;
 
     if (!_validateScreeningFields()) return;
@@ -156,35 +214,64 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     }
   }
 
+  String _stepTitle() {
+    if (_selectedProfile != null) return 'Medical Screening';
+    if (_selectedFamily != null) return 'Pilih Anggota Keluarga';
+    return 'Pilih Keluarga';
+  }
+
+  void _onBackPressed() {
+    if (_selectedProfile != null) {
+      setState(() => _selectedProfile = null);
+      return;
+    }
+    if (_selectedFamily != null) {
+      setState(() {
+        _selectedFamily = null;
+        _familyProfiles = [];
+      });
+      return;
+    }
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     ResponsiveSize.init(context);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
+    return PopScope(
+      canPop: _selectedProfile == null && _selectedFamily == null,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onBackPressed();
+      },
+      child: Scaffold(
         backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Medical Screening',
-          style: TextStyle(
-            color: AppColors.primary,
-            fontSize: ResponsiveSize.fontXLarge,
-            fontWeight: FontWeight.w600,
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            onPressed: _onBackPressed,
           ),
+          title: Text(
+            _stepTitle(),
+            style: TextStyle(
+              color: AppColors.primary,
+              fontSize: ResponsiveSize.fontXLarge,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: _selectedPatient == null
-            ? _buildPatientSelection()
-            : _buildMedicalForm(),
+        body: SafeArea(child: _buildBody()),
       ),
     );
+  }
+
+  Widget _buildBody() {
+    if (_selectedProfile != null) return _buildMedicalForm();
+    if (_selectedFamily != null) return _buildProfileSelection();
+    return _buildFamilySelection();
   }
 
   void _openQrScanner() {
@@ -194,7 +281,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
         builder: (_) => QrScannerScreen(
           onScanResult: (data) {
             setState(() {
-              _selectedPatient = data;
+              _selectedProfile = data;
             });
           },
         ),
@@ -202,7 +289,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     );
   }
 
-  Widget _buildPatientSelection() {
+  Widget _buildFamilySelection() {
     return Column(
       children: [
         Container(
@@ -212,9 +299,9 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
               Expanded(
                 child: TextField(
                   controller: _searchController,
-                  onChanged: (_) => _fetchPatients(),
+                  onChanged: (_) => _fetchFamilies(),
                   decoration: InputDecoration(
-                    hintText: 'Cari KK atau Keluarga',
+                    hintText: 'Cari No. KK atau Nama Kepala Keluarga',
                     hintStyle: TextStyle(color: AppColors.textSecondary),
                     prefixIcon:
                         Icon(Icons.search, color: AppColors.textSecondary),
@@ -251,91 +338,305 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
         Expanded(
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
-              : ListView.builder(
-                  padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                  itemCount: _patients.length,
-                  itemBuilder: (context, index) {
-                    final patient = _patients[index];
-                    return _buildPatientCard(patient);
-                  },
-                ),
+              : _families.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.family_restroom,
+                              size: 48, color: AppColors.textSecondary),
+                          SizedBox(height: ResponsiveSize.spacingMedium),
+                          Text(
+                            'Tidak ada keluarga ditemukan',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: ResponsiveSize.fontMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+                      itemCount: _families.length,
+                      itemBuilder: (context, index) {
+                        return _buildFamilyCard(_families[index]);
+                      },
+                    ),
         ),
       ],
     );
   }
 
-  Widget _buildPatientCard(Map<String, dynamic> patient) {
+  Widget _buildFamilyCard(Map<String, dynamic> family) {
+    final name = (family['name'] ?? family['responsibleName'] ?? '-').toString();
+    final kk = (family['nik'] ?? family['kkNumber'] ?? '').toString();
+    final count = family['_count'] as Map<String, dynamic>? ?? {};
+    final memberCount = count['familyProfiles'] as int? ?? 0;
+
     return Container(
       margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
-      padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.surface, width: 1),
       ),
       child: InkWell(
-        onTap: () {
-          setState(() {
-            _selectedPatient = patient;
-          });
-        },
-        child: Row(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _selectFamily(family),
+        child: Padding(
+          padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+          child: Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.family_restroom,
+                    color: AppColors.primary, size: 28),
               ),
-              child: Icon(Icons.person, color: AppColors.primary, size: 28),
-            ),
-            SizedBox(width: ResponsiveSize.paddingMedium),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    patient['name'],
-                    style: TextStyle(
-                      fontSize: ResponsiveSize.fontLarge,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+              SizedBox(width: ResponsiveSize.paddingMedium),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: TextStyle(
+                        fontSize: ResponsiveSize.fontLarge,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
-                  Text(
-                    'NIK: ${patient['nik']}',
-                    style: TextStyle(
-                      fontSize: ResponsiveSize.fontMedium,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  if (patient['village'] != null) ...[
                     SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
                     Text(
-                      'Desa: ${patient['village']}',
+                      'KK: ${_maskKk(kk)}',
+                      style: TextStyle(
+                        fontSize: ResponsiveSize.fontSmall,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    if (memberCount > 0) ...[
+                      SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
+                      Text(
+                        '$memberCount anggota',
+                        style: TextStyle(
+                          fontSize: ResponsiveSize.fontSmall,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: AppColors.primary,
+                size: ResponsiveSize.iconSmall,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileSelection() {
+    final family = _selectedFamily!;
+    final familyName =
+        (family['responsibleName'] ?? family['name'] ?? '-').toString();
+    final kk = (family['kkNumber'] ?? family['nik'] ?? '').toString();
+
+    return Column(
+      children: [
+        Container(
+          margin: EdgeInsets.all(ResponsiveSize.paddingMedium),
+          padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.family_restroom, color: AppColors.primary),
+              SizedBox(width: ResponsiveSize.paddingSmall),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      familyName,
+                      style: TextStyle(
+                        fontSize: ResponsiveSize.fontLarge,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'KK: ${_maskKk(kk)}',
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontSmall,
                         color: AppColors.textSecondary,
                       ),
                     ),
                   ],
-                ],
+                ),
               ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: AppColors.primary,
-              size: ResponsiveSize.iconSmall,
-            ),
-          ],
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _selectedFamily = null;
+                    _familyProfiles = [];
+                  });
+                },
+                child: Text(
+                  'Ganti',
+                  style: TextStyle(color: AppColors.primary),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _isLoadingFamily
+              ? const Center(child: CircularProgressIndicator())
+              : _familyProfiles.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.group_off,
+                              size: 48, color: AppColors.textSecondary),
+                          SizedBox(height: ResponsiveSize.spacingMedium),
+                          Text(
+                            'Belum ada anggota terdaftar',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: ResponsiveSize.fontMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ResponsiveSize.paddingMedium,
+                      ),
+                      itemCount: _familyProfiles.length,
+                      itemBuilder: (context, index) {
+                        return _buildProfileCard(_familyProfiles[index]);
+                      },
+                    ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProfileCard(Map<String, dynamic> profile) {
+    final name = (profile['name'] as String?) ?? '-';
+    final nik = (profile['nik'] as String?) ?? '';
+    final nikTail = nik.length > 3 ? nik.substring(nik.length - 3) : nik;
+    final gender = (profile['gender'] as String?) ?? '';
+    final age = _ageFromBirthDate(profile['birthDate']);
+    final initial = name.isNotEmpty && name != '-'
+        ? name[0].toUpperCase()
+        : '?';
+    final subtitle = [
+      if (nikTail.isNotEmpty) 'NIK …$nikTail',
+      if (gender.isNotEmpty) gender,
+      if (age != null) '$age th',
+    ].join(' · ');
+
+    return Container(
+      margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.surface, width: 1),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          setState(() {
+            _selectedProfile = profile;
+          });
+        },
+        child: Padding(
+          padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  initial,
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              SizedBox(width: ResponsiveSize.paddingMedium),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: TextStyle(
+                        fontSize: ResponsiveSize.fontMedium,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    if (subtitle.isNotEmpty) ...[
+                      SizedBox(height: ResponsiveSize.spacingSmall * 0.4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: ResponsiveSize.fontSmall,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: AppColors.primary,
+                size: ResponsiveSize.iconSmall,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildMedicalForm() {
+    final profile = _selectedProfile!;
+    final profileName = (profile['name'] as String?) ?? '-';
+    final profileNik = (profile['nik'] as String?) ?? '';
+    final age = _ageFromBirthDate(profile['birthDate']);
+    final gender = (profile['gender'] as String?) ?? '';
+    final meta = [
+      if (gender.isNotEmpty) gender,
+      if (age != null) '$age th',
+    ].join(' · ');
+
     return SingleChildScrollView(
       padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
       child: Column(
@@ -359,27 +660,36 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _selectedPatient!['name'],
+                        profileName,
                         style: TextStyle(
                           fontSize: ResponsiveSize.fontLarge,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      Text(
-                        'NIK: ${_selectedPatient!['nik']}',
-                        style: TextStyle(
-                          fontSize: ResponsiveSize.fontMedium,
-                          color: AppColors.textSecondary,
+                      if (profileNik.isNotEmpty)
+                        Text(
+                          'NIK: $profileNik',
+                          style: TextStyle(
+                            fontSize: ResponsiveSize.fontMedium,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
-                      ),
+                      if (meta.isNotEmpty)
+                        Text(
+                          meta,
+                          style: TextStyle(
+                            fontSize: ResponsiveSize.fontSmall,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                     ],
                   ),
                 ),
                 TextButton(
                   onPressed: () {
                     setState(() {
-                      _selectedPatient = null;
+                      _selectedProfile = null;
                     });
                   },
                   child: Text(
