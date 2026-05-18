@@ -14,7 +14,7 @@ log() { echo -e "${GREEN}[stop]${NC} $1"; }
 SERVER_PID=$(lsof -ti:3000 2>/dev/null || true)
 if [ -n "$SERVER_PID" ]; then
   log "Stopping backend server (PID: $SERVER_PID)..."
-  kill $SERVER_PID 2>/dev/null || true
+  kill -9 $SERVER_PID 2>/dev/null || true
 else
   log "No backend server running on port 3000"
 fi

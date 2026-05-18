@@ -28,18 +28,23 @@ until docker exec mediku-postgres pg_isready -U mediku -d mediku &>/dev/null; do
 done
 log "PostgreSQL is ready"
 
-# 2. Run Prisma migrations
-log "Running Prisma migrations..."
-npx prisma migrate dev
-
-# 3. Seed the database
-log "Seeding database..."
-npm run prisma:seed
-
-# 4. Install dependencies if needed
+# 2. Install dependencies if needed
 if [ ! -d "node_modules" ]; then
   log "Installing dependencies..."
   npm install
+fi
+
+# 3. Run Prisma migrations
+log "Running Prisma migrations..."
+npx prisma migrate dev
+
+# 4. Seed the database (skip if already seeded)
+USER_COUNT=$(docker exec mediku-postgres psql -U mediku -d mediku -tAc "SELECT COUNT(*) FROM \"User\";" 2>/dev/null || echo "0")
+if [ "$USER_COUNT" = "0" ]; then
+  log "Seeding database..."
+  npm run prisma:seed
+else
+  log "Database already seeded (${USER_COUNT} users found), skipping."
 fi
 
 # 5. Start the backend server
