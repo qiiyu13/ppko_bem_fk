@@ -78,6 +78,10 @@ class ProfileService {
         await CacheService.saveProfile(profile.id, profile.toJson());
       }
 
+      if (_activeProfile != null &&
+          !_profiles.any((p) => p.id == _activeProfile!.id)) {
+        _activeProfile = null;
+      }
       if (_activeProfile == null && _profiles.isNotEmpty) {
         _activeProfile = _profiles.first;
         _activeProfileController.add(_activeProfile);
@@ -119,7 +123,7 @@ class ProfileService {
 
     try {
       final response = await ApiService.post('/profiles', data: data);
-      final profile = FamilyProfile.fromMap(response.data['data'] as Map<String, dynamic>);
+      final profile = FamilyProfile.fromApi(response.data['data'] as Map<String, dynamic>);
       _profiles.add(profile);
       _profilesController.add(List.unmodifiable(_profiles));
       if (_profiles.length == 1) {
