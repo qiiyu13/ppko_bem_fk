@@ -13,6 +13,7 @@ import '../../../models/family_profile.dart';
 import '../../../services/profile_service.dart';
 import '../../../services/notification_service.dart';
 import '../../../services/api_service.dart';
+import '../../../services/websocket_service.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -121,6 +122,7 @@ class _HomeTabState extends State<HomeTab> {
   int _dataVersion = 0;
   String? _error;
   StreamSubscription<FamilyProfile?>? _profileSubscription;
+  StreamSubscription<Map<String, dynamic>>? _wsSub;
 
   @override
   void initState() {
@@ -131,11 +133,18 @@ class _HomeTabState extends State<HomeTab> {
     ) {
       _loadData();
     });
+    _wsSub = WebSocketService.instance.dataUpdateStream.listen((payload) {
+      final type = payload['type'];
+      if ((type == 'appointments' || type == 'metrics') && mounted) {
+        _loadData();
+      }
+    });
   }
 
   @override
   void dispose() {
     _profileSubscription?.cancel();
+    _wsSub?.cancel();
     super.dispose();
   }
 
