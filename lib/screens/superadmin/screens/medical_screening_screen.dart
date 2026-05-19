@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/api_service.dart';
 import '../../../utils/responsive_size.dart';
@@ -24,12 +25,24 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
   final TextEditingController _cholesterolController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
 
+  final FocusNode _systolicFocus = FocusNode();
+  final FocusNode _diastolicFocus = FocusNode();
+  final FocusNode _weightFocus = FocusNode();
+  final FocusNode _heightFocus = FocusNode();
+  final FocusNode _bloodSugarFocus = FocusNode();
+  final FocusNode _uricAcidFocus = FocusNode();
+  final FocusNode _cholesterolFocus = FocusNode();
+  final FocusNode _notesFocus = FocusNode();
+
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
   Map<String, dynamic>? _selectedFamily;
   List<Map<String, dynamic>> _familyProfiles = [];
   bool _isLoadingFamily = false;
 
   Map<String, dynamic>? _selectedProfile;
   bool _isLoading = false;
+  bool _isSubmitting = false;
   List<Map<String, dynamic>> _families = [];
 
   @override
@@ -53,7 +66,52 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     _uricAcidController.dispose();
     _cholesterolController.dispose();
     _notesController.dispose();
+    _systolicFocus.dispose();
+    _diastolicFocus.dispose();
+    _weightFocus.dispose();
+    _heightFocus.dispose();
+    _bloodSugarFocus.dispose();
+    _uricAcidFocus.dispose();
+    _cholesterolFocus.dispose();
+    _notesFocus.dispose();
     super.dispose();
+  }
+
+  bool get _isFormDirty {
+    return [
+      _systolicController,
+      _diastolicController,
+      _weightController,
+      _heightController,
+      _bloodSugarController,
+      _uricAcidController,
+      _cholesterolController,
+      _notesController,
+    ].any((c) => c.text.trim().isNotEmpty);
+  }
+
+  Future<bool> _confirmDiscard() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Buang data?'),
+        content: const Text(
+          'Data yang sudah diisi akan hilang. Yakin ingin keluar?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Buang'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 
   Future<void> _fetchFamilies() async {
@@ -131,52 +189,34 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     }
   }
 
-  bool _validateScreeningFields() {
-    final fields = <String, TextEditingController>{
-      'Sistolik': _systolicController,
-      'Diastolik': _diastolicController,
-      'Gula Darah': _bloodSugarController,
-      'Kolesterol': _cholesterolController,
-      'Asam Urat': _uricAcidController,
-      'Tinggi Badan': _heightController,
-    };
-    for (final entry in fields.entries) {
-      if (entry.value.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${entry.key} wajib diisi')),
-        );
-        return false;
-      }
-      if (int.tryParse(entry.value.text.trim()) == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${entry.key} harus berupa angka')),
-        );
-        return false;
-      }
-    }
-    if (_weightController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Berat Badan wajib diisi')),
-      );
-      return false;
-    }
-    if (double.tryParse(_weightController.text.trim()) == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Berat Badan harus berupa angka')),
-      );
-      return false;
-    }
-    return true;
+  String? _validateInt(String? v, String label) {
+    final t = v?.trim() ?? '';
+    if (t.isEmpty) return '$label wajib diisi';
+    if (int.tryParse(t) == null) return 'Harus berupa angka';
+    return null;
+  }
+
+  String? _validateDouble(String? v, String label) {
+    final t = v?.trim() ?? '';
+    if (t.isEmpty) return '$label wajib diisi';
+    if (double.tryParse(t) == null) return 'Harus berupa angka';
+    return null;
   }
 
   Future<void> _submitScreening() async {
-    if (_selectedProfile == null) return;
+    if (_selectedProfile == null || _isSubmitting) return;
 
     final profileId =
         _selectedProfile!['profileId'] ?? _selectedProfile!['id'];
     if (profileId == null) return;
 
-    if (!_validateScreeningFields()) return;
+    final form = _formKey.currentState;
+    if (form == null || !form.validate()) {
+      _focusFirstInvalid();
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
 
     final body = {
       'profileId': profileId,
@@ -204,6 +244,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal menyimpan: $e'),
@@ -214,15 +255,41 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     }
   }
 
+  void _focusFirstInvalid() {
+    final order = <(TextEditingController, FocusNode)>[
+      (_systolicController, _systolicFocus),
+      (_diastolicController, _diastolicFocus),
+      (_weightController, _weightFocus),
+      (_heightController, _heightFocus),
+      (_bloodSugarController, _bloodSugarFocus),
+      (_uricAcidController, _uricAcidFocus),
+      (_cholesterolController, _cholesterolFocus),
+    ];
+    for (final (c, f) in order) {
+      final t = c.text.trim();
+      if (t.isEmpty || double.tryParse(t) == null) {
+        f.requestFocus();
+        return;
+      }
+    }
+  }
+
   String _stepTitle() {
     if (_selectedProfile != null) return 'Medical Screening';
     if (_selectedFamily != null) return 'Pilih Anggota Keluarga';
     return 'Pilih Keluarga';
   }
 
-  void _onBackPressed() {
+  Future<void> _onBackPressed() async {
     if (_selectedProfile != null) {
-      setState(() => _selectedProfile = null);
+      if (_isFormDirty) {
+        final ok = await _confirmDiscard();
+        if (!ok) return;
+      }
+      setState(() {
+        _selectedProfile = null;
+        _clearFormFields();
+      });
       return;
     }
     if (_selectedFamily != null) {
@@ -232,15 +299,29 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
       });
       return;
     }
-    Navigator.pop(context);
+    if (mounted) Navigator.pop(context);
+  }
+
+  void _clearFormFields() {
+    _systolicController.clear();
+    _diastolicController.clear();
+    _weightController.clear();
+    _heightController.clear();
+    _bloodSugarController.clear();
+    _uricAcidController.clear();
+    _cholesterolController.clear();
+    _notesController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
     ResponsiveSize.init(context);
 
+    final canPopNow = _selectedProfile == null &&
+        _selectedFamily == null;
+
     return PopScope(
-      canPop: _selectedProfile == null && _selectedFamily == null,
+      canPop: canPopNow && !_isFormDirty,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _onBackPressed();
       },
@@ -637,205 +718,249 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
       if (age != null) '$age th',
     ].join(' · ');
 
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    return SingleChildScrollView(
-      physics: const ClampingScrollPhysics(),
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: EdgeInsets.fromLTRB(
-        ResponsiveSize.paddingMedium,
-        ResponsiveSize.paddingMedium,
-        ResponsiveSize.paddingMedium,
-        ResponsiveSize.paddingMedium + bottomInset,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
+    return Column(
+      children: [
+        Expanded(
+          child: Form(
+            key: _formKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: ListView(
+              padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+              keyboardDismissBehavior:
+                  ScrollViewKeyboardDismissBehavior.onDrag,
               children: [
-                Icon(Icons.person, color: AppColors.primary),
-                SizedBox(width: ResponsiveSize.paddingSmall),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                Container(
+                  padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
                     children: [
-                      Text(
-                        profileName,
-                        style: TextStyle(
-                          fontSize: ResponsiveSize.fontLarge,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                      Icon(Icons.person, color: AppColors.primary),
+                      SizedBox(width: ResponsiveSize.paddingSmall),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              profileName,
+                              style: TextStyle(
+                                fontSize: ResponsiveSize.fontLarge,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            if (profileNik.isNotEmpty)
+                              Text(
+                                'NIK: $profileNik',
+                                style: TextStyle(
+                                  fontSize: ResponsiveSize.fontMedium,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            if (meta.isNotEmpty)
+                              Text(
+                                meta,
+                                style: TextStyle(
+                                  fontSize: ResponsiveSize.fontSmall,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                      if (profileNik.isNotEmpty)
-                        Text(
-                          'NIK: $profileNik',
-                          style: TextStyle(
-                            fontSize: ResponsiveSize.fontMedium,
-                            color: AppColors.textSecondary,
-                          ),
+                      TextButton(
+                        onPressed: () async {
+                          if (_isFormDirty) {
+                            final ok = await _confirmDiscard();
+                            if (!ok) return;
+                          }
+                          setState(() {
+                            _selectedProfile = null;
+                            _clearFormFields();
+                          });
+                        },
+                        child: Text(
+                          'Ganti',
+                          style: TextStyle(color: AppColors.primary),
                         ),
-                      if (meta.isNotEmpty)
-                        Text(
-                          meta,
-                          style: TextStyle(
-                            fontSize: ResponsiveSize.fontSmall,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
+                      ),
                     ],
                   ),
                 ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _selectedProfile = null;
-                    });
-                  },
-                  child: Text(
-                    'Ganti',
-                    style: TextStyle(color: AppColors.primary),
+                SizedBox(height: ResponsiveSize.spacingXLarge),
+                Text(
+                  'Data Medical Screening',
+                  style: TextStyle(
+                    fontSize: ResponsiveSize.fontXLarge,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
                 ),
+                SizedBox(height: ResponsiveSize.spacingMedium),
+                _buildFormSection('Tekanan Darah'),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _buildIntField(
+                        label: 'Sistolik',
+                        hint: '90–180',
+                        suffix: 'mmHg',
+                        controller: _systolicController,
+                        focusNode: _systolicFocus,
+                        nextFocus: _diastolicFocus,
+                      ),
+                    ),
+                    SizedBox(width: ResponsiveSize.paddingSmall),
+                    Padding(
+                      padding: EdgeInsets.only(top: 32),
+                      child: Text(
+                        '/',
+                        style: TextStyle(
+                          fontSize: 24,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: ResponsiveSize.paddingSmall),
+                    Expanded(
+                      child: _buildIntField(
+                        label: 'Diastolik',
+                        hint: '60–110',
+                        suffix: 'mmHg',
+                        controller: _diastolicController,
+                        focusNode: _diastolicFocus,
+                        nextFocus: _weightFocus,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: ResponsiveSize.spacingMedium),
+                _buildFormSection('Berat & Tinggi Badan'),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _buildDoubleField(
+                        label: 'Berat Badan',
+                        hint: 'mis. 65',
+                        suffix: 'kg',
+                        controller: _weightController,
+                        focusNode: _weightFocus,
+                        nextFocus: _heightFocus,
+                      ),
+                    ),
+                    SizedBox(width: ResponsiveSize.paddingSmall),
+                    Expanded(
+                      child: _buildIntField(
+                        label: 'Tinggi Badan',
+                        hint: 'mis. 165',
+                        suffix: 'cm',
+                        controller: _heightController,
+                        focusNode: _heightFocus,
+                        nextFocus: _bloodSugarFocus,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: ResponsiveSize.spacingMedium),
+                _buildFormSection('Hasil Laboratorium'),
+                _buildIntField(
+                  label: 'Gula Darah',
+                  hint: 'mis. 110',
+                  suffix: 'mg/dL',
+                  controller: _bloodSugarController,
+                  focusNode: _bloodSugarFocus,
+                  nextFocus: _uricAcidFocus,
+                ),
+                SizedBox(height: ResponsiveSize.spacingMedium),
+                _buildIntField(
+                  label: 'Asam Urat',
+                  hint: 'mis. 6',
+                  suffix: 'mg/dL',
+                  controller: _uricAcidController,
+                  focusNode: _uricAcidFocus,
+                  nextFocus: _cholesterolFocus,
+                ),
+                SizedBox(height: ResponsiveSize.spacingMedium),
+                _buildIntField(
+                  label: 'Kolesterol',
+                  hint: 'mis. 180',
+                  suffix: 'mg/dL',
+                  controller: _cholesterolController,
+                  focusNode: _cholesterolFocus,
+                  nextFocus: _notesFocus,
+                ),
+                SizedBox(height: ResponsiveSize.spacingMedium),
+                _buildFormSection('Catatan'),
+                _buildNotesField(),
+                SizedBox(height: ResponsiveSize.spacingMedium),
               ],
             ),
           ),
+        ),
+        _buildSubmitBar(),
+      ],
+    );
+  }
 
-          SizedBox(height: ResponsiveSize.spacingXLarge),
-
-          Text(
-            'Data Medical Screening',
-            style: TextStyle(
-              fontSize: ResponsiveSize.fontXLarge,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-
-          SizedBox(height: ResponsiveSize.spacingMedium),
-
-          _buildFormSection('Tekanan Darah'),
-          Row(
-            children: [
-              Expanded(
-                child: _buildTextField(
-                  label: 'Sistolik',
-                  hint: 'mmHg',
-                  controller: _systolicController,
-                  keyboardType: TextInputType.number,
-                ),
+  Widget _buildSubmitBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        border: Border(
+          top: BorderSide(color: AppColors.surface, width: 1),
+        ),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        ResponsiveSize.paddingMedium,
+        ResponsiveSize.paddingSmall,
+        ResponsiveSize.paddingMedium,
+        ResponsiveSize.paddingSmall,
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _isSubmitting ? null : _submitScreening,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.background,
+              disabledBackgroundColor:
+                  AppColors.primary.withValues(alpha: 0.5),
+              padding: EdgeInsets.symmetric(
+                vertical: ResponsiveSize.paddingMedium,
               ),
-              SizedBox(width: ResponsiveSize.paddingSmall),
-              Text(
-                '/',
-                style: TextStyle(fontSize: 24, color: AppColors.textSecondary),
-              ),
-              SizedBox(width: ResponsiveSize.paddingSmall),
-              Expanded(
-                child: _buildTextField(
-                  label: 'Diastolik',
-                  hint: 'mmHg',
-                  controller: _diastolicController,
-                  keyboardType: TextInputType.number,
-                ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: ResponsiveSize.spacingMedium),
-
-          _buildFormSection('Berat & Tinggi Badan'),
-          Row(
-            children: [
-              Expanded(
-                child: _buildTextField(
-                  label: 'Berat Badan',
-                  hint: 'kg',
-                  controller: _weightController,
-                  keyboardType: TextInputType.number,
-                ),
-              ),
-              SizedBox(width: ResponsiveSize.paddingSmall),
-              Expanded(
-                child: _buildTextField(
-                  label: 'Tinggi Badan',
-                  hint: 'cm',
-                  controller: _heightController,
-                  keyboardType: TextInputType.number,
-                ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: ResponsiveSize.spacingMedium),
-
-          _buildFormSection('Hasil Laboratorium'),
-          _buildTextField(
-            label: 'Gula Darah',
-            hint: 'mg/dL',
-            controller: _bloodSugarController,
-            keyboardType: TextInputType.number,
-          ),
-          SizedBox(height: ResponsiveSize.spacingMedium),
-          _buildTextField(
-            label: 'Asam Urat',
-            hint: 'mg/dL',
-            controller: _uricAcidController,
-            keyboardType: TextInputType.number,
-          ),
-          SizedBox(height: ResponsiveSize.spacingMedium),
-          _buildTextField(
-            label: 'Kolesterol',
-            hint: 'mg/dL',
-            controller: _cholesterolController,
-            keyboardType: TextInputType.number,
-          ),
-
-          SizedBox(height: ResponsiveSize.spacingMedium),
-
-          _buildFormSection('Catatan'),
-          _buildTextField(
-            label: 'Catatan',
-            hint: 'Opsional',
-            controller: _notesController,
-          ),
-
-          SizedBox(height: ResponsiveSize.spacingXLarge * 2),
-
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _submitScreening,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.background,
-                padding: EdgeInsets.symmetric(
-                  vertical: ResponsiveSize.paddingMedium,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                'Simpan Data',
-                style: TextStyle(
-                  fontSize: ResponsiveSize.fontLarge,
-                  fontWeight: FontWeight.bold,
-                ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
+            child: _isSubmitting
+                ? SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.background,
+                      ),
+                    ),
+                  )
+                : Text(
+                    'Simpan Data',
+                    style: TextStyle(
+                      fontSize: ResponsiveSize.fontLarge,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
-
-          SizedBox(height: ResponsiveSize.spacingMedium),
-        ],
+        ),
       ),
     );
   }
@@ -854,28 +979,70 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     );
   }
 
-  Widget _buildTextField({
+  Widget _buildIntField({
     required String label,
     required String hint,
+    required String suffix,
     required TextEditingController controller,
-    TextInputType? keyboardType,
+    required FocusNode focusNode,
+    FocusNode? nextFocus,
   }) {
+    return _buildField(
+      label: label,
+      hint: hint,
+      suffix: suffix,
+      controller: controller,
+      focusNode: focusNode,
+      nextFocus: nextFocus,
+      keyboardType: TextInputType.number,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      validator: (v) => _validateInt(v, label),
+    );
+  }
+
+  Widget _buildDoubleField({
+    required String label,
+    required String hint,
+    required String suffix,
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    FocusNode? nextFocus,
+  }) {
+    return _buildField(
+      label: label,
+      hint: hint,
+      suffix: suffix,
+      controller: controller,
+      focusNode: focusNode,
+      nextFocus: nextFocus,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+      ],
+      validator: (v) => _validateDouble(v, label),
+    );
+  }
+
+  Widget _buildNotesField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label,
+          'Catatan',
           style: TextStyle(
             fontSize: ResponsiveSize.fontMedium,
             color: AppColors.textSecondary,
           ),
         ),
         SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
+        TextFormField(
+          controller: _notesController,
+          focusNode: _notesFocus,
+          minLines: 2,
+          maxLines: 4,
+          textInputAction: TextInputAction.newline,
           decoration: InputDecoration(
-            hintText: hint,
+            hintText: 'Opsional',
             hintStyle: TextStyle(color: AppColors.surface),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -888,6 +1055,78 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: AppColors.primary),
+            ),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: ResponsiveSize.paddingMedium,
+              vertical: ResponsiveSize.paddingSmall * 1.2,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildField({
+    required String label,
+    required String hint,
+    required String suffix,
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    FocusNode? nextFocus,
+    required TextInputType keyboardType,
+    required List<TextInputFormatter> inputFormatters,
+    required String? Function(String?) validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: ResponsiveSize.fontMedium,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
+        TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          validator: validator,
+          textInputAction:
+              nextFocus != null ? TextInputAction.next : TextInputAction.done,
+          onFieldSubmitted: (_) {
+            if (nextFocus != null) {
+              FocusScope.of(context).requestFocus(nextFocus);
+            } else {
+              focusNode.unfocus();
+            }
+          },
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: AppColors.surface),
+            suffixText: suffix,
+            suffixStyle: TextStyle(color: AppColors.textSecondary),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.surface),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.surface),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primary),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.error),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.error, width: 1.5),
             ),
             contentPadding: EdgeInsets.symmetric(
               horizontal: ResponsiveSize.paddingMedium,
