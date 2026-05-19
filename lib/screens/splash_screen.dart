@@ -3,6 +3,20 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../utils/asset_helper.dart';
 import 'welcome_screen.dart';
 
+const _commonSvgs = [
+  'doodle-01.svg',
+  'document-icon.svg',
+  'document_recolored_final_2.svg',
+];
+
+Future<void> _precacheSvgs() async {
+  for (final name in _commonSvgs) {
+    final loader = SvgAssetLoader(AssetHelper.getSvgPath(name));
+    await svg.cache
+        .putIfAbsent(loader.cacheKey(null), () => loader.loadBytes(null));
+  }
+}
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -30,10 +44,9 @@ class _SplashScreenState extends State<SplashScreen>
       end: 0.0,
     ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeOut));
 
-    // Start the transition after 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
-      _navigateToWelcome();
-    });
+    _precacheSvgs();
+    // Min display time so logo is visible; navigates as soon as min hits.
+    Future.delayed(const Duration(milliseconds: 1200), _navigateToWelcome);
   }
 
   void _navigateToWelcome() async {
