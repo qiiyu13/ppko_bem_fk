@@ -48,3 +48,12 @@ app.*.map.json
 .opencode/
 .gemini/
 graphify-out/
+
+# Android signing
+android/key.properties
+**/*.jks
+**/*.keystore
+
+# SSH keys (never commit)
+/mediku
+/mediku.pub
