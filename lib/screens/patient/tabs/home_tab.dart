@@ -1,3 +1,4 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -229,6 +230,8 @@ class _HomeTabState extends State<HomeTab> {
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
+    if (hour < 3) return 'Selamat Dini Hari,';
+    if (hour < 5) return 'Selamat Subuh,';
     if (hour < 11) return 'Selamat Pagi,';
     if (hour < 15) return 'Selamat Siang,';
     if (hour < 18) return 'Selamat Sore,';
@@ -821,25 +824,7 @@ class _HomeTabState extends State<HomeTab> {
   }
 }
 
-class _SmoothAspectRatioRectTween extends RectTween {
-  _SmoothAspectRatioRectTween({required super.begin, required super.end});
-
-  @override
-  Rect lerp(double t) {
-    if (begin == null || end == null) return super.lerp(t) ?? Rect.zero;
-
-    return Rect.fromCenter(
-      center: Offset(
-        begin!.center.dx + (end!.center.dx - begin!.center.dx) * t,
-        begin!.center.dy + (end!.center.dy - begin!.center.dy) * t,
-      ),
-      width: begin!.width + (end!.width - begin!.width) * t,
-      height: begin!.height + (end!.height - begin!.height) * t,
-    );
-  }
-}
-
-class _MetricCardWrapper extends StatefulWidget {
+class _MetricCardWrapper extends StatelessWidget {
   final HealthMetric metric;
   final double iconSize;
   final double chipSize;
@@ -851,212 +836,129 @@ class _MetricCardWrapper extends StatefulWidget {
   });
 
   @override
-  State<_MetricCardWrapper> createState() => _MetricCardWrapperState();
-}
-
-class _MetricCardWrapperState extends State<_MetricCardWrapper> {
-  @override
   Widget build(BuildContext context) {
-    final metricId = widget.metric.type.name;
+    final cardColor = Color.lerp(
+      Colors.white,
+      metric.primaryColor,
+      0.15,
+    )!;
 
-    RectTween createTween(Rect? begin, Rect? end) {
-      return _SmoothAspectRatioRectTween(begin: begin, end: end);
-    }
-
-    return GestureDetector(
-      onTap: _onCardTap,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            child: Hero(
-              tag: 'metric_bg_$metricId',
-              createRectTween: createTween,
-              transitionOnUserGestures: false,
-              flightShuttleBuilder: (_, animation, flightDir, fromCtx, toCtx) {
-                return AnimatedBuilder(
-                  animation: animation,
-                  builder: (context, child) {
-                    final t = animation.value;
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: Color.lerp(
-                          Colors.white,
-                          widget.metric.primaryColor,
-                          0.15,
-                        ),
-                        borderRadius: BorderRadius.circular(24.0 * (1.0 - t)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(
-                              alpha: 0.05 * (1.0 - t),
-                            ),
-                            blurRadius: 8.0 * (1.0 - t),
-                            offset: Offset(0, 2.0 * (1.0 - t)),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Color.lerp(
-                    Colors.white,
-                    widget.metric.primaryColor,
-                    0.15,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          if (widget.metric.recentValues.length >= 2)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: 52,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(24),
-                  bottomRight: Radius.circular(24),
-                ),
-                child: MiniSparkline(
-                  primaryColor: widget.metric.primaryColor,
-                  values: widget.metric.recentValues,
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 8),
-                Text(
-                  widget.metric.nameId,
-                  maxLines: 1,
-                  overflow: TextOverflow.visible,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      widget.metric.displayValue,
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.visible,
-                      style: const TextStyle(
-                        fontSize: 21,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                        height: 1,
-                      ),
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      widget.metric.unit,
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.visible,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: Hero(
-              tag: 'metric_icon_$metricId',
-              createRectTween: createTween,
-              transitionOnUserGestures: false,
-              flightShuttleBuilder: (_, animation, flightDir, fromCtx, toCtx) {
-                return AnimatedBuilder(
-                  animation: animation,
-                  builder: (context, child) {
-                    final t = animation.value;
-                    final iconSize =
-                        widget.iconSize + (28.0 - widget.iconSize) * t;
-                    return Container(
-                      padding: EdgeInsets.all(12.0 * t),
-                      decoration: BoxDecoration(
-                        color: AppColors.card.withValues(alpha: t),
-                        borderRadius: BorderRadius.circular(16.0 * t),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05 * t),
-                            blurRadius: 4.0 * t,
-                            offset: Offset(-2.0 * t, 2.0 * t),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        widget.metric.icon,
-                        color: widget.metric.primaryColor,
-                        size: iconSize,
-                      ),
-                    );
-                  },
-                );
-              },
-              child: Container(
-                width: widget.chipSize,
-                height: widget.chipSize,
-                alignment: Alignment.center,
-                child: Icon(
-                  widget.metric.icon,
-                  color: widget.metric.primaryColor,
-                  size: widget.iconSize,
-                ),
-              ),
-            ),
-          ),
-        ],
+    return OpenContainer(
+      transitionType: ContainerTransitionType.fade,
+      transitionDuration: const Duration(milliseconds: 450),
+      closedElevation: 0,
+      openElevation: 0,
+      closedColor: cardColor,
+      openColor: cardColor,
+      middleColor: cardColor,
+      closedShape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(24)),
       ),
+      openShape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      closedBuilder: (context, openContainer) {
+        return _MetricCardContent(
+          metric: metric,
+          iconSize: iconSize,
+          chipSize: chipSize,
+        );
+      },
+      openBuilder: (context, closeContainer) {
+        return MetricDetailScreen(metric: metric);
+      },
     );
   }
+}
 
-  void _onCardTap() {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        opaque: false,
-        barrierColor: Colors.transparent,
-        transitionDuration: const Duration(milliseconds: 400),
-        reverseTransitionDuration: const Duration(milliseconds: 400),
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return MetricDetailScreen(
-            metric: widget.metric,
-            routeAnimation: animation,
-          );
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return child;
-        },
-      ),
+class _MetricCardContent extends StatelessWidget {
+  final HealthMetric metric;
+  final double iconSize;
+  final double chipSize;
+
+  const _MetricCardContent({
+    required this.metric,
+    required this.iconSize,
+    required this.chipSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.hardEdge,
+      children: [
+        if (metric.recentValues.length >= 2)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 52,
+            child: MiniSparkline(
+              primaryColor: metric.primaryColor,
+              values: metric.recentValues,
+            ),
+          ),
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Text(
+                metric.nameId,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    metric.displayValue,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: const TextStyle(
+                      fontSize: 21,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      height: 1,
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    metric.unit,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Positioned(
+          top: 0,
+          right: 0,
+          child: SizedBox(
+            width: chipSize,
+            height: chipSize,
+            child: Icon(
+              metric.icon,
+              color: metric.primaryColor,
+              size: iconSize,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
