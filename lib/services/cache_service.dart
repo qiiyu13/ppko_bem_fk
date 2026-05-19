@@ -110,13 +110,18 @@ class CacheService {
   }
 
   static Future<void> saveArticles(List<Map<String, dynamic>> articles) async {
+    final db = _db;
+    if (db == null) return;
+    final batch = db.batch();
+    final now = DateTime.now().toIso8601String();
     for (final article in articles) {
-      await _db?.insert('articles', {
+      batch.insert('articles', {
         'id': article['id'],
         'data': jsonEncode(article),
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': now,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
+    await batch.commit(noResult: true);
   }
 
   static Future<List<Map<String, dynamic>>> getArticles() async {
