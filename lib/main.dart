@@ -14,6 +14,8 @@ import 'services/platform_util.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Cap image cache so large herbal photos don't pin RAM.
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 50 << 20;
   if (PlatformUtil.firebaseAvailable) {
     await Firebase.initializeApp();
   }
