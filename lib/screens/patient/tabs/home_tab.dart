@@ -279,7 +279,9 @@ class _HomeTabState extends State<HomeTab> {
         final screenWidth = constraints.maxWidth;
 
         return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: Container(
