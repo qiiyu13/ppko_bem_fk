@@ -595,24 +595,22 @@ class _HomeTabState extends State<HomeTab> {
                                     final cardHeight = cardWidth;
                                     final gridHeight = (cardHeight * 2) + 16;
 
-                                    return SizedBox(
-                                      height: gridHeight,
-                                      child: GridView.count(
-                                        crossAxisCount: 2,
-                                        shrinkWrap: true,
-                                        physics:
-                                            const NeverScrollableScrollPhysics(),
-                                        crossAxisSpacing: 16,
-                                        mainAxisSpacing: 16,
-                                        childAspectRatio: 1.0,
-                                        children: _metrics.map((metric) {
-                                          return _buildMetricCard(
-                                            context: context,
-                                            metric: metric,
-                                            screenWidth: screenWidth,
-                                          );
-                                        }).toList(),
-                                      ),
+                                    return GridView.count(
+                                      crossAxisCount: 2,
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      crossAxisSpacing: 16,
+                                      mainAxisSpacing: 16,
+                                      childAspectRatio: 1.0,
+                                      padding: EdgeInsets.zero,
+                                      children: _metrics.map((metric) {
+                                        return _buildMetricCard(
+                                          context: context,
+                                          metric: metric,
+                                          screenWidth: screenWidth,
+                                        );
+                                      }).toList(),
                                     );
                                   },
                                 ),
