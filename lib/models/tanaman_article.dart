@@ -129,7 +129,7 @@ Cara konsumsi:
 3. Konsisten selama minimal 8 minggu untuk hasil optimal
 
 Catatan: Jahe merupakan pendamping terapi, bukan pengganti obat. Konsultasikan dengan dokter terlebih dahulu.''',
-        imagePath: 'assets/images/Jahe.jpg',
+        imagePath: 'assets/images/Jahe.webp',
         publishDate: DateTime(2025, 1, 5),
         createdAt: now.subtract(const Duration(days: 30)),
         updatedAt: now.subtract(const Duration(days: 5)),
@@ -158,7 +158,7 @@ Cara konsumsi optimal:
 4. Minum setiap malam sebelum tidur
 
 Ingat: Pencegahan lebih baik daripada pengobatan!''',
-        imagePath: 'assets/images/Kunyit.jpg',
+        imagePath: 'assets/images/Kunyit.webp',
         publishDate: DateTime(2025, 1, 3),
         createdAt: now.subtract(const Duration(days: 28)),
         updatedAt: now.subtract(const Duration(days: 3)),
@@ -189,7 +189,7 @@ Cara konsumsi terapeutik:
 4. Konsumsi 2 kali sehari (pagi dan malam)
 
 Tips: Gunakan daun sirih merah untuk hasil lebih optimal.''',
-        imagePath: 'assets/images/Sirih.jpg',
+        imagePath: 'assets/images/Sirih.webp',
         publishDate: DateTime(2025, 1, 1),
         createdAt: now.subtract(const Duration(days: 26)),
         updatedAt: now.subtract(const Duration(days: 1)),
@@ -254,7 +254,7 @@ Protokol konsumsi untuk PTM:
 Pantau hasilnya dengan pemeriksaan fungsi hati (SGOT, SGPT) dan gula darah secara berkala.
 
 Catatan: Artikel ini masih dalam tahap penyuntingan medis.''',
-        imagePath: 'assets/images/Temulawak.jpg',
+        imagePath: 'assets/images/Temulawak.webp',
         publishDate: now,
         createdAt: now.subtract(const Duration(days: 1)),
         updatedAt: now,
