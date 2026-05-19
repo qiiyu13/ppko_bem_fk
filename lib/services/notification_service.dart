@@ -32,7 +32,7 @@ class NotificationService {
     if (PlatformUtil.firebaseAvailable && !kIsWeb) {
       await _initFcm();
     }
-    await fetchFromApi();
+    fetchFromApi();
   }
 
   Future<void> _initFcm() async {

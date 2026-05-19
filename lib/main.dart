@@ -18,23 +18,18 @@ void main() async {
     await Firebase.initializeApp();
   }
 
-  // Initialize API service with interceptors
   ApiService.setupInterceptors();
-
-  // Initialize local cache for offline support
   await CacheService.init();
-
-  // Initialize connectivity monitoring and auto-sync
-  await ConnectivityService.instance.initialize();
-
-  // Initialize notification service (loads local cache, registers FCM if available)
-  await NotificationService.instance.initialize();
 
   runApp(
     kDebugMode
         ? DevicePreview(enabled: true, builder: (context) => const MyApp())
         : const MyApp(),
   );
+
+  // Non-critical services start after first frame so UI isn't blocked.
+  ConnectivityService.instance.initialize();
+  NotificationService.instance.initialize();
 }
 
 class MyApp extends StatelessWidget {
