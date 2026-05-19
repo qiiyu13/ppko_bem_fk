@@ -34,7 +34,7 @@ class _TambahPasienScreenState extends State<TambahPasienScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -96,7 +96,7 @@ class _TambahPasienScreenState extends State<TambahPasienScreen> {
             controller: _nikController,
             keyboardType: TextInputType.number,
             suffixIcon: IconButton(
-              icon: Icon(Icons.camera_alt, color: AppColors.primary),
+              icon: const Icon(Icons.camera_alt, color: AppColors.primary),
               onPressed: () {
                 // TODO: OCR scan NIK
               },
@@ -119,7 +119,7 @@ class _TambahPasienScreenState extends State<TambahPasienScreen> {
             hint: 'Nama sesuai KTP',
             controller: _nameController,
             suffixIcon: IconButton(
-              icon: Icon(Icons.mic, color: AppColors.primary),
+              icon: const Icon(Icons.mic, color: AppColors.primary),
               onPressed: () {
                 // TODO: Voice input
               },
@@ -132,7 +132,7 @@ class _TambahPasienScreenState extends State<TambahPasienScreen> {
             label: 'Tanggal Lahir',
             hint: 'Pilih Tanggal',
             readOnly: true,
-            suffixIcon: Icon(Icons.calendar_today, color: AppColors.primary),
+            suffixIcon: const Icon(Icons.calendar_today, color: AppColors.primary),
             onTap: () {
               // TODO: Show date picker
             },
@@ -198,7 +198,7 @@ class _TambahPasienScreenState extends State<TambahPasienScreen> {
                     ),
                   ),
                   SizedBox(width: ResponsiveSize.paddingSmall),
-                  Icon(Icons.arrow_forward),
+                  const Icon(Icons.arrow_forward),
                 ],
               ),
             ),
@@ -222,7 +222,7 @@ class _TambahPasienScreenState extends State<TambahPasienScreen> {
                 color: AppColors.statusGreen.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.check_circle,
                 color: AppColors.statusGreen,
                 size: 60,
@@ -335,7 +335,7 @@ class _TambahPasienScreenState extends State<TambahPasienScreen> {
                 ),
               ),
               SizedBox(width: ResponsiveSize.paddingSmall),
-              Text(
+              const Text(
                 '/',
                 style: TextStyle(fontSize: 24, color: AppColors.textSecondary),
               ),
@@ -401,7 +401,7 @@ class _TambahPasienScreenState extends State<TambahPasienScreen> {
             child: ElevatedButton(
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
+                  const SnackBar(
                     content: Text(
                       'Pasien dan data screening berhasil disimpan!',
                     ),
@@ -448,7 +448,7 @@ class _TambahPasienScreenState extends State<TambahPasienScreen> {
             ),
           ),
         ),
-        SizedBox(width: 4),
+        const SizedBox(width: 4),
         Expanded(
           child: Container(
             height: 4,
@@ -460,7 +460,7 @@ class _TambahPasienScreenState extends State<TambahPasienScreen> {
             ),
           ),
         ),
-        SizedBox(width: 4),
+        const SizedBox(width: 4),
         Expanded(
           child: Container(
             height: 4,
@@ -555,19 +555,19 @@ class _TambahPasienScreenState extends State<TambahPasienScreen> {
           onTap: onTap,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: AppColors.surface),
+            hintStyle: const TextStyle(color: AppColors.surface),
             suffixIcon: suffixIcon,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.surface),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.surface),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary),
+              borderSide: const BorderSide(color: AppColors.primary),
             ),
             contentPadding: EdgeInsets.symmetric(
               horizontal: ResponsiveSize.paddingMedium,

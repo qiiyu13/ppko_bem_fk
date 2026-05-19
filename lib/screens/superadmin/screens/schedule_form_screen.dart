@@ -122,7 +122,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
       lastDate: DateTime(now.year + 5),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: ColorScheme.light(primary: AppColors.primary),
+          colorScheme: const ColorScheme.light(primary: AppColors.primary),
         ),
         child: child!,
       ),
@@ -278,7 +278,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
           backgroundColor: AppColors.background,
           elevation: 0,
           leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
@@ -314,7 +314,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
                     controller: _dateDisplayController,
                     readOnly: true,
                     suffixIcon:
-                        Icon(Icons.calendar_today, color: AppColors.primary),
+                        const Icon(Icons.calendar_today, color: AppColors.primary),
                     onTap: _pickDate,
                     validator: (_) =>
                         _selectedDate == null ? 'Wajib diisi' : null,
@@ -326,7 +326,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
                     controller: _timeDisplayController,
                     readOnly: true,
                     suffixIcon:
-                        Icon(Icons.access_time, color: AppColors.primary),
+                        const Icon(Icons.access_time, color: AppColors.primary),
                     onTap: _pickTimeRange,
                   ),
                   SizedBox(height: ResponsiveSize.spacingLarge),
@@ -355,8 +355,8 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
                   SizedBox(height: ResponsiveSize.spacingSmall),
                   TextButton.icon(
                     onPressed: _openGoogleMaps,
-                    icon: Icon(Icons.map_outlined, color: AppColors.primary),
-                    label: Text(
+                    icon: const Icon(Icons.map_outlined, color: AppColors.primary),
+                    label: const Text(
                       'Buka Google Maps untuk salin link',
                       style: TextStyle(color: AppColors.primary),
                     ),
@@ -436,19 +436,19 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
           autovalidateMode: AutovalidateMode.onUserInteraction,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: AppColors.textSecondary),
+            hintStyle: const TextStyle(color: AppColors.textSecondary),
             suffixIcon: suffixIcon,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.surface),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.surface),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary),
+              borderSide: const BorderSide(color: AppColors.primary),
             ),
             contentPadding: EdgeInsets.symmetric(
               horizontal: ResponsiveSize.paddingMedium,

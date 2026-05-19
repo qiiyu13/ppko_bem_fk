@@ -138,9 +138,9 @@ class _DashboardTabState extends State<DashboardTab> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.card,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
           child: Padding(
@@ -706,7 +706,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 padding: const EdgeInsets.symmetric(vertical: 48),
                 child: Column(
                   children: [
-                    Icon(Icons.person_search,
+                    const Icon(Icons.person_search,
                         size: 48, color: AppColors.textSecondary),
                     const SizedBox(height: 12),
                     Text(

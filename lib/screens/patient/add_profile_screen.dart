@@ -39,10 +39,10 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
+        title: const Text(
           'Tambah Anggota',
           style: TextStyle(
             color: AppColors.textPrimary,
@@ -56,7 +56,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
           padding: const EdgeInsets.all(16),
           physics: const ClampingScrollPhysics(),
           children: [
-            Column(
+            const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -67,7 +67,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
                     color: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   'Masukkan data anggota keluarga',
                   style: TextStyle(
@@ -185,7 +185,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
+            colorScheme: const ColorScheme.light(
               primary: AppColors.primary,
             ),
           ),
@@ -257,8 +257,8 @@ class _GenderSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8),
           child: Text(
             'Jenis Kelamin',
             style: TextStyle(
@@ -358,8 +358,8 @@ class _BirthDateField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8),
           child: Text(
             'Tanggal Lahir',
             style: TextStyle(
@@ -380,7 +380,7 @@ class _BirthDateField extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.calendar_today,
                   color: AppColors.primary,
                 ),
@@ -421,8 +421,8 @@ class _BloodTypeSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8),
           child: Text(
             'Golongan Darah',
             style: TextStyle(

@@ -194,8 +194,8 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
                         );
                         if (result == true) _loadSchedules();
                       },
-                      icon: Icon(Icons.add, color: AppColors.textOnPrimary),
-                      label: Text(
+                      icon: const Icon(Icons.add, color: AppColors.textOnPrimary),
+                      label: const Text(
                         'Tambah Jadwal',
                         style: TextStyle(color: AppColors.textOnPrimary),
                       ),
@@ -213,7 +213,7 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
                 ),
               Expanded(
                 child: _isLoading
-                    ? Center(
+                    ? const Center(
                         child: CircularProgressIndicator(
                           color: AppColors.primary,
                         ),
@@ -253,7 +253,7 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
       backgroundColor: AppColors.background,
       elevation: 0,
       leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+        icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
@@ -273,7 +273,7 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
       backgroundColor: AppColors.background,
       elevation: 0,
       leading: IconButton(
-        icon: Icon(Icons.close, color: AppColors.textPrimary),
+        icon: const Icon(Icons.close, color: AppColors.textPrimary),
         onPressed: _clearSelection,
       ),
       title: Text(
@@ -287,7 +287,7 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
       centerTitle: true,
       actions: [
         IconButton(
-          icon: Icon(Icons.delete, color: highRiskRed),
+          icon: const Icon(Icons.delete, color: highRiskRed),
           tooltip: 'Hapus terpilih',
           onPressed: _deleteSelected,
         ),
@@ -371,7 +371,7 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
                 children: [
                   Text(
                     IndonesianDate.shortMonth(date.month).toUpperCase(),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -380,7 +380,7 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
                   const SizedBox(height: 2),
                   Text(
                     date.day.toString(),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.primary,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -430,7 +430,7 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
                   if ((schedule['time'] as String).isNotEmpty) ...[
                     Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.access_time,
                           size: 14,
                           color: AppColors.textSecondary,
@@ -438,7 +438,7 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
                         const SizedBox(width: 6),
                         Text(
                           schedule['time'],
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 13,
                           ),
@@ -449,7 +449,7 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
                   ],
                   Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.location_on_outlined,
                         size: 14,
                         color: AppColors.textSecondary,
@@ -458,7 +458,7 @@ class _JadwalManagementScreenState extends State<JadwalManagementScreen> {
                       Expanded(
                         child: Text(
                           schedule['location'],
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 13,
                           ),

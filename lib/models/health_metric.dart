@@ -74,7 +74,7 @@ class HealthMetricData {
 
   static List<AgeBasedRange> getBloodPressureRanges() {
     return [
-      AgeBasedRange(
+      const AgeBasedRange(
         minAge: 18,
         maxAge: 39,
         range: ReferenceRange(
@@ -83,7 +83,7 @@ class HealthMetricData {
           description: 'Normal untuk usia 18-39 tahun',
         ),
       ),
-      AgeBasedRange(
+      const AgeBasedRange(
         minAge: 40,
         maxAge: 59,
         range: ReferenceRange(
@@ -92,7 +92,7 @@ class HealthMetricData {
           description: 'Normal untuk usia 40-59 tahun',
         ),
       ),
-      AgeBasedRange(
+      const AgeBasedRange(
         minAge: 60,
         range: ReferenceRange(
           min: 90,
@@ -105,7 +105,7 @@ class HealthMetricData {
 
   static List<AgeBasedRange> getCholesterolRanges() {
     return [
-      AgeBasedRange(
+      const AgeBasedRange(
         minAge: 20,
         maxAge: 39,
         range: ReferenceRange(
@@ -114,7 +114,7 @@ class HealthMetricData {
           description: 'Normal untuk usia 20-39 tahun',
         ),
       ),
-      AgeBasedRange(
+      const AgeBasedRange(
         minAge: 40,
         maxAge: 59,
         range: ReferenceRange(
@@ -123,7 +123,7 @@ class HealthMetricData {
           description: 'Normal untuk usia 40-59 tahun',
         ),
       ),
-      AgeBasedRange(
+      const AgeBasedRange(
         minAge: 60,
         range: ReferenceRange(
           min: 0,
@@ -136,7 +136,7 @@ class HealthMetricData {
 
   static List<AgeBasedRange> getBloodSugarRanges() {
     return [
-      AgeBasedRange(
+      const AgeBasedRange(
         minAge: 18,
         maxAge: 59,
         range: ReferenceRange(
@@ -145,7 +145,7 @@ class HealthMetricData {
           description: 'Normal puasa untuk usia 18-59 tahun',
         ),
       ),
-      AgeBasedRange(
+      const AgeBasedRange(
         minAge: 60,
         range: ReferenceRange(
           min: 80,
@@ -159,7 +159,7 @@ class HealthMetricData {
   static List<AgeBasedRange> getUricAcidRanges(String gender) {
     if (gender.toLowerCase() == 'pria') {
       return [
-        AgeBasedRange(
+        const AgeBasedRange(
           minAge: 18,
           maxAge: 59,
           range: ReferenceRange(
@@ -168,7 +168,7 @@ class HealthMetricData {
             description: 'Normal untuk pria usia 18-59 tahun',
           ),
         ),
-        AgeBasedRange(
+        const AgeBasedRange(
           minAge: 60,
           range: ReferenceRange(
             min: 3.5,
@@ -179,7 +179,7 @@ class HealthMetricData {
       ];
     } else {
       return [
-        AgeBasedRange(
+        const AgeBasedRange(
           minAge: 18,
           maxAge: 59,
           range: ReferenceRange(
@@ -188,7 +188,7 @@ class HealthMetricData {
             description: 'Normal untuk wanita usia 18-59 tahun',
           ),
         ),
-        AgeBasedRange(
+        const AgeBasedRange(
           minAge: 60,
           range: ReferenceRange(
             min: 2.6,

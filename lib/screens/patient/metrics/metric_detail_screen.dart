@@ -157,9 +157,9 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                     child: FadeTransition(
                       opacity: _contentFadeAnimation,
                       child: Container(
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppColors.background,
-                          borderRadius: const BorderRadius.only(
+                          borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(32),
                             topRight: Radius.circular(32),
                           ),
@@ -186,7 +186,7 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                                   size: 24,
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
+                                const Text(
                                   'Riwayat Pengukuran',
                                   style: TextStyle(
                                     fontSize: 18,
@@ -207,12 +207,12 @@ class _MetricDetailScreenState extends State<MetricDetailScreen>
                               padding: const EdgeInsets.all(32),
                               child: Column(
                                 children: [
-                                  Icon(Icons.cloud_off, size: 40, color: AppColors.textSecondary),
+                                  const Icon(Icons.cloud_off, size: 40, color: AppColors.textSecondary),
                                   const SizedBox(height: 12),
                                   Text(
                                     _error!,
                                     textAlign: TextAlign.center,
-                                    style: TextStyle(color: AppColors.textSecondary),
+                                    style: const TextStyle(color: AppColors.textSecondary),
                                   ),
                                   const SizedBox(height: 12),
                                   ElevatedButton(

@@ -54,7 +54,7 @@ class ProfilTab extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
+                            const Text(
                               'Anggota Keluarga',
                               style: TextStyle(
                                 fontSize: 24,
@@ -74,7 +74,7 @@ class ProfilTab extends StatelessWidget {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.people,
                                     size: 16,
                                     color: AppColors.primary,
@@ -82,7 +82,7 @@ class ProfilTab extends StatelessWidget {
                                   const SizedBox(width: 4),
                                   Text(
                                     '${profiles.length}',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                       color: AppColors.primary,
@@ -113,7 +113,7 @@ class ProfilTab extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Text(
+                            const Text(
                               'Semua Anggota',
                               style: TextStyle(
                                 fontSize: 16,
@@ -128,7 +128,7 @@ class ProfilTab extends StatelessWidget {
                                   builder: (context) => const AddProfileScreen(),
                                 ),
                               ),
-                              icon: Icon(
+                              icon: const Icon(
                                 Icons.person_add,
                                 color: AppColors.primary,
                               ),
@@ -173,9 +173,9 @@ class ProfilTab extends StatelessWidget {
       child: Center(
         child: Column(
           children: [
-            Icon(Icons.people_outline, size: 56, color: AppColors.textSecondary),
+            const Icon(Icons.people_outline, size: 56, color: AppColors.textSecondary),
             SizedBox(height: spacing),
-            Text(
+            const Text(
               'Belum ada anggota keluarga',
               style: TextStyle(
                 fontSize: 15,
@@ -255,7 +255,7 @@ class ProfilTab extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(
+                      child: const Text(
                         'PROFIL AKTIF',
                         style: TextStyle(
                           fontSize: 10,
@@ -277,7 +277,7 @@ class ProfilTab extends StatelessWidget {
                 // Name
                 Text(
                   profile.name,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textOnPrimary,
@@ -422,7 +422,7 @@ class ProfilTab extends StatelessWidget {
                                 color: AppColors.primary,
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              child: Text(
+                              child: const Text(
                                 'AKTIF',
                                 style: TextStyle(
                                   fontSize: 10,
@@ -437,7 +437,7 @@ class ProfilTab extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         profile.formattedNik,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,
                         ),
@@ -454,11 +454,11 @@ class ProfilTab extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.qr_code, color: AppColors.primary, size: 20),
+                  icon: const Icon(Icons.qr_code, color: AppColors.primary, size: 20),
                   onPressed: () => _showQRCodeDialog(context, profile),
                   tooltip: 'Tampilkan QR',
                 ),
-                Icon(Icons.more_vert, color: AppColors.textSecondary),
+                const Icon(Icons.more_vert, color: AppColors.textSecondary),
               ],
             ),
           ),
@@ -536,9 +536,9 @@ class ProfilTab extends StatelessWidget {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.background,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
           child: Column(
@@ -554,7 +554,7 @@ class ProfilTab extends StatelessWidget {
                 ),
               ),
               ListTile(
-                leading: Icon(Icons.switch_account, color: AppColors.primary),
+                leading: const Icon(Icons.switch_account, color: AppColors.primary),
                 title: Text(
                   isActive ? 'Profil Aktif' : 'Pilih Profil Ini',
                   style: TextStyle(
@@ -562,7 +562,7 @@ class ProfilTab extends StatelessWidget {
                   ),
                 ),
                 trailing: isActive
-                    ? Icon(Icons.check, color: AppColors.primary)
+                    ? const Icon(Icons.check, color: AppColors.primary)
                     : null,
                 onTap: () async {
                   if (!isActive) {
@@ -572,7 +572,7 @@ class ProfilTab extends StatelessWidget {
                 },
               ),
               ListTile(
-                leading: Icon(Icons.edit, color: AppColors.textSecondary),
+                leading: const Icon(Icons.edit, color: AppColors.textSecondary),
                 title: const Text('Edit Profil'),
                 onTap: () {
                   Navigator.pop(context);

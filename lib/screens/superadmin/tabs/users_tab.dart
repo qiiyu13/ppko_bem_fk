@@ -115,8 +115,8 @@ class _UsersTabState extends State<UsersTab>
                   ),
                 ).then((_) => _loadUsers());
               },
-              icon: Icon(Icons.add, color: AppColors.textOnPrimary),
-              label: Text(
+              icon: const Icon(Icons.add, color: AppColors.textOnPrimary),
+              label: const Text(
                 'Tambah Admin',
                 style: TextStyle(color: AppColors.textOnPrimary),
               ),
@@ -190,7 +190,7 @@ class _UsersTabState extends State<UsersTab>
                   color: AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.person, color: AppColors.primary, size: 28),
+                child: const Icon(Icons.person, color: AppColors.primary, size: 28),
               ),
               SizedBox(width: ResponsiveSize.paddingMedium),
               Expanded(
@@ -256,7 +256,7 @@ class _UsersTabState extends State<UsersTab>
               Column(
                 children: [
                   IconButton(
-                    icon: Icon(Icons.edit, color: AppColors.primary),
+                    icon: const Icon(Icons.edit, color: AppColors.primary),
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -267,7 +267,7 @@ class _UsersTabState extends State<UsersTab>
                     },
                   ),
                   IconButton(
-                    icon: Icon(Icons.delete, color: AppColors.textSecondary),
+                    icon: const Icon(Icons.delete, color: AppColors.textSecondary),
                     onPressed: () => _deleteAdmin(admin),
                   ),
                 ],
@@ -333,7 +333,7 @@ class _UsersTabState extends State<UsersTab>
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => RwListScreen()),
+              MaterialPageRoute(builder: (context) => const RwListScreen()),
             );
           },
           child: Container(
@@ -382,7 +382,7 @@ class _UsersTabState extends State<UsersTab>
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
                         _regionStats == null
                             ? 'Memuat...'
@@ -396,7 +396,7 @@ class _UsersTabState extends State<UsersTab>
                     ],
                   ),
                 ),
-                Icon(
+                const Icon(
                   Icons.arrow_forward_ios,
                   color: AppColors.primary,
                   size: 20,

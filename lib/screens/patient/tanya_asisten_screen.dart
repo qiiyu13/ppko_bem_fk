@@ -364,11 +364,11 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
             ),
           ),
           SizedBox(width: ResponsiveSize.spacingMedium),
-          Expanded(
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Asisten Sehat',
                   style: TextStyle(
                     color: Colors.white,
@@ -465,8 +465,8 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (!isUser)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 4),
                             child: Text(
                               'Asisten Sehat',
                               style: TextStyle(
@@ -503,7 +503,7 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
                 children: [
                   Text(
                     time,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 11,
                     ),
@@ -531,9 +531,9 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
       child: Container(
         margin: EdgeInsets.only(left: 40, bottom: ResponsiveSize.spacingMedium),
         padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: assistantBubbleColor,
-          borderRadius: const BorderRadius.only(
+          borderRadius: BorderRadius.only(
             topLeft: Radius.circular(16),
             topRight: Radius.circular(16),
             bottomLeft: Radius.circular(4),
@@ -585,7 +585,7 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
       duration: const Duration(milliseconds: 300),
       width: 8,
       height: 8,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.primary,
         shape: BoxShape.circle,
       ),
@@ -661,7 +661,7 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
         horizontal: ResponsiveSize.paddingMedium,
         vertical: ResponsiveSize.paddingMedium,
       ),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.card,
         border: Border(top: BorderSide(color: AppColors.surface, width: 1)),
       ),
@@ -744,7 +744,7 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
                     ),
                   ],
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.mic,
                   color: Colors.white,
                   size: 32,
@@ -766,7 +766,7 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
                     : _isRecordingActive
                         ? 'active'
                         : 'idle'),
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 12,
                 ),
@@ -806,7 +806,7 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
         horizontal: ResponsiveSize.paddingMedium,
         vertical: ResponsiveSize.paddingSmall,
       ),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.card,
         border: Border(top: BorderSide(color: AppColors.surface, width: 1)),
       ),
@@ -875,7 +875,7 @@ class TanyaAsistenScreenState extends State<TanyaAsistenScreen> {
                 duration: const Duration(milliseconds: 200),
                 width: 44,
                 height: 44,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),

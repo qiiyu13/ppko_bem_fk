@@ -114,12 +114,12 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
             }
 
             if (_screeningData.isEmpty) {
-              return Center(
+              return const Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.inbox, size: 48, color: AppColors.textSecondary),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       'Belum ada data screening',
                       style: TextStyle(
@@ -391,7 +391,7 @@ class _ExpandableScreeningCardWidgetState
                 borderRadius: BorderRadius.vertical(
                   bottom: Radius.circular(ResponsiveSize.cardBorderRadius),
                 ),
-                border: Border(top: BorderSide(color: AppColors.surface)),
+                border: const Border(top: BorderSide(color: AppColors.surface)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -462,7 +462,7 @@ class _ExpandableScreeningCardWidgetState
                   // IRD progress bar
                   _buildIRDBar(),
                   SizedBox(height: ResponsiveSize.spacingMedium),
-                  Divider(color: AppColors.surface),
+                  const Divider(color: AppColors.surface),
                   SizedBox(height: ResponsiveSize.spacingSmall),
                   // Action button
                   _buildActionButton(
@@ -534,7 +534,7 @@ class _ExpandableScreeningCardWidgetState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: iconColor, size: 16),
-          SizedBox(height: 6),
+          const SizedBox(height: 6),
           Text(
             value,
             style: TextStyle(
@@ -543,8 +543,8 @@ class _ExpandableScreeningCardWidgetState
               color: AppColors.textPrimary,
             ),
           ),
-          Text(unit, style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-          Text(label, style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+          Text(unit, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+          Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
         ],
       ),
     );
@@ -685,11 +685,11 @@ class _ExpandableScreeningCardWidgetState
                   pw.SizedBox(height: 4),
                   pw.Text(
                     'Tanggal Screening: ${_formatDate(d.date)}',
-                    style: pw.TextStyle(fontSize: 10, color: PdfColors.white),
+                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.white),
                   ),
                   pw.Text(
                     'Dicetak: ${_formatDate(DateTime.now())}',
-                    style: pw.TextStyle(fontSize: 10, color: PdfColors.white),
+                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.white),
                   ),
                 ],
               ),

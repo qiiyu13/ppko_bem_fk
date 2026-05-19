@@ -58,7 +58,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -193,18 +193,18 @@ class _UserFormScreenState extends State<UserFormScreen> {
           keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: AppColors.surface),
+            hintStyle: const TextStyle(color: AppColors.surface),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.surface),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.surface),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary),
+              borderSide: const BorderSide(color: AppColors.primary),
             ),
             contentPadding: EdgeInsets.symmetric(
               horizontal: ResponsiveSize.paddingMedium,
@@ -246,7 +246,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
             child: DropdownButton<String>(
               value: value,
               isExpanded: true,
-              icon: Icon(Icons.arrow_drop_down, color: AppColors.primary),
+              icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
               items: items.map((String item) {
                 return DropdownMenuItem<String>(value: item, child: Text(item));
               }).toList(),

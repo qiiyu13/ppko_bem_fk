@@ -415,10 +415,10 @@ class AppTheme {
   // BOTTOM SHEET THEME
   // ============================================
   static BottomSheetThemeData get bottomSheetTheme {
-    return BottomSheetThemeData(
+    return const BottomSheetThemeData(
       backgroundColor: AppColors.card,
       elevation: 0,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(radiusXLarge)),
       ),
     );

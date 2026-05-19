@@ -103,7 +103,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
               ),
             ),
           ),
-          Positioned(
+          const Positioned(
             bottom: 60,
             left: 0,
             right: 0,
@@ -117,7 +117,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             ),
           ),
           if (_isProcessing)
-            Center(
+            const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             ),
         ],

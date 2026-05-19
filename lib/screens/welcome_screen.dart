@@ -111,11 +111,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.divider),
+                  borderSide: const BorderSide(color: AppColors.divider),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.divider),
+                  borderSide: const BorderSide(color: AppColors.divider),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -143,11 +143,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.divider),
+                  borderSide: const BorderSide(color: AppColors.divider),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.divider),
+                  borderSide: const BorderSide(color: AppColors.divider),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -397,7 +397,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           ),
         ),
 
-        SizedBox(height: 20),
+        const SizedBox(height: 20),
 
         Center(
           child: Text(
@@ -647,7 +647,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           ],
         ),
 
-        SizedBox(height: 20),
+        const SizedBox(height: 20),
 
         Center(
           child: Text(
@@ -850,7 +850,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                 ),
                                 shape: BoxShape.circle,
                               ),
-                              child: Icon(
+                              child: const Icon(
                                 Icons.favorite,
                                 color: AppColors.textSecondary,
                                 size: 20,

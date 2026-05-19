@@ -53,7 +53,7 @@ class _FamilyAccountsScreenState extends State<FamilyAccountsScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -125,7 +125,7 @@ class _FamilyAccountsScreenState extends State<FamilyAccountsScreen> {
                 color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.family_restroom, color: AppColors.primary, size: 28),
+              child: const Icon(Icons.family_restroom, color: AppColors.primary, size: 28),
             ),
             SizedBox(width: ResponsiveSize.paddingMedium),
             Expanded(
@@ -186,7 +186,7 @@ class _FamilyAccountsScreenState extends State<FamilyAccountsScreen> {
                 ],
               ),
             ),
-            Icon(
+            const Icon(
               Icons.arrow_forward_ios,
               color: AppColors.textSecondary,
               size: 16,

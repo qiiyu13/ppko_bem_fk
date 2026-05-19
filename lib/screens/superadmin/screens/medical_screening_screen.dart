@@ -331,7 +331,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
           backgroundColor: AppColors.background,
           elevation: 0,
           leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
             onPressed: _onBackPressed,
           ),
           title: Text(
@@ -383,20 +383,20 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                   onChanged: (_) => _fetchFamilies(),
                   decoration: InputDecoration(
                     hintText: 'Cari No. KK atau Nama Kepala Keluarga',
-                    hintStyle: TextStyle(color: AppColors.textSecondary),
+                    hintStyle: const TextStyle(color: AppColors.textSecondary),
                     prefixIcon:
-                        Icon(Icons.search, color: AppColors.textSecondary),
+                        const Icon(Icons.search, color: AppColors.textSecondary),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppColors.surface),
+                      borderSide: const BorderSide(color: AppColors.surface),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppColors.surface),
+                      borderSide: const BorderSide(color: AppColors.surface),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppColors.primary),
+                      borderSide: const BorderSide(color: AppColors.primary),
                     ),
                   ),
                 ),
@@ -404,7 +404,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
               SizedBox(width: ResponsiveSize.paddingSmall),
               IconButton(
                 onPressed: _openQrScanner,
-                icon: Icon(Icons.qr_code_scanner, color: AppColors.primary),
+                icon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
                 tooltip: 'Scan QR Pasien',
                 style: IconButton.styleFrom(
                   backgroundColor: AppColors.primary.withValues(alpha: 0.1),
@@ -424,7 +424,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.family_restroom,
+                          const Icon(Icons.family_restroom,
                               size: 48, color: AppColors.textSecondary),
                           SizedBox(height: ResponsiveSize.spacingMedium),
                           Text(
@@ -476,7 +476,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.family_restroom,
+                child: const Icon(Icons.family_restroom,
                     color: AppColors.primary, size: 28),
               ),
               SizedBox(width: ResponsiveSize.paddingMedium),
@@ -545,7 +545,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
           ),
           child: Row(
             children: [
-              Icon(Icons.family_restroom, color: AppColors.primary),
+              const Icon(Icons.family_restroom, color: AppColors.primary),
               SizedBox(width: ResponsiveSize.paddingSmall),
               Expanded(
                 child: Column(
@@ -576,7 +576,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                     _familyProfiles = [];
                   });
                 },
-                child: Text(
+                child: const Text(
                   'Ganti',
                   style: TextStyle(color: AppColors.primary),
                 ),
@@ -592,7 +592,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.group_off,
+                          const Icon(Icons.group_off,
                               size: 48, color: AppColors.textSecondary),
                           SizedBox(height: ResponsiveSize.spacingMedium),
                           Text(
@@ -662,7 +662,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                 alignment: Alignment.center,
                 child: Text(
                   initial,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.primary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -740,7 +740,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.person, color: AppColors.primary),
+                      const Icon(Icons.person, color: AppColors.primary),
                       SizedBox(width: ResponsiveSize.paddingSmall),
                       Expanded(
                         child: Column(
@@ -784,7 +784,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                             _clearFormFields();
                           });
                         },
-                        child: Text(
+                        child: const Text(
                           'Ganti',
                           style: TextStyle(color: AppColors.primary),
                         ),
@@ -817,7 +817,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                       ),
                     ),
                     SizedBox(width: ResponsiveSize.paddingSmall),
-                    Padding(
+                    const Padding(
                       padding: EdgeInsets.only(top: 32),
                       child: Text(
                         '/',
@@ -911,7 +911,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
 
   Widget _buildSubmitBar() {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.background,
         border: Border(
           top: BorderSide(color: AppColors.surface, width: 1),
@@ -942,7 +942,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
               ),
             ),
             child: _isSubmitting
-                ? SizedBox(
+                ? const SizedBox(
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
@@ -1043,18 +1043,18 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
           textInputAction: TextInputAction.newline,
           decoration: InputDecoration(
             hintText: 'Opsional',
-            hintStyle: TextStyle(color: AppColors.surface),
+            hintStyle: const TextStyle(color: AppColors.surface),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.surface),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.surface),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary),
+              borderSide: const BorderSide(color: AppColors.primary),
             ),
             contentPadding: EdgeInsets.symmetric(
               horizontal: ResponsiveSize.paddingMedium,
@@ -1105,20 +1105,20 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
           },
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: AppColors.surface),
+            hintStyle: const TextStyle(color: AppColors.surface),
             suffixText: suffix,
-            suffixStyle: TextStyle(color: AppColors.textSecondary),
+            suffixStyle: const TextStyle(color: AppColors.textSecondary),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.surface),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.surface),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary),
+              borderSide: const BorderSide(color: AppColors.primary),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

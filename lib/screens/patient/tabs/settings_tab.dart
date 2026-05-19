@@ -99,14 +99,14 @@ class SettingsTab extends StatelessWidget {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        title: Text(
+                        title: const Text(
                           'Keluar',
                           style: TextStyle(
                             fontSize: 20,
                             color: AppColors.textPrimary,
                           ),
                         ),
-                        content: Text(
+                        content: const Text(
                           'Apakah Anda yakin ingin keluar?',
                           style: TextStyle(
                             fontSize: 14,
@@ -116,7 +116,7 @@ class SettingsTab extends StatelessWidget {
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context),
-                            child: Text(
+                            child: const Text(
                               'Batal',
                               style: TextStyle(
                                 fontSize: 14,
@@ -140,7 +140,7 @@ class SettingsTab extends StatelessWidget {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                             ),
-                            child: Text(
+                            child: const Text(
                               'Keluar',
                               style: TextStyle(fontSize: 14),
                             ),
@@ -149,12 +149,12 @@ class SettingsTab extends StatelessWidget {
                       ),
                     );
                   },
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.logout,
                     size: 20,
                     color: AppColors.background,
                   ),
-                  label: Text(
+                  label: const Text(
                     'Keluar',
                     style: TextStyle(fontSize: 16, color: AppColors.background),
                   ),
@@ -209,7 +209,7 @@ class SettingsTab extends StatelessWidget {
         ),
         title: Text(
           title,
-          style: TextStyle(
+          style: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 14,
             color: AppColors.textPrimary,
@@ -217,9 +217,9 @@ class SettingsTab extends StatelessWidget {
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
-        trailing: Icon(
+        trailing: const Icon(
           Icons.arrow_forward_ios,
           size: 14,
           color: AppColors.textSecondary,

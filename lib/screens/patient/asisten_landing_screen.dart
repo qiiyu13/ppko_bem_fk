@@ -189,9 +189,9 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
     final spacing = screenWidth * 0.03;
 
     if (_isLoading) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: AppColors.background,
-        body: const Center(
+        body: Center(
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
       );
@@ -209,7 +209,7 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
             else ...[
               Container(
                 padding: EdgeInsets.all(padding),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.background,
                   border: Border(
                     bottom: BorderSide(color: AppColors.surface, width: 1),
@@ -244,7 +244,7 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
                                     color: AppColors.background.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: Icon(
+                                  child: const Icon(
                                     Icons.chat_bubble_outline,
                                     color: AppColors.background,
                                     size: 32,
@@ -255,7 +255,7 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
+                                      const Text(
                                         'Tanya mediku!',
                                         style: TextStyle(
                                           color: AppColors.background,
@@ -289,13 +289,13 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.arrow_forward,
                                     color: AppColors.primary,
                                     size: 18,
                                   ),
                                   SizedBox(width: spacing * 0.5),
-                                  Text(
+                                  const Text(
                                     'Mulai Percakapan',
                                     style: TextStyle(
                                       color: AppColors.primary,
@@ -313,13 +313,13 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
                     SizedBox(height: spacing * 1.5),
                     Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.history,
                           color: AppColors.textSecondary,
                           size: 20,
                         ),
                         SizedBox(width: spacing * 0.75),
-                        Text(
+                        const Text(
                           'Riwayat Percakapan',
                           style: TextStyle(
                             color: AppColors.textPrimary,
@@ -487,7 +487,7 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
             color: AppColors.primary.withValues(alpha: 0.3),
           ),
           SizedBox(height: spacing * 1.5),
-          Text(
+          const Text(
             'Belum Ada Percakapan',
             style: TextStyle(
               fontSize: 18,
@@ -496,7 +496,7 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
             ),
           ),
           SizedBox(height: spacing * 0.5),
-          Text(
+          const Text(
             'Mulai percakapan pertama Anda\ndengan menekan tombol di atas',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
@@ -549,11 +549,11 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.chat, color: AppColors.primary, size: 20),
+                child: const Icon(Icons.chat, color: AppColors.primary, size: 20),
               ),
         title: Text(
           conversation.formattedTimestamp,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
@@ -564,12 +564,12 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
                 lastMessage,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
               )
             : null,
         trailing: _isSelecting
             ? null
-            : Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textSecondary),
+            : const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textSecondary),
         onTap: _isSelecting ? () => _toggleSelection(conversation.id) : () => _navigateToChat(conversationId: conversation.id),
       ),
     );

@@ -50,11 +50,11 @@ class ProfileFormField extends StatelessWidget {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.surface),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary, width: 2),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
             contentPadding: const EdgeInsets.all(16),
             counterText: '',
@@ -77,7 +77,7 @@ class ProfileFieldLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         text,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,

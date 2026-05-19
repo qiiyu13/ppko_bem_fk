@@ -56,10 +56,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
+        title: const Text(
           'Edit Profil',
           style: TextStyle(
             color: AppColors.textPrimary,
@@ -74,7 +74,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Informasi Pribadi',
                 style: TextStyle(
                   fontSize: 18,
@@ -85,7 +85,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 4),
               Text(
                 'Ubah data profil ${widget.profile.name}',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
                 ),
@@ -121,7 +121,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
 
               // Gender
-              ProfileFieldLabel('Jenis Kelamin'),
+              const ProfileFieldLabel('Jenis Kelamin'),
               Row(
                 children: [
                   Expanded(
@@ -136,7 +136,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 20),
 
               // Birth Date
-              ProfileFieldLabel('Tanggal Lahir'),
+              const ProfileFieldLabel('Tanggal Lahir'),
               InkWell(
                 onTap: _selectBirthDate,
                 child: Container(
@@ -148,7 +148,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.calendar_today,
                         color: AppColors.primary,
                       ),
@@ -171,7 +171,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 20),
 
               // Blood Type
-              ProfileFieldLabel('Golongan Darah'),
+              const ProfileFieldLabel('Golongan Darah'),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -296,7 +296,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
+            colorScheme: const ColorScheme.light(
               primary: AppColors.primary,
             ),
           ),

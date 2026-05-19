@@ -341,7 +341,7 @@ class _BerandaTabState extends State<BerandaTab> {
         SizedBox(height: ResponsiveSize.spacingSmall),
         Text(
           value.toString(),
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,

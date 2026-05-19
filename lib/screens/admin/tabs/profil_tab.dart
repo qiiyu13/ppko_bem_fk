@@ -230,7 +230,7 @@ class AdminProfilTab extends StatelessWidget {
           ),
         ),
         if (!last)
-          Divider(
+          const Divider(
             height: 1,
             thickness: 1,
             color: AppColors.surface,

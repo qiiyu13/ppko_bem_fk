@@ -127,7 +127,7 @@ class PatientDetailScreen extends StatelessWidget {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(Icons.more_vert, color: AppColors.textPrimary),
+            icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
             onPressed: () {
               // TODO: Show options menu
             },
@@ -167,7 +167,7 @@ class PatientDetailScreen extends StatelessWidget {
                           color: AppColors.primary.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.person,
                           color: AppColors.primary,
                           size: 40,
@@ -198,12 +198,12 @@ class PatientDetailScreen extends StatelessWidget {
                             SizedBox(height: ResponsiveSize.spacingSmall),
                             Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.location_on_outlined,
                                   color: AppColors.textSecondary,
                                   size: 16,
                                 ),
-                                SizedBox(width: 4),
+                                const SizedBox(width: 4),
                                 Text(
                                   patient['village'],
                                   style: TextStyle(
@@ -219,7 +219,7 @@ class PatientDetailScreen extends StatelessWidget {
                     ],
                   ),
                   SizedBox(height: ResponsiveSize.spacingMedium),
-                  Divider(color: AppColors.surface),
+                  const Divider(color: AppColors.surface),
                   SizedBox(height: ResponsiveSize.spacingMedium),
                   // Risk Level Badge
                   Container(
@@ -389,7 +389,7 @@ class PatientDetailScreen extends StatelessWidget {
                         ? AppColors.success
                         : AppColors.primarySurface,
                   ),
-                  Divider(color: AppColors.surface),
+                  const Divider(color: AppColors.surface),
                   _buildLabResultRow(
                     'Asam Urat',
                     '${latestData['uricAcid']}',
@@ -398,7 +398,7 @@ class PatientDetailScreen extends StatelessWidget {
                         ? AppColors.success
                         : AppColors.primarySurface,
                   ),
-                  Divider(color: AppColors.surface),
+                  const Divider(color: AppColors.surface),
                   _buildLabResultRow(
                     'Kolesterol',
                     '${latestData['cholesterol']}',
@@ -458,7 +458,7 @@ class PatientDetailScreen extends StatelessWidget {
           Row(
             children: [
               Icon(icon, color: statusColor, size: 20),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   label,
@@ -482,7 +482,7 @@ class PatientDetailScreen extends StatelessWidget {
                   color: statusColor,
                 ),
               ),
-              SizedBox(width: 4),
+              const SizedBox(width: 4),
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
@@ -537,7 +537,7 @@ class PatientDetailScreen extends StatelessWidget {
           Row(
             children: [
               Icon(icon, color: AppColors.primary, size: 20),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   label,
@@ -561,7 +561,7 @@ class PatientDetailScreen extends StatelessWidget {
                   color: AppColors.textPrimary,
                 ),
               ),
-              SizedBox(width: 4),
+              const SizedBox(width: 4),
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
@@ -599,7 +599,7 @@ class PatientDetailScreen extends StatelessWidget {
           drawVerticalLine: false,
           horizontalInterval: 20,
           getDrawingHorizontalLine: (value) {
-            return FlLine(color: AppColors.surface, strokeWidth: 1);
+            return const FlLine(color: AppColors.surface, strokeWidth: 1);
           },
         ),
         titlesData: FlTitlesData(
@@ -652,7 +652,7 @@ class PatientDetailScreen extends StatelessWidget {
         ),
         borderData: FlBorderData(
           show: true,
-          border: Border(
+          border: const Border(
             bottom: BorderSide(color: AppColors.surface),
             left: BorderSide(color: AppColors.surface),
           ),
@@ -763,7 +763,7 @@ class PatientDetailScreen extends StatelessWidget {
                     color: statusColor,
                   ),
                 ),
-                SizedBox(width: 4),
+                const SizedBox(width: 4),
                 Text(
                   unit,
                   style: TextStyle(
@@ -880,7 +880,7 @@ class PatientDetailScreen extends StatelessWidget {
     return Column(
       children: [
         Icon(icon, color: color, size: 20),
-        SizedBox(height: 4),
+        const SizedBox(height: 4),
         Text(
           value,
           style: TextStyle(
@@ -891,7 +891,7 @@ class PatientDetailScreen extends StatelessWidget {
         ),
         Text(
           unit,
-          style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
         ),
       ],
     );

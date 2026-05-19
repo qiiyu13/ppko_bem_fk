@@ -108,7 +108,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
+            const Text(
               'Pilih Gambar',
               style: TextStyle(
                 fontSize: 18,
@@ -124,7 +124,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.camera_alt, color: AppColors.primary),
+                child: const Icon(Icons.camera_alt, color: AppColors.primary),
               ),
               title: const Text('Kamera'),
               subtitle: const Text('Ambil foto baru'),
@@ -141,7 +141,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.photo_library, color: AppColors.primary),
+                child: const Icon(Icons.photo_library, color: AppColors.primary),
               ),
               title: const Text('Galeri'),
               subtitle: const Text('Pilih dari galeri'),
@@ -189,7 +189,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
+            colorScheme: const ColorScheme.light(
               primary: AppColors.primary,
               onPrimary: Colors.white,
               surface: AppColors.card,
@@ -309,12 +309,12 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
         backgroundColor: AppColors.card,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           widget.article != null ? 'Edit Artikel' : 'Artikel Baru',
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
           ),
@@ -447,7 +447,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
           color: AppColors.textSecondary.withValues(alpha: 0.5),
         ),
         const SizedBox(height: 8),
-        Text(
+        const Text(
           'Tap untuk tambah gambar',
           style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ),
@@ -459,7 +459,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Judul Artikel',
           style: TextStyle(
             fontSize: 14,
@@ -483,7 +483,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
             ),
             contentPadding: const EdgeInsets.all(16),
           ),
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
@@ -505,13 +505,13 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
         ),
         child: Row(
           children: [
-            Icon(Icons.calendar_today, color: AppColors.primary),
+            const Icon(Icons.calendar_today, color: AppColors.primary),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Tanggal Publikasi',
                     style: TextStyle(
                       fontSize: 12,
@@ -521,7 +521,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
                   const SizedBox(height: 4),
                   Text(
                     '${_publishDate.day}/${_publishDate.month}/${_publishDate.year}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -530,7 +530,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: AppColors.textSecondary),
+            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
           ],
         ),
       ),
@@ -541,7 +541,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Tags',
           style: TextStyle(
             fontSize: 14,
@@ -565,9 +565,9 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
               borderSide: BorderSide.none,
             ),
             contentPadding: const EdgeInsets.all(16),
-            prefixIcon: Icon(Icons.tag, color: AppColors.textSecondary),
+            prefixIcon: const Icon(Icons.tag, color: AppColors.textSecondary),
           ),
-          style: TextStyle(fontSize: 14, color: AppColors.textPrimary),
+          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
         ),
       ],
     );
@@ -577,7 +577,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Konten Artikel',
           style: TextStyle(
             fontSize: 14,
@@ -682,7 +682,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
                 label: const Text('Simpan Draft'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
-                  side: BorderSide(color: AppColors.primary),
+                  side: const BorderSide(color: AppColors.primary),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

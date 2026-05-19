@@ -47,7 +47,7 @@ class _RwListScreenState extends State<RwListScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -175,7 +175,7 @@ class _RwListScreenState extends State<RwListScreen> {
                   ],
                 ),
               ),
-              Icon(
+              const Icon(
                 Icons.arrow_forward_ios,
                 color: AppColors.textSecondary,
                 size: 16,

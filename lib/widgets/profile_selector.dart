@@ -38,7 +38,7 @@ class ProfileSelector extends StatelessWidget {
                     color: AppColors.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.person,
                     size: 16,
                     color: AppColors.primary,
@@ -48,7 +48,7 @@ class ProfileSelector extends StatelessWidget {
                 Flexible(
                   child: Text(
                     activeProfile.name,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -58,7 +58,7 @@ class ProfileSelector extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                Icon(
+                const Icon(
                   Icons.keyboard_arrow_down,
                   size: 18,
                   color: AppColors.textSecondary,
@@ -87,9 +87,9 @@ class ProfileSwitcherSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.background,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SafeArea(
         child: Column(
@@ -106,8 +106,8 @@ class ProfileSwitcherSheet extends StatelessWidget {
               ),
             ),
             // Header
-            Padding(
-              padding: const EdgeInsets.all(16),
+            const Padding(
+              padding: EdgeInsets.all(16),
               child: Row(
                 children: [
                   Text(
@@ -212,7 +212,7 @@ class _ProfileListTile extends StatelessWidget {
           ),
           subtitle: Text(
             profile.formattedNik,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,
             ),
@@ -224,7 +224,7 @@ class _ProfileListTile extends StatelessWidget {
                     color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
+                  child: const Text(
                     'Aktif',
                     style: TextStyle(
                       fontSize: 12,

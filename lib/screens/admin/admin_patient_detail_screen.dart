@@ -293,15 +293,15 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.badge_outlined,
               size: 16,
               color: AppColors.textSecondary,
             ),
-            SizedBox(width: 6),
+            const SizedBox(width: 6),
             Text(
               '${data['age']} Tahun • ${data['gender']}',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -407,14 +407,14 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
         children: [
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
               letterSpacing: 0.5,
             ),
           ),
-          SizedBox(height: 6),
+          const SizedBox(height: 6),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Row(
@@ -423,17 +423,17 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
               children: [
                 Text(
                   value,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
                 ),
                 if (unit != null && unit.isNotEmpty) ...[
-                  SizedBox(width: 2),
+                  const SizedBox(width: 2),
                   Text(
                     unit,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 10,
                       color: AppColors.textSecondary,
                     ),
@@ -442,9 +442,9 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
               ],
             ),
           ),
-          SizedBox(height: 6),
+          const SizedBox(height: 6),
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: statusColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
@@ -469,7 +469,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Riwayat Screening',
           style: TextStyle(
             fontSize: 18,
@@ -513,13 +513,13 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
               children: [
                 Text(
                   '${record['systolic']}/${record['diastolic']}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
                   record['statusLabel'],
                   style: TextStyle(
@@ -533,7 +533,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
           ),
           Text(
             record['date'],
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
         ],
       ),

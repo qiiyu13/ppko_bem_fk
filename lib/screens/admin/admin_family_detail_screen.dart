@@ -118,7 +118,7 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
                     alignment: Alignment.center,
                     child: Column(
                       children: [
-                        Icon(Icons.group_off,
+                        const Icon(Icons.group_off,
                             size: 48, color: AppColors.textSecondary),
                         const SizedBox(height: 12),
                         Text(

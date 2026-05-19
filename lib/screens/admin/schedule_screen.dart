@@ -228,7 +228,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
               ),
               child: Text(
                 '${today.day} ${IndonesianDate.fullMonth(today.month)} ${today.year}',
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.primary,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -280,7 +280,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             SizedBox(height: ResponsiveSize.spacingSmall),
             Text(
               message,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
             ),
           ],
         ),
@@ -294,7 +294,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
       children: [
         Text(
           title,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -348,7 +348,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             decoration: BoxDecoration(
               color: AppColors.surface.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
-              border: Border(
+              border: const Border(
                 left: BorderSide(color: AppColors.primary, width: 4),
               ),
             ),
@@ -357,7 +357,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
               children: [
                 Text(
                   IndonesianDate.shortMonth(date.month).toUpperCase(),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -366,7 +366,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                 const SizedBox(height: 2),
                 Text(
                   date.day.toString(),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.primary,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -386,7 +386,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                     Expanded(
                       child: Text(
                         schedule['title'],
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -395,7 +395,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                     ),
                     if (hasStatus)
                       Container(
-                        padding: EdgeInsets.symmetric(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 4,
                         ),
@@ -418,35 +418,35 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                 // Time
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.access_time,
                       size: 14,
                       color: AppColors.textSecondary,
                     ),
-                    SizedBox(width: 6),
+                    const SizedBox(width: 6),
                     Text(
                       timeText,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 13,
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 // Location
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.location_on_outlined,
                       size: 14,
                       color: AppColors.textSecondary,
                     ),
-                    SizedBox(width: 6),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         schedule['location'],
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 13,
                         ),
@@ -460,8 +460,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                   InkWell(
                     onTap: () => _openMaps(mapsUrl),
                     borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 4),
                       child: Row(
                         children: [
                           Icon(
@@ -556,7 +556,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                icon: Icon(Icons.chevron_left, color: AppColors.textSecondary),
+                icon: const Icon(Icons.chevron_left, color: AppColors.textSecondary),
                 onPressed: () {
                   setState(() {
                     _focusedDate = DateTime(
@@ -568,14 +568,14 @@ class _ScheduleScreenState extends State<ScheduleScreen>
               ),
               Text(
                 '${IndonesianDate.fullMonth(_focusedDate.month)} ${_focusedDate.year}',
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                icon: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
                 onPressed: () {
                   setState(() {
                     _focusedDate = DateTime(
@@ -597,7 +597,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                     child: Center(
                       child: Text(
                         day,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
@@ -612,8 +612,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           // Calendar grid
           GridView.builder(
             shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
               childAspectRatio: 1,
             ),
@@ -636,7 +636,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                   });
                 },
                 child: Container(
-                  margin: EdgeInsets.all(2),
+                  margin: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
                     color: isSelected ? AppColors.primary : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
@@ -660,7 +660,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                       ),
                       if (hasEvent)
                         Container(
-                          margin: EdgeInsets.only(top: 2),
+                          margin: const EdgeInsets.only(top: 2),
                           width: 5,
                           height: 5,
                           decoration: BoxDecoration(
@@ -685,13 +685,13 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
                 ),
-                SizedBox(width: 6),
-                Text(
+                const SizedBox(width: 6),
+                const Text(
                   'Ada Jadwal',
                   style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                 ),

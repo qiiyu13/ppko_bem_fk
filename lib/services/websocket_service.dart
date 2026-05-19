@@ -38,7 +38,7 @@ class WebSocketService {
     if (token == null) return;
 
     try {
-      final wsUrl = Env.wsBaseUrl;
+      const wsUrl = Env.wsBaseUrl;
 
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
 
