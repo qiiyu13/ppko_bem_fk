@@ -14,99 +14,9 @@ import '../../../services/profile_service.dart';
 import '../../../services/notification_service.dart';
 import '../../../services/api_service.dart';
 import '../../../services/websocket_service.dart';
+import '../../../widgets/mini_sparkline.dart';
 import 'dart:async';
 import 'dart:math' as math;
-
-class MiniSparkline extends StatelessWidget {
-  final Color primaryColor;
-  final List<double> values;
-
-  const MiniSparkline({
-    super.key,
-    required this.primaryColor,
-    required this.values,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _SparklinePainter(
-        values: values,
-        color: primaryColor,
-      ),
-    );
-  }
-}
-
-class _SparklinePainter extends CustomPainter {
-  final List<double> values;
-  final Color color;
-
-  const _SparklinePainter({required this.values, required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (values.length < 2) return;
-
-    final minVal = values.reduce(math.min);
-    final maxVal = values.reduce(math.max);
-    final range = (maxVal - minVal).abs();
-    final effectiveRange = range < 1e-6 ? 1.0 : range;
-
-    double toX(int i) => i / (values.length - 1) * size.width;
-    double toY(double v) =>
-        size.height - ((v - minVal) / effectiveRange) * size.height * 0.8 - size.height * 0.1;
-
-    final points = [
-      for (int i = 0; i < values.length; i++) Offset(toX(i), toY(values[i])),
-    ];
-
-    final path = Path()..moveTo(points.first.dx, points.first.dy);
-    for (int i = 1; i < points.length; i++) {
-      final cp1 = Offset(
-        points[i - 1].dx + (points[i].dx - points[i - 1].dx) / 3,
-        points[i - 1].dy,
-      );
-      final cp2 = Offset(
-        points[i].dx - (points[i].dx - points[i - 1].dx) / 3,
-        points[i].dy,
-      );
-      path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, points[i].dx, points[i].dy);
-    }
-
-    final fillPath = Path.from(path)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-
-    final gradient = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [color.withValues(alpha: 0.35), color.withValues(alpha: 0.0)],
-    );
-
-    canvas.drawPath(
-      fillPath,
-      Paint()
-        ..shader = gradient.createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-        ..style = PaintingStyle.fill,
-    );
-
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = color.withValues(alpha: 0.85)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_SparklinePainter old) =>
-      old.values != values || old.color != color;
-}
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -464,7 +374,7 @@ class _HomeTabState extends State<HomeTab> {
                                                   Text(
                                                     activeProfile?.name ??
                                                         'Pengguna',
-                                                    style: TextStyle(
+                                                    style: const TextStyle(
                                                       fontSize: 20,
                                                       fontWeight:
                                                           FontWeight.w600,
@@ -475,7 +385,7 @@ class _HomeTabState extends State<HomeTab> {
                                                   if (activeProfile != null &&
                                                       profiles.length > 1) ...[
                                                     const SizedBox(width: 4),
-                                                    Icon(
+                                                    const Icon(
                                                       Icons.keyboard_arrow_down,
                                                       color: AppColors.primary,
                                                       size: 24,
@@ -605,7 +515,7 @@ class _HomeTabState extends State<HomeTab> {
                                       children: [
                                         Text(
                                           '$daysUntilAppointment hari menuju',
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontSize: 15,
                                             color: AppColors.textSecondary,
                                             fontWeight: FontWeight.w500,
@@ -616,7 +526,7 @@ class _HomeTabState extends State<HomeTab> {
                                           _nextAppointment?['title']
                                                   as String? ??
                                               'Janji Temu',
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontSize: 20,
                                             fontWeight: FontWeight.bold,
                                             color: AppColors.textPrimary,
@@ -653,8 +563,8 @@ class _HomeTabState extends State<HomeTab> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               if (_metrics.isEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(
                                     vertical: 32,
                                   ),
                                   child: Center(
@@ -665,7 +575,7 @@ class _HomeTabState extends State<HomeTab> {
                                           size: 48,
                                           color: AppColors.textSecondary,
                                         ),
-                                        const SizedBox(height: 12),
+                                        SizedBox(height: 12),
                                         Text(
                                           'Belum ada data',
                                           style: TextStyle(
@@ -888,7 +798,7 @@ class _HomeTabState extends State<HomeTab> {
             child: Row(
               children: [
                 if (isSelected)
-                  Icon(Icons.check, color: AppColors.primary, size: 20),
+                  const Icon(Icons.check, color: AppColors.primary, size: 20),
                 if (isSelected) const SizedBox(width: 8),
                 Text(
                   profile.name,
@@ -1041,7 +951,7 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
                   widget.metric.nameId,
                   maxLines: 1,
                   overflow: TextOverflow.visible,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -1057,7 +967,7 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
                       maxLines: 1,
                       softWrap: false,
                       overflow: TextOverflow.visible,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 21,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
@@ -1070,7 +980,7 @@ class _MetricCardWrapperState extends State<_MetricCardWrapper> {
                       maxLines: 1,
                       softWrap: false,
                       overflow: TextOverflow.visible,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
