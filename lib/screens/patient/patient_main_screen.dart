@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../components/animated_line_navbar.dart';
 import '../../constants/app_colors.dart';
-import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/sync_status_banner.dart';
 import 'tabs/home_tab.dart';
 import 'tabs/profil_tab.dart';
@@ -18,8 +18,9 @@ class PatientMainScreen extends StatefulWidget {
 
 class _PatientMainScreenState extends State<PatientMainScreen> {
   int _currentIndex = 0;
+  final Set<int> _built = {0};
 
-  final List<String> _tabTitles = [
+  final List<String> _tabTitles = const [
     '',
     'Jadwal',
     'Tanaman Toga',
@@ -27,10 +28,61 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
     'Profil',
   ];
 
+  Widget _buildTab(int i) {
+    switch (i) {
+      case 0:
+        return const HomeTab();
+      case 1:
+        return JadwalSayaScreen(onBack: () {}, isEmbedded: true);
+      case 2:
+        return const TanamanTogaTab();
+      case 3:
+        return const AsistenLandingScreen();
+      case 4:
+        return const ProfilTab();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  final List<NavBarItem> _navItems = const [
+    NavBarItem(
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home,
+      label: 'Beranda',
+    ),
+    NavBarItem(
+      icon: Icons.event_note_outlined,
+      activeIcon: Icons.event_note,
+      label: 'Jadwal',
+    ),
+    NavBarItem(
+      icon: Icons.eco_outlined,
+      activeIcon: Icons.eco,
+      label: 'Tanaman',
+    ),
+    NavBarItem(
+      icon: Icons.chat_outlined,
+      activeIcon: Icons.chat,
+      label: 'Asisten',
+    ),
+    NavBarItem(
+      icon: Icons.person_outline,
+      activeIcon: Icons.person,
+      label: 'Profil',
+    ),
+  ];
+
+  void _onTabChanged(int index) {
+    setState(() {
+      _currentIndex = index;
+      _built.add(index);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final showAppBar = _currentIndex != 0;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -70,50 +122,22 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
             )
           : null,
       body: SyncStatusBanner(
-        child: Stack(
-          children: [
-            // Main content area - fills entire screen
-            Positioned.fill(
-              child: IndexedStack(
-                index: _currentIndex,
-                children: [
-                  _buildTab(HomeTab()),
-                  _buildTab(JadwalSayaScreen(onBack: () {}, isEmbedded: true)),
-                  _buildTab(const TanamanTogaTab()),
-                  _buildTab(const AsistenLandingScreen()),
-                  _buildTab(const ProfilTab()),
-                ],
-              ),
-            ),
-            // Floating navbar positioned at bottom
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: bottomPadding,
-              child: CustomBottomNav(
-                currentIndex: _currentIndex,
-                onTap: (index) {
-                  setState(() {
-                    _currentIndex = index;
-                  });
-                },
-              ),
-            ),
-          ],
+        child: IndexedStack(
+          index: _currentIndex,
+          children: List.generate(
+            _navItems.length,
+            (i) => _built.contains(i) ? _buildTab(i) : const SizedBox.shrink(),
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildTab(Widget child) {
-    return Container(
-      color: AppColors.background,
-      child: SafeArea(
-        bottom: false, // Don't apply bottom safe area since we have navbar
-        child: Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + CustomBottomNav.barHeight),
-          child: child,
-        ),
+      bottomNavigationBar: AnimatedLineNavBar(
+        currentIndex: _currentIndex,
+        onTap: _onTabChanged,
+        items: _navItems,
+        selectedColor: AppColors.primary,
+        unselectedColor: AppColors.textSecondary,
+        backgroundColor: AppColors.background,
+        indicatorWidth: 0.6,
       ),
     );
   }

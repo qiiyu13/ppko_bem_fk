@@ -16,15 +16,9 @@ class AdminMainScreen extends StatefulWidget {
 
 class _AdminMainScreenState extends State<AdminMainScreen> {
   int _currentIndex = 0;
+  final Set<int> _built = {0};
 
-  final List<Widget> _screens = [
-    const DashboardTab(),
-    const ScheduleScreen(),
-    const PublishTab(),
-    const AdminProfilTab(),
-  ];
-
-  final List<NavBarItem> _navItems = const [
+  static const _navItems = <NavBarItem>[
     NavBarItem(
       icon: Icons.dashboard_outlined,
       activeIcon: Icons.dashboard,
@@ -47,9 +41,25 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
     ),
   ];
 
+  Widget _buildTab(int i) {
+    switch (i) {
+      case 0:
+        return const DashboardTab();
+      case 1:
+        return const ScheduleScreen();
+      case 2:
+        return const PublishTab();
+      case 3:
+        return const AdminProfilTab();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
   void _onTabChanged(int index) {
     setState(() {
       _currentIndex = index;
+      _built.add(index);
     });
   }
 
@@ -60,7 +70,10 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
       body: SyncStatusBanner(
         child: IndexedStack(
           index: _currentIndex,
-          children: _screens,
+          children: List.generate(
+            _navItems.length,
+            (i) => _built.contains(i) ? _buildTab(i) : const SizedBox.shrink(),
+          ),
         ),
       ),
       bottomNavigationBar: AnimatedLineNavBar(
