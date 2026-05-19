@@ -635,12 +635,8 @@ class _HomeTabState extends State<HomeTab> {
                                 screenWidth: screenWidth,
                               ),
 
-                              // Bottom spacer for nav bar clearance
                               SizedBox(
-                                height: math.max(
-                                  ResponsiveSize.spacingXLarge * 2,
-                                  80.0,
-                                ),
+                                height: MediaQuery.of(context).padding.bottom + 16,
                               ),
                             ],
                           ),
