@@ -1,6 +1,10 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../constants/app_colors.dart';
 import '../../services/appointment_service.dart';
+import '../../services/websocket_service.dart';
 import '../../utils/date_utils.dart';
 import '../../utils/responsive_size.dart';
 
@@ -12,20 +16,32 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
   DateTime _focusedDate = DateTime.now();
   DateTime? _selectedDate;
   bool _isLoading = true;
 
   List<Map<String, dynamic>> _schedules = [];
+  StreamSubscription<Map<String, dynamic>>? _wsSub;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _selectedDate = _focusedDate;
+    WidgetsBinding.instance.addObserver(this);
     _loadAppointments();
+    _wsSub = WebSocketService.instance.dataUpdateStream.listen((payload) {
+      if (payload['type'] == 'appointments' && mounted) {
+        _loadAppointments();
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadAppointments();
   }
 
   Future<void> _loadAppointments() async {
@@ -38,16 +54,32 @@ class _ScheduleScreenState extends State<ScheduleScreen>
         final date = DateTime.parse(a['date'] as String).toLocal();
         final dateOnly = DateTime(date.year, date.month, date.day);
         final isToday = dateOnly == today;
+
+        String notesTime = '';
+        String? mapsUrl;
+        final rawNotes = a['notes'];
+        if (rawNotes is String && rawNotes.isNotEmpty) {
+          try {
+            final parsed = jsonDecode(rawNotes) as Map<String, dynamic>;
+            notesTime = parsed['time'] as String? ?? '';
+            mapsUrl = parsed['mapsUrl'] as String?;
+          } catch (_) {}
+        }
+
+        final fallbackRange =
+            '${date.hour.toString().padLeft(2, '0')}:00 - ${(date.hour + 2).toString().padLeft(2, '0')}:00';
+        final fallbackTime =
+            '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+
         return {
           'id': a['id'],
           'title': a['title'],
           'date': date,
-          'timeRange': isToday ? '${date.hour.toString().padLeft(2, '0')}:00 - ${(date.hour + 2).toString().padLeft(2, '0')}:00' : '${date.hour.toString().padLeft(2, '0')}:00 - ${(date.hour + 2).toString().padLeft(2, '0')}:00',
-          'time': '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}',
+          'timeRange':
+              notesTime.isNotEmpty ? notesTime : (isToday ? fallbackRange : null),
+          'time': notesTime.isNotEmpty ? notesTime : fallbackTime,
           'location': a['location'] ?? 'Lokasi belum ditentukan',
-          'doctor': a['notes'],
-          'patientsCount': 0,
-          'highRiskCount': 0,
+          'mapsUrl': mapsUrl,
           'status': isToday ? 'Segera' : null,
           'type': isToday ? 'today' : 'upcoming',
         };
@@ -71,6 +103,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
 
   @override
   void dispose() {
+    _wsSub?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _tabController.dispose();
     super.dispose();
   }
@@ -271,11 +305,24 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     );
   }
 
+  Future<void> _openMaps(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak dapat membuka Google Maps')),
+      );
+    }
+  }
+
   Widget _buildScheduleCard(Map<String, dynamic> schedule, bool isToday) {
     final date = schedule['date'] as DateTime;
     final hasStatus = schedule['status'] != null;
-    final hasDoctor = schedule['doctor'] != null;
-    final highRiskCount = schedule['highRiskCount'] as int;
+    final mapsUrl = schedule['mapsUrl'] as String?;
+    final hasMaps = mapsUrl != null && mapsUrl.isNotEmpty;
+    final timeRange = schedule['timeRange'] as String?;
+    final timeText = timeRange ?? schedule['time'] as String;
 
     return Container(
       margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
@@ -378,7 +425,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                     ),
                     SizedBox(width: 6),
                     Text(
-                      isToday ? schedule['timeRange'] : schedule['time'],
+                      timeText,
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 13,
@@ -408,61 +455,38 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                     ),
                   ],
                 ),
-                if (hasDoctor || highRiskCount > 0) ...[
+                if (hasMaps) ...[
                   SizedBox(height: ResponsiveSize.spacingSmall),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Doctor or Patient Count
-                      if (hasDoctor)
-                        Text(
-                          schedule['doctor'],
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                  InkWell(
+                    onTap: () => _openMaps(mapsUrl),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.map_outlined,
+                            size: 14,
+                            color: AppColors.primary,
                           ),
-                        )
-                      else if (schedule['patientsCount'] != null)
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.people_outline,
-                              size: 14,
+                          SizedBox(width: 6),
+                          Text(
+                            'Lihat di Google Maps',
+                            style: TextStyle(
                               color: AppColors.primary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
                             ),
-                            SizedBox(width: 4),
-                            Text(
-                              '${schedule['patientsCount']} pasien',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      // High Risk Badge
-                      if (highRiskCount > 0)
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.warning_amber,
-                              size: 14,
-                              color: AppColors.error,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              '$highRiskCount high risk',
-                              style: TextStyle(
-                                color: AppColors.error,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                    ],
+                          ),
+                          SizedBox(width: 2),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 12,
+                            color: AppColors.primary,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ],
@@ -602,10 +626,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
               final date = DateTime(_focusedDate.year, _focusedDate.month, day);
               final isSelected =
                   _selectedDate != null && _isSameDay(date, _selectedDate!);
-              final isToday = _isSameDay(
-                date,
-                DateTime.now(),
-              ); // Mock today
+              final isToday = _isSameDay(date, DateTime.now());
               final hasEvent = _markedDates.any((d) => _isSameDay(d, date));
 
               return GestureDetector(
@@ -644,7 +665,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                           height: 5,
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? AppColors.textOnPrimary
+                                ? AppColors.background
                                 : AppColors.primary,
                             shape: BoxShape.circle,
                           ),
