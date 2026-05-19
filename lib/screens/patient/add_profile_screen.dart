@@ -216,7 +216,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
       await ProfileService.instance.createProfile(
         nik: _nikController.text,
         name: _nameController.text,
-        gender: _selectedGender,
+        gender: _selectedGender.toLowerCase(),
         birthDate: _selectedBirthDate!,
         bloodType: _selectedBloodType,
         address: _addressController.text.isEmpty ? null : _addressController.text,

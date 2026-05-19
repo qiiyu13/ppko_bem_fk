@@ -34,7 +34,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameController = TextEditingController(text: widget.profile.name);
     _addressController = TextEditingController(text: widget.profile.address ?? '');
     _phoneController = TextEditingController(text: widget.profile.phone ?? '');
-    _selectedGender = widget.profile.gender;
+    final g = widget.profile.gender.toLowerCase();
+    _selectedGender = g == 'wanita' ? 'Wanita' : 'Pria';
     _selectedBloodType = widget.profile.bloodType;
     _selectedBirthDate = widget.profile.birthDate;
   }
@@ -326,7 +327,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final updatedProfile = widget.profile.copyWith(
         name: _nameController.text,
-        gender: _selectedGender,
+        gender: _selectedGender.toLowerCase(),
         birthDate: _selectedBirthDate!,
         bloodType: _selectedBloodType,
         address: _addressController.text.isEmpty ? null : _addressController.text,

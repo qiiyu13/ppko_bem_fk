@@ -13,7 +13,7 @@ router.get('/:id', controller.getProfile);
 router.post('/', [
   body('name').isString().notEmpty(),
   body('nik').isString().notEmpty(),
-  body('gender').isIn(['pria', 'wanita']),
+  body('gender').customSanitizer((v) => typeof v === 'string' ? v.toLowerCase() : v).isIn(['pria', 'wanita']),
   body('birthDate').isISO8601(),
   validate,
 ], controller.createProfile);
@@ -21,7 +21,7 @@ router.post('/', [
 router.put('/:id', [
   body('name').optional().isString().notEmpty(),
   body('nik').optional().isString().notEmpty(),
-  body('gender').optional().isIn(['pria', 'wanita']),
+  body('gender').optional().customSanitizer((v) => typeof v === 'string' ? v.toLowerCase() : v).isIn(['pria', 'wanita']),
   body('birthDate').optional().isISO8601(),
   body('updatedAt').isISO8601().withMessage('updatedAt is required for conflict detection'),
   validate,

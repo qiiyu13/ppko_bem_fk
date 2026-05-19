@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 import '../exceptions/sync_conflict_exception.dart';
 import '../models/family_profile.dart';
@@ -132,7 +133,15 @@ class ProfileService {
       }
       await CacheService.saveProfile(profile.id, profile.toJson());
       return profile;
-    } catch (e) {
+    } on DioException catch (e) {
+      // Server responded with an error (4xx/5xx) — surface it; do NOT fake a local profile.
+      if (e.response != null) {
+        final msg = e.response?.data is Map
+            ? (e.response!.data['error']?['message'] ?? e.response!.data['message'])
+            : null;
+        throw Exception(msg ?? 'Gagal membuat profil (${e.response?.statusCode})');
+      }
+      // Genuine network failure — queue for later sync and reflect locally.
       final tempId = const Uuid().v4();
       final profile = FamilyProfile(
         id: tempId,

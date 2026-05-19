@@ -46,7 +46,7 @@ class FamilyProfile {
       id: map['id'] as String,
       nik: map['nik'] as String,
       name: map['name'] as String,
-      gender: map['gender'] as String,
+      gender: _normalizeGender(map['gender'] as String),
       birthDate: DateTime.parse(map['birth_date'] as String),
       bloodType: map['blood_type'] as String?,
       address: map['address'] as String?,
@@ -61,7 +61,7 @@ class FamilyProfile {
       id: map['id'] as String,
       nik: map['nik'] as String,
       name: map['name'] as String,
-      gender: map['gender'] as String,
+      gender: _normalizeGender(map['gender'] as String),
       birthDate: DateTime.parse(map['birthDate'] as String),
       bloodType: map['bloodType'] as String?,
       address: map['address'] as String?,
@@ -115,5 +115,9 @@ class FamilyProfile {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  static String _normalizeGender(String raw) {
+    return raw.toLowerCase() == 'wanita' ? 'Wanita' : 'Pria';
   }
 }
