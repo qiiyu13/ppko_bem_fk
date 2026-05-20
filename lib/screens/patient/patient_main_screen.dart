@@ -1,6 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../components/animated_line_navbar.dart';
 import '../../constants/app_colors.dart';
+import '../../models/family_profile.dart';
+import '../../services/profile_service.dart';
 import '../../widgets/sync_status_banner.dart';
 import 'tabs/home_tab.dart';
 import 'tabs/profil_tab.dart';
@@ -80,12 +84,87 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
     });
   }
 
+  void _showQRCodeDialog(BuildContext context, FamilyProfile profile) {
+    final qrData = jsonEncode({
+      'profileId': profile.id,
+      'name': profile.name,
+      'nik': profile.nik,
+    });
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          profile.name,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            QrImageView(
+              data: qrData,
+              version: QrVersions.auto,
+              size: 220,
+              backgroundColor: Colors.white,
+              eyeStyle: const QrEyeStyle(
+                eyeShape: QrEyeShape.square,
+                color: Colors.black,
+              ),
+              dataModuleStyle: const QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.square,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'NIK: ${profile.formattedNik}',
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Tutup',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final showAppBar = _currentIndex != 0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: _currentIndex == 0
+          ? StreamBuilder<FamilyProfile?>(
+              stream: ProfileService.instance.activeProfileStream,
+              initialData: ProfileService.instance.activeProfile,
+              builder: (context, snapshot) {
+                final profile = snapshot.data;
+                if (profile == null) return const SizedBox.shrink();
+                return FloatingActionButton(
+                  heroTag: 'patient_home_qr_fab',
+                  onPressed: () => _showQRCodeDialog(context, profile),
+                  backgroundColor: AppColors.primary,
+                  child: const Icon(Icons.qr_code, color: Colors.white),
+                );
+              },
+            )
+          : null,
       appBar: showAppBar
           ? AppBar(
               backgroundColor: AppColors.background,

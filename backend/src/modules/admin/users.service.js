@@ -10,7 +10,7 @@ const getUsers = async (role) => {
     where,
     orderBy: { createdAt: 'desc' },
     select: {
-      id: true, kkNumber: true, responsibleName: true, role: true, isActive: true,
+      id: true, kkNumber: true, username: true, responsibleName: true, position: true, phone: true, role: true, isActive: true,
       regionId: true, createdAt: true, updatedAt: true,
       region: { select: { id: true, name: true, type: true } },
     },
@@ -37,6 +37,7 @@ const createUser = async (data) => {
       kkNumber: isAdminRole ? null : data.kkNumber,
       username: isAdminRole ? data.username : null,
       responsibleName: data.responsibleName,
+      position: data.position || null,
       password: hashedPassword,
       phone: data.phone || null,
       role,
@@ -44,7 +45,7 @@ const createUser = async (data) => {
       regionId: data.regionId || null,
     },
     select: {
-      id: true, kkNumber: true, username: true, responsibleName: true, role: true, isActive: true,
+      id: true, kkNumber: true, username: true, responsibleName: true, position: true, phone: true, role: true, isActive: true,
       regionId: true, createdAt: true,
       region: { select: { id: true, name: true, type: true } },
     },
@@ -54,6 +55,8 @@ const createUser = async (data) => {
 const updateUser = async (id, data) => {
   const updateData = {};
   if (data.responsibleName !== undefined) updateData.responsibleName = data.responsibleName;
+  if (data.position !== undefined) updateData.position = data.position || null;
+  if (data.username !== undefined) updateData.username = data.username || null;
   if (data.phone !== undefined) updateData.phone = data.phone || null;
   if (data.role !== undefined) updateData.role = data.role;
   if (data.isActive !== undefined) updateData.isActive = data.isActive;
@@ -64,8 +67,8 @@ const updateUser = async (id, data) => {
     where: { id },
     data: updateData,
     select: {
-      id: true, kkNumber: true, responsibleName: true, role: true, isActive: true,
-      regionId: true, createdAt: true,
+      id: true, kkNumber: true, username: true, responsibleName: true, position: true, phone: true, role: true, isActive: true,
+      regionId: true, createdAt: true, updatedAt: true,
       region: { select: { id: true, name: true, type: true } },
     },
   });

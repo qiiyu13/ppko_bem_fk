@@ -31,19 +31,23 @@ class AdminService {
   }
 
   static Future<Map<String, dynamic>> createUser({
-    required String kkNumber,
+    String? kkNumber,
+    String? username,
     required String responsibleName,
     required String password,
     String? phone,
+    String? position,
     String role = 'ADMIN',
     bool isActive = true,
     String? regionId,
   }) async {
     final response = await ApiService.post('/admin/users', data: {
-      'kkNumber': kkNumber,
+      'kkNumber': ?kkNumber,
+      'username': ?username,
       'responsibleName': responsibleName,
       'password': password,
       'phone': ?phone,
+      'position': ?position,
       'role': role,
       'isActive': isActive,
       'regionId': ?regionId,
@@ -52,8 +56,10 @@ class AdminService {
   }
 
   static Future<Map<String, dynamic>> updateUser(String id, {
+    String? username,
     String? responsibleName,
     String? phone,
+    String? position,
     String? role,
     bool? isActive,
     String? password,
@@ -61,8 +67,10 @@ class AdminService {
     required DateTime updatedAt,
   }) async {
     final response = await ApiService.put('/admin/users/$id', data: {
+      'username': ?username,
       'responsibleName': ?responsibleName,
       'phone': ?phone,
+      'position': ?position,
       'role': ?role,
       'isActive': ?isActive,
       'password': ?password,

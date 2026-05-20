@@ -20,6 +20,7 @@ model User {
   password        String
   phone           String?
   responsibleName String   @map("responsible_name")
+  position        String?  @db.VarChar(100)
   role            Role     @default(PATIENT)
   isActive        Boolean  @default(true) @map("is_active")
   fcmToken        String?  @map("fcm_token")

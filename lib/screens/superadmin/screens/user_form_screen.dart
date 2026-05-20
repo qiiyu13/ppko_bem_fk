@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
+import '../../../services/admin_service.dart';
 import '../../../utils/responsive_size.dart';
 
 class UserFormScreen extends StatefulWidget {
@@ -12,39 +13,82 @@ class UserFormScreen extends StatefulWidget {
 }
 
 class _UserFormScreenState extends State<UserFormScreen> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _idController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  String _selectedRole = 'Dokter Umum';
-  String _selectedStatus = 'Active';
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _positionController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
 
-  final List<String> _roles = [
-    'Super Administrator',
-    'Dokter Umum',
-    'Dokter perut',
-    'Petugas Kesehatan',
-  ];
-
-  final List<String> _statuses = ['Active', 'Inactive'];
+  bool _isActive = true;
+  bool _obscurePassword = true;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    if (widget.admin != null) {
-      _nameController.text = widget.admin!['name'];
-      _idController.text = widget.admin!['id'];
-      _phoneController.text = widget.admin!['phone'];
-      _selectedRole = widget.admin!['role'];
-      _selectedStatus = widget.admin!['status'];
+    final a = widget.admin;
+    if (a != null) {
+      _nameController.text = (a['responsibleName'] ?? a['name'] ?? '') as String;
+      _usernameController.text = (a['username'] ?? '') as String? ?? '';
+      _positionController.text = (a['position'] ?? '') as String? ?? '';
+      _phoneController.text = (a['phone'] ?? '') as String? ?? '';
+      _isActive = a['isActive'] == true;
     }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _idController.dispose();
+    _usernameController.dispose();
+    _positionController.dispose();
     _phoneController.dispose();
+    _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSubmitting = true);
+    final isEdit = widget.admin != null;
+    try {
+      if (isEdit) {
+        await AdminService.updateUser(
+          widget.admin!['id'] as String,
+          username: _usernameController.text.trim(),
+          responsibleName: _nameController.text.trim(),
+          position: _positionController.text.trim(),
+          phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+          isActive: _isActive,
+          password: _passwordController.text.isEmpty ? null : _passwordController.text,
+          updatedAt: DateTime.parse(widget.admin!['updatedAt'] as String),
+        );
+      } else {
+        await AdminService.createUser(
+          username: _usernameController.text.trim(),
+          responsibleName: _nameController.text.trim(),
+          password: _passwordController.text,
+          position: _positionController.text.trim(),
+          phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+          isActive: _isActive,
+          role: 'ADMIN',
+        );
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(isEdit ? 'Admin diperbarui' : 'Admin ditambahkan'),
+        backgroundColor: AppColors.statusGreen,
+      ));
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Gagal: $e'),
+        backgroundColor: Colors.red,
+      ));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -72,128 +116,121 @@ class _UserFormScreenState extends State<UserFormScreen> {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTextField(
-                label: 'Nama Lengkap',
-                hint: 'Masukkan nama',
-                controller: _nameController,
-              ),
-
-              SizedBox(height: ResponsiveSize.spacingLarge),
-
-              _buildTextField(
-                label: 'ID/NIK',
-                hint: 'Masukkan ID',
-                controller: _idController,
-              ),
-
-              SizedBox(height: ResponsiveSize.spacingLarge),
-
-              _buildDropdown(
-                label: 'Jabatan',
-                value: _selectedRole,
-                items: _roles,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedRole = value!;
-                  });
-                },
-              ),
-
-              SizedBox(height: ResponsiveSize.spacingLarge),
-
-              _buildTextField(
-                label: 'Nomor Telepon',
-                hint: 'Contoh: 081234567890',
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-              ),
-
-              SizedBox(height: ResponsiveSize.spacingLarge),
-
-              _buildDropdown(
-                label: 'Status',
-                value: _selectedStatus,
-                items: _statuses,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedStatus = value!;
-                  });
-                },
-              ),
-
-              SizedBox(height: ResponsiveSize.spacingXLarge * 2),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isEdit
-                              ? 'Data admin berhasil diperbarui!'
-                              : 'Admin baru berhasil ditambahkan!',
-                        ),
-                        backgroundColor: AppColors.statusGreen,
-                      ),
-                    );
-                    Navigator.pop(context);
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _field(
+                  label: 'Nama',
+                  hint: 'Nama lengkap',
+                  controller: _nameController,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Nama wajib diisi' : null,
+                ),
+                SizedBox(height: ResponsiveSize.spacingLarge),
+                _field(
+                  label: 'Username',
+                  hint: 'Username untuk login',
+                  controller: _usernameController,
+                  validator: (v) {
+                    final t = v?.trim() ?? '';
+                    if (t.isEmpty) return 'Username wajib diisi';
+                    if (t.length < 3) return 'Minimal 3 karakter';
+                    return null;
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.textOnPrimary,
-                    padding: EdgeInsets.symmetric(
-                      vertical: ResponsiveSize.paddingMedium,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                ),
+                SizedBox(height: ResponsiveSize.spacingLarge),
+                _field(
+                  label: 'Jabatan',
+                  hint: 'Contoh: Dokter Umum',
+                  controller: _positionController,
+                ),
+                SizedBox(height: ResponsiveSize.spacingLarge),
+                _field(
+                  label: 'Nomor Telepon',
+                  hint: 'Contoh: 081234567890',
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                ),
+                SizedBox(height: ResponsiveSize.spacingLarge),
+                _field(
+                  label: isEdit ? 'Password (kosongkan jika tidak diubah)' : 'Password',
+                  hint: 'Minimal 6 karakter',
+                  controller: _passwordController,
+                  obscure: _obscurePassword,
+                  suffix: IconButton(
+                    icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        color: AppColors.textSecondary),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
-                  child: Text(
-                    isEdit ? 'Simpan Perubahan' : 'Tambah Admin',
-                    style: TextStyle(
-                      fontSize: ResponsiveSize.fontLarge,
-                      fontWeight: FontWeight.bold,
+                  validator: (v) {
+                    if (isEdit && (v == null || v.isEmpty)) return null;
+                    if (v == null || v.length < 6) return 'Minimal 6 karakter';
+                    return null;
+                  },
+                ),
+                SizedBox(height: ResponsiveSize.spacingLarge),
+                _statusToggle(),
+                SizedBox(height: ResponsiveSize.spacingXLarge * 2),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isSubmitting ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.textOnPrimary,
+                      padding: EdgeInsets.symmetric(vertical: ResponsiveSize.paddingMedium),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            height: 22, width: 22,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : Text(
+                            isEdit ? 'Simpan Perubahan' : 'Tambah Admin',
+                            style: TextStyle(fontSize: ResponsiveSize.fontLarge, fontWeight: FontWeight.bold),
+                          ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTextField({
+  Widget _field({
     required String label,
     required String hint,
-    TextEditingController? controller,
+    required TextEditingController controller,
     TextInputType? keyboardType,
+    bool obscure = false,
+    Widget? suffix,
+    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: ResponsiveSize.fontMedium,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
+        Text(label,
+            style: TextStyle(
+              fontSize: ResponsiveSize.fontMedium,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            )),
         SizedBox(height: ResponsiveSize.spacingSmall),
-        TextField(
+        TextFormField(
           controller: controller,
           keyboardType: keyboardType,
+          obscureText: obscure,
+          validator: validator,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(color: AppColors.surface),
+            suffixIcon: suffix,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppColors.surface),
@@ -216,42 +253,42 @@ class _UserFormScreenState extends State<UserFormScreen> {
     );
   }
 
-  Widget _buildDropdown({
-    required String label,
-    required String value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
+  Widget _statusToggle() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: ResponsiveSize.fontMedium,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
+        Text('Status',
+            style: TextStyle(
+              fontSize: ResponsiveSize.fontMedium,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            )),
         SizedBox(height: ResponsiveSize.spacingSmall),
         Container(
           padding: EdgeInsets.symmetric(
             horizontal: ResponsiveSize.paddingMedium,
+            vertical: ResponsiveSize.paddingSmall,
           ),
           decoration: BoxDecoration(
             border: Border.all(color: AppColors.surface),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: value,
-              isExpanded: true,
-              icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
-              items: items.map((String item) {
-                return DropdownMenuItem<String>(value: item, child: Text(item));
-              }).toList(),
-              onChanged: onChanged,
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(_isActive ? 'Aktif' : 'Nonaktif',
+                    style: TextStyle(
+                      fontSize: ResponsiveSize.fontMedium,
+                      color: _isActive ? AppColors.statusGreen : AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    )),
+              ),
+              Switch(
+                value: _isActive,
+                activeThumbColor: AppColors.primary,
+                onChanged: (v) => setState(() => _isActive = v),
+              ),
+            ],
           ),
         ),
       ],
