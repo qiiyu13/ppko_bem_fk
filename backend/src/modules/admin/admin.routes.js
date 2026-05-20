@@ -16,7 +16,8 @@ router.get('/patients/:id', adminController.getPatientDetail);
 // User Management
 router.get('/users', usersController.getUsers);
 router.post('/users', [
-  body('kkNumber').isString().isLength({ min: 16, max: 16 }).withMessage('KK number must be exactly 16 digits'),
+  body('kkNumber').optional({ nullable: true }).isString().isLength({ min: 16, max: 16 }).withMessage('KK number must be exactly 16 digits'),
+  body('username').optional({ nullable: true }).isString().isLength({ min: 3, max: 50 }).withMessage('Username must be 3-50 characters'),
   body('responsibleName').isString().notEmpty(),
   body('password').isString().isLength({ min: 6 }),
   body('role').optional().isIn(['ADMIN', 'SUPERADMIN', 'PATIENT']),

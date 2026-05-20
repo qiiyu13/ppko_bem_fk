@@ -18,22 +18,33 @@ const getUsers = async (role) => {
 };
 
 const createUser = async (data) => {
-  const existing = await prisma.user.findUnique({ where: { kkNumber: data.kkNumber } });
-  if (existing) throw Object.assign(new Error('KK number already registered'), { code: 'P2002' });
+  const role = data.role || 'ADMIN';
+  const isAdminRole = role === 'ADMIN' || role === 'SUPERADMIN';
+
+  if (isAdminRole) {
+    if (!data.username) throw Object.assign(new Error('Username is required for admin/superadmin'), { statusCode: 400 });
+    const existing = await prisma.user.findUnique({ where: { username: data.username } });
+    if (existing) throw Object.assign(new Error('Username already taken'), { code: 'P2002' });
+  } else {
+    if (!data.kkNumber) throw Object.assign(new Error('KK number is required for patients'), { statusCode: 400 });
+    const existing = await prisma.user.findUnique({ where: { kkNumber: data.kkNumber } });
+    if (existing) throw Object.assign(new Error('KK number already registered'), { code: 'P2002' });
+  }
 
   const hashedPassword = await hashPassword(data.password);
   return prisma.user.create({
     data: {
-      kkNumber: data.kkNumber,
+      kkNumber: isAdminRole ? null : data.kkNumber,
+      username: isAdminRole ? data.username : null,
       responsibleName: data.responsibleName,
       password: hashedPassword,
       phone: data.phone || null,
-      role: data.role || 'ADMIN',
+      role,
       isActive: data.isActive !== undefined ? data.isActive : true,
       regionId: data.regionId || null,
     },
     select: {
-      id: true, kkNumber: true, responsibleName: true, role: true, isActive: true,
+      id: true, kkNumber: true, username: true, responsibleName: true, role: true, isActive: true,
       regionId: true, createdAt: true,
       region: { select: { id: true, name: true, type: true } },
     },
