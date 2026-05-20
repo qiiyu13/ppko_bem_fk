@@ -20,19 +20,47 @@ class NotificationService {
   NotificationService._();
 
   static const _localCacheKey = 'cached_notifications';
+  static const _enabledKey = 'notifications_enabled';
 
   final ValueNotifier<int> unreadCount = ValueNotifier(0);
   final ValueNotifier<List<NotificationModel>> notifications =
       ValueNotifier([]);
+  final ValueNotifier<bool> enabled = ValueNotifier(true);
 
   final _localNotif = FlutterLocalNotificationsPlugin();
 
   Future<void> initialize() async {
     await _loadLocalCache();
-    if (PlatformUtil.firebaseAvailable && !kIsWeb) {
+    await _loadEnabled();
+    if (PlatformUtil.firebaseAvailable && !kIsWeb && enabled.value) {
       await _initFcm();
     }
     fetchFromApi();
+  }
+
+  Future<void> _loadEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      enabled.value = prefs.getBool(_enabledKey) ?? true;
+    } catch (_) {}
+  }
+
+  Future<void> setEnabled(bool value) async {
+    enabled.value = value;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_enabledKey, value);
+    } catch (_) {}
+
+    if (!PlatformUtil.firebaseAvailable || kIsWeb) return;
+
+    try {
+      if (value) {
+        await _initFcm();
+      } else {
+        await FirebaseMessaging.instance.deleteToken();
+      }
+    } catch (_) {}
   }
 
   Future<void> _initFcm() async {
@@ -81,6 +109,7 @@ class NotificationService {
   }
 
   void _handleForegroundMessage(RemoteMessage message) {
+    if (!enabled.value) return;
     final notif = _remoteToModel(message);
     addLocal(notif);
 

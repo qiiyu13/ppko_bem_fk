@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../screens/welcome_screen.dart';
+import '../../../screens/common/settings/about_screen.dart';
+import '../../../screens/common/settings/help_screen.dart';
+import '../../../screens/common/settings/language_screen.dart';
+import '../../../screens/common/settings/notification_settings_screen.dart';
 import '../../../services/profile_service.dart';
 
 const String _kAppVersion = '1.0.0';
 
-void _showComingSoon(BuildContext context, String feature) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text('$feature segera hadir')),
-  );
+void _push(BuildContext context, Widget screen) {
+  Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
 }
 
 class SettingsTab extends StatelessWidget {
@@ -53,7 +55,7 @@ class SettingsTab extends StatelessWidget {
                 icon: Icons.notifications_outlined,
                 title: 'Notifikasi',
                 subtitle: 'Atur notifikasi pengingat',
-                onTap: () => _showComingSoon(context, 'Notifikasi'),
+                onTap: () => _push(context, const NotificationSettingsScreen()),
                 padding: padding,
                 spacing: spacing,
               ),
@@ -62,7 +64,7 @@ class SettingsTab extends StatelessWidget {
                 icon: Icons.language_outlined,
                 title: 'Bahasa',
                 subtitle: 'Bahasa Indonesia',
-                onTap: () => _showComingSoon(context, 'Bahasa'),
+                onTap: () => _push(context, const LanguageScreen()),
                 padding: padding,
                 spacing: spacing,
               ),
@@ -71,7 +73,7 @@ class SettingsTab extends StatelessWidget {
                 icon: Icons.help_outline,
                 title: 'Bantuan',
                 subtitle: 'Pusat bantuan dan FAQ',
-                onTap: () => _showComingSoon(context, 'Bantuan'),
+                onTap: () => _push(context, const HelpScreen()),
                 padding: padding,
                 spacing: spacing,
               ),
@@ -80,7 +82,7 @@ class SettingsTab extends StatelessWidget {
                 icon: Icons.info_outline,
                 title: 'Tentang Aplikasi',
                 subtitle: 'Versi $_kAppVersion',
-                onTap: () {},
+                onTap: () => _push(context, const AboutScreen()),
                 padding: padding,
                 spacing: spacing,
               ),

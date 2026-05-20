@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
+import '../../../screens/common/settings/about_screen.dart';
+import '../../../screens/common/settings/help_screen.dart';
+import '../../../screens/common/settings/language_screen.dart';
+import '../../../screens/common/settings/notification_settings_screen.dart';
 import '../../../screens/welcome_screen.dart';
 import '../../../utils/responsive_size.dart';
+
+void _push(BuildContext context, Widget screen) {
+  Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+}
 
 class SuperadminSettingsTab extends StatelessWidget {
   const SuperadminSettingsTab({super.key});
@@ -43,28 +51,28 @@ class SuperadminSettingsTab extends StatelessWidget {
                         icon: Icons.notifications_outlined,
                         title: 'Notifikasi',
                         subtitle: 'Atur notifikasi pengingat',
-                        onTap: () {},
+                        onTap: () => _push(context, const NotificationSettingsScreen()),
                       ),
 
                       _buildSettingsItem(
                         icon: Icons.language_outlined,
                         title: 'Bahasa',
                         subtitle: 'Bahasa Indonesia',
-                        onTap: () {},
+                        onTap: () => _push(context, const LanguageScreen()),
                       ),
 
                       _buildSettingsItem(
                         icon: Icons.help_outline,
                         title: 'Bantuan',
                         subtitle: 'Pusat bantuan dan FAQ',
-                        onTap: () {},
+                        onTap: () => _push(context, const HelpScreen()),
                       ),
 
                       _buildSettingsItem(
                         icon: Icons.info_outline,
                         title: 'Tentang Aplikasi',
                         subtitle: 'Versi 1.0.0',
-                        onTap: () {},
+                        onTap: () => _push(context, const AboutScreen()),
                       ),
 
                       const Spacer(),
