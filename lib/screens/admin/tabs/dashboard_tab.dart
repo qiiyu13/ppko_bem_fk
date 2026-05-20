@@ -54,6 +54,22 @@ class _DashboardTabState extends State<DashboardTab> {
     });
   }
 
+  Future<Map<String, dynamic>> _safeStats() async {
+    try {
+      return await ScreeningService.getStats();
+    } catch (_) {
+      return {'total': 0, 'categories': {}};
+    }
+  }
+
+  Future<Map<String, dynamic>> _safeRegionStats() async {
+    try {
+      return await RegionService.getStats();
+    } catch (_) {
+      return {};
+    }
+  }
+
   Future<void> _fetchPatients({bool loadMore = false}) async {
     if (loadMore) {
       setState(() => _isLoadingMore = true);
@@ -89,8 +105,8 @@ class _DashboardTabState extends State<DashboardTab> {
         });
       } else {
         final results = await Future.wait([
-          ScreeningService.getStats(),
-          RegionService.getStats(),
+          _safeStats(),
+          _safeRegionStats(),
           ApiService.get('/admin/patients', queryParameters: queryParams),
         ]);
         final screeningStats = results[0] as Map<String, dynamic>;
