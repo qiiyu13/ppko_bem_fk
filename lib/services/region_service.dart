@@ -1,6 +1,12 @@
 import 'api_service.dart';
 
 class RegionService {
+  static Future<List<Map<String, dynamic>>> getVillages() async {
+    final response = await ApiService.get('/regions/villages');
+    final List<dynamic> data = response.data['data'] ?? [];
+    return data.cast<Map<String, dynamic>>();
+  }
+
   static Future<List<Map<String, dynamic>>> getRegions() async {
     final response = await ApiService.get('/regions');
     final List<dynamic> data = response.data['data'] ?? [];

@@ -2,47 +2,77 @@ import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
-import 'rt_list_screen.dart';
+import 'rw_list_screen.dart';
 
-class RwListScreen extends StatefulWidget {
-  final String? villageId;
-  final String? villageName;
-
-  const RwListScreen({super.key, this.villageId, this.villageName});
+class VillageListScreen extends StatefulWidget {
+  const VillageListScreen({super.key});
 
   @override
-  State<RwListScreen> createState() => _RwListScreenState();
+  State<VillageListScreen> createState() => _VillageListScreenState();
 }
 
-class _RwListScreenState extends State<RwListScreen> {
-  List<Map<String, dynamic>> _rws = [];
+class _VillageListScreenState extends State<VillageListScreen> {
+  List<Map<String, dynamic>> _villages = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadRegions();
+    _loadVillages();
   }
 
-  Future<void> _loadRegions() async {
+  Future<void> _loadVillages() async {
     try {
-      final regions = await RegionService.getRegions();
-      final rwList = regions.where((r) {
-        if (r['type'] != 'RW') return false;
-        if (widget.villageId != null) {
-          final parent = r['parent'] as Map<String, dynamic>?;
-          return parent != null && parent['id'] == widget.villageId;
-        }
-        return true;
-      }).toList();
+      final villages = await RegionService.getVillages();
       setState(() {
-        _rws = rwList;
+        _villages = villages;
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _addVillage() async {
+    final controller = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Tambah Desa/Kelurahan'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Nama desa/kelurahan',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Tambah', style: TextStyle(color: AppColors.textOnPrimary)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && controller.text.trim().isNotEmpty) {
+      try {
+        await RegionService.createRegion(
+          type: 'VILLAGE',
+          name: controller.text.trim(),
+        );
+        _loadVillages();
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal menambah desa'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -60,7 +90,7 @@ class _RwListScreenState extends State<RwListScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          widget.villageName != null ? 'RW — ${widget.villageName}' : 'Daftar RW',
+          'Daftar Desa/Kelurahan',
           style: TextStyle(
             color: AppColors.primary,
             fontSize: ResponsiveSize.fontXLarge,
@@ -69,44 +99,44 @@ class _RwListScreenState extends State<RwListScreen> {
         ),
         centerTitle: true,
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addVillage,
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.add, color: AppColors.textOnPrimary),
+      ),
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
             : RefreshIndicator(
-                onRefresh: _loadRegions,
+                onRefresh: _loadVillages,
                 color: AppColors.primary,
-                child: _rws.isEmpty
+                child: _villages.isEmpty
                     ? ListView(
                         children: const [
                           SizedBox(height: 100),
                           Center(
                             child: Text(
-                              'Belum ada RW',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 16,
-                              ),
+                              'Belum ada desa/kelurahan.\nTambah untuk mengaktifkan pendaftaran pasien.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
                             ),
                           ),
                         ],
                       )
                     : ListView.builder(
                         padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                        itemCount: _rws.length,
-                        itemBuilder: (context, index) {
-                          final rw = _rws[index];
-                          return _buildRwCard(context, rw);
-                        },
+                        itemCount: _villages.length,
+                        itemBuilder: (context, index) =>
+                            _buildVillageCard(_villages[index]),
                       ),
               ),
       ),
     );
   }
 
-  Widget _buildRwCard(BuildContext context, Map<String, dynamic> rw) {
-    final children = rw['children'] as List<dynamic>? ?? [];
-    final count = rw['_count'] as Map<String, dynamic>? ?? {};
-    final userCount = count['users'] as int? ?? 0;
+  Widget _buildVillageCard(Map<String, dynamic> village) {
+    final count = village['_count'] as Map<String, dynamic>? ?? {};
+    final rwCount = count['children'] as int? ?? 0;
 
     return Container(
       margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
@@ -124,15 +154,12 @@ class _RwListScreenState extends State<RwListScreen> {
       ),
       child: InkWell(
         onTap: () {
-          final children = (rw['children'] as List<dynamic>? ?? [])
-              .cast<Map<String, dynamic>>();
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => RtListScreen(
-                rwId: rw['id'] as String,
-                rwName: rw['name'] as String? ?? 'RW',
-                rtData: children,
+              builder: (context) => RwListScreen(
+                villageId: village['id'] as String,
+                villageName: village['name'] as String,
               ),
             ),
           );
@@ -143,22 +170,13 @@ class _RwListScreenState extends State<RwListScreen> {
           child: Row(
             children: [
               Container(
-                width: 60,
-                height: 60,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Center(
-                  child: Text(
-                    rw['name']?.toString() ?? 'RW',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: ResponsiveSize.fontLarge,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+                child: const Icon(Icons.location_city, color: AppColors.primary, size: 28),
               ),
               SizedBox(width: ResponsiveSize.paddingMedium),
               Expanded(
@@ -166,7 +184,7 @@ class _RwListScreenState extends State<RwListScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      rw['name']?.toString() ?? 'RW',
+                      village['name'] as String,
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontLarge,
                         fontWeight: FontWeight.bold,
@@ -175,7 +193,7 @@ class _RwListScreenState extends State<RwListScreen> {
                     ),
                     SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
                     Text(
-                      '${children.length} RT • $userCount KK',
+                      '$rwCount RW',
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontSmall,
                         color: AppColors.textSecondary,
@@ -184,11 +202,7 @@ class _RwListScreenState extends State<RwListScreen> {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.arrow_forward_ios,
-                color: AppColors.textSecondary,
-                size: 16,
-              ),
+              const Icon(Icons.arrow_forward_ios, color: AppColors.textSecondary, size: 16),
             ],
           ),
         ),

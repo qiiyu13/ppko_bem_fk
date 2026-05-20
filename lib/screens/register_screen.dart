@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
 import 'patient/patient_main_screen.dart';
 import '../services/auth_service.dart';
+import '../services/region_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -18,11 +19,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _isLoadingVillages = true;
 
+  List<Map<String, dynamic>> _villages = [];
+  String? _selectedVillageId;
   int? _selectedRwNumber;
   int? _selectedRtNumber;
 
   static final List<int> _numbers = List.generate(100, (i) => i + 1);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVillages();
+  }
+
+  Future<void> _loadVillages() async {
+    try {
+      final villages = await RegionService.getVillages();
+      setState(() {
+        _villages = villages;
+        _isLoadingVillages = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingVillages = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -55,8 +77,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final phone = _phoneController.text.trim();
     final password = _passwordController.text.trim();
 
+    if (_villages.isEmpty) {
+      _showErrorDialog('Pendaftaran belum tersedia. Hubungi admin.');
+      return;
+    }
+
     if (kkNumber.isEmpty || name.isEmpty || phone.isEmpty || password.isEmpty) {
       _showErrorDialog('Semua kolom harus diisi');
+      return;
+    }
+
+    if (_selectedVillageId == null) {
+      _showErrorDialog('Pilih desa/kelurahan Anda terlebih dahulu');
       return;
     }
 
@@ -78,6 +110,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         responsibleName: name,
         password: password,
         phone: phone,
+        villageId: _selectedVillageId,
         rwNumber: _selectedRwNumber,
         rtNumber: _selectedRtNumber,
       );
@@ -181,29 +214,79 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 20),
 
-              // RW Selection
-              _buildInputLabel('RW (opsional)'),
+              // Village Selection
+              _buildInputLabel('Desa / Kelurahan'),
               const SizedBox(height: 8),
-              DropdownButtonFormField<int>(
-                value: _selectedRwNumber,
-                decoration: _buildInputDecoration(
-                  hint: 'Pilih RW Anda',
-                  icon: Icons.location_city_outlined,
+              _isLoadingVillages
+                  ? const Center(child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
+                    ))
+                  : _villages.isEmpty
+                      ? Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.info_outline, color: AppColors.statusAmber, size: 20),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Pendaftaran belum tersedia. Hubungi admin.',
+                                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : DropdownButtonFormField<String>(
+                          value: _selectedVillageId,
+                          decoration: _buildInputDecoration(
+                            hint: 'Pilih desa/kelurahan',
+                            icon: Icons.location_city_outlined,
+                          ),
+                          items: _villages.map((v) => DropdownMenuItem(
+                            value: v['id'] as String,
+                            child: Text(v['name'] as String),
+                          )).toList(),
+                          onChanged: (val) => setState(() {
+                            _selectedVillageId = val;
+                            _selectedRwNumber = null;
+                            _selectedRtNumber = null;
+                          }),
+                          dropdownColor: AppColors.card,
+                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                        ),
+
+              if (_selectedVillageId != null) ...[
+                const SizedBox(height: 20),
+                // RW Selection
+                _buildInputLabel('RW (opsional)'),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<int>(
+                  value: _selectedRwNumber,
+                  decoration: _buildInputDecoration(
+                    hint: 'Pilih RW Anda',
+                    icon: Icons.account_tree_outlined,
+                  ),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('— Tidak dipilih')),
+                    ..._numbers.map((n) => DropdownMenuItem(
+                          value: n,
+                          child: Text('RW ${n.toString().padLeft(2, '0')}'),
+                        )),
+                  ],
+                  onChanged: (val) => setState(() {
+                    _selectedRwNumber = val;
+                    _selectedRtNumber = null;
+                  }),
+                  dropdownColor: AppColors.card,
+                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
                 ),
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('— Tidak dipilih')),
-                  ..._numbers.map((n) => DropdownMenuItem(
-                        value: n,
-                        child: Text('RW ${n.toString().padLeft(2, '0')}'),
-                      )),
-                ],
-                onChanged: (val) => setState(() {
-                  _selectedRwNumber = val;
-                  _selectedRtNumber = null;
-                }),
-                dropdownColor: AppColors.card,
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
-              ),
+              ],
 
               if (_selectedRwNumber != null) ...[
                 const SizedBox(height: 20),
@@ -260,7 +343,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleRegister,
+                  onPressed: (_isLoading || _isLoadingVillages || _villages.isEmpty) ? null : _handleRegister,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.textOnPrimary,

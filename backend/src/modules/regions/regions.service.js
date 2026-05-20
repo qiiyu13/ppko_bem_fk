@@ -33,14 +33,23 @@ const createRegion = async (data) => {
   });
 };
 
+const getVillages = async () => {
+  return prisma.region.findMany({
+    where: { type: 'VILLAGE' },
+    orderBy: { name: 'asc' },
+    select: { id: true, name: true, _count: { select: { children: true } } },
+  });
+};
+
 const getStats = async () => {
-  const [rwCount, rtCount, familyCount, profileCount] = await Promise.all([
+  const [villageCount, rwCount, rtCount, familyCount, profileCount] = await Promise.all([
+    prisma.region.count({ where: { type: 'VILLAGE' } }),
     prisma.region.count({ where: { type: 'RW' } }),
     prisma.region.count({ where: { type: 'RT' } }),
     prisma.user.count({ where: { role: 'PATIENT' } }),
     prisma.familyProfile.count(),
   ]);
-  return { rwCount, rtCount, familyCount, profileCount };
+  return { villageCount, rwCount, rtCount, familyCount, profileCount };
 };
 
 const getUsersByRegion = async (regionId, query) => {
@@ -67,4 +76,4 @@ const getUsersByRegion = async (regionId, query) => {
   return { data, total, page, limit };
 };
 
-module.exports = { getRegions, createRegion, getStats, getUsersByRegion };
+module.exports = { getRegions, createRegion, getVillages, getStats, getUsersByRegion };

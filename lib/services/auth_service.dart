@@ -9,6 +9,7 @@ class AuthService {
     required String responsibleName,
     required String password,
     String? phone,
+    String? villageId,
     int? rwNumber,
     int? rtNumber,
   }) async {
@@ -17,6 +18,7 @@ class AuthService {
       'responsibleName': responsibleName,
       'password': password,
       'phone': phone,
+      if (villageId != null) 'villageId': villageId,
       if (rwNumber != null) 'rwNumber': rwNumber,
       if (rtNumber != null) 'rtNumber': rtNumber,
     });

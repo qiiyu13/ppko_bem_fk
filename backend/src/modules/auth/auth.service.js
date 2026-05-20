@@ -4,17 +4,17 @@ const { verifyFirebaseToken } = require('../../utils/firebase');
 
 const prisma = require('../../utils/prisma');
 
-const register = async ({ kkNumber, responsibleName, password, phone, rwNumber, rtNumber }) => {
+const register = async ({ kkNumber, responsibleName, password, phone, villageId, rwNumber, rtNumber }) => {
   const existing = await prisma.user.findUnique({ where: { kkNumber } });
   if (existing) throw Object.assign(new Error('KK number already registered'), { code: 'P2002' });
 
   let regionId = null;
-  if (rwNumber && rtNumber) {
+  if (villageId && rwNumber && rtNumber) {
     const rwName = `RW ${String(rwNumber).padStart(2, '0')}`;
     const rtName = `RT ${String(rtNumber).padStart(2, '0')}`;
 
-    let rw = await prisma.region.findFirst({ where: { type: 'RW', name: rwName } });
-    if (!rw) rw = await prisma.region.create({ data: { type: 'RW', name: rwName } });
+    let rw = await prisma.region.findFirst({ where: { type: 'RW', name: rwName, parentId: villageId } });
+    if (!rw) rw = await prisma.region.create({ data: { type: 'RW', name: rwName, parentId: villageId } });
 
     let rt = await prisma.region.findFirst({ where: { type: 'RT', name: rtName, parentId: rw.id } });
     if (!rt) rt = await prisma.region.create({ data: { type: 'RT', name: rtName, parentId: rw.id } });

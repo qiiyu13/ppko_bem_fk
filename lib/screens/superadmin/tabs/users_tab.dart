@@ -20,6 +20,8 @@ class _UsersTabState extends State<UsersTab>
   List<Map<String, dynamic>> _admins = [];
   bool _isLoading = true;
   Map<String, dynamic>? _regionStats;
+  List<Map<String, dynamic>> _villages = [];
+  bool _isLoadingVillages = true;
 
   @override
   void initState() {
@@ -27,6 +29,7 @@ class _UsersTabState extends State<UsersTab>
     _tabController = TabController(length: 2, vsync: this);
     _loadUsers();
     _loadStats();
+    _loadVillages();
   }
 
   Future<void> _loadUsers() async {
@@ -324,85 +327,186 @@ class _UsersTabState extends State<UsersTab>
     );
   }
 
+  Future<void> _loadVillages() async {
+    try {
+      final villages = await RegionService.getVillages();
+      setState(() {
+        _villages = villages;
+        _isLoadingVillages = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingVillages = false);
+    }
+  }
+
+  Future<void> _addVillage() async {
+    final controller = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Tambah Desa/Kelurahan'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Nama desa/kelurahan'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Tambah', style: TextStyle(color: AppColors.textOnPrimary)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && controller.text.trim().isNotEmpty) {
+      try {
+        await RegionService.createRegion(type: 'VILLAGE', name: controller.text.trim());
+        _loadVillages();
+        _loadStats();
+      } catch (e) {
+        _showSnackBar('Gagal menambah desa');
+      }
+    }
+  }
+
   Widget _buildWilayahTab() {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: Container(
-        padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-        child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const RwListScreen()),
-            );
-          },
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: ResponsiveSize.paddingMedium,
-              vertical: ResponsiveSize.paddingSmall,
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+          color: AppColors.background,
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _addVillage,
+              icon: const Icon(Icons.add, color: AppColors.textOnPrimary),
+              label: const Text(
+                'Tambah Desa/Kelurahan',
+                style: TextStyle(color: AppColors.textOnPrimary),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: EdgeInsets.symmetric(vertical: ResponsiveSize.paddingMedium),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
             ),
-            decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.surface, width: 1),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+          ),
+        ),
+        if (_regionStats != null)
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: ResponsiveSize.paddingMedium),
+            child: Text(
+              '${_regionStats!['villageCount']} Desa • ${_regionStats!['rwCount']} RW • ${_regionStats!['rtCount']} RT • ${_regionStats!['profileCount']} Penduduk',
+              style: TextStyle(
+                fontSize: ResponsiveSize.fontSmall,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  padding: EdgeInsets.all(ResponsiveSize.paddingSmall),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.location_city,
-                    color: AppColors.primary,
-                    size: ResponsiveSize.iconMedium,
-                  ),
-                ),
-                SizedBox(width: ResponsiveSize.paddingMedium),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Kelola RW/RT',
-                        style: TextStyle(
-                          fontSize: ResponsiveSize.fontLarge,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _regionStats == null
-                            ? 'Memuat...'
-                            : '${_regionStats!['rwCount']} RW • ${_regionStats!['rtCount']} RT • ${_regionStats!['profileCount']} Penduduk',
-                        style: TextStyle(
-                          fontSize: ResponsiveSize.fontSmall,
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.arrow_forward_ios,
+          ),
+        SizedBox(height: ResponsiveSize.spacingSmall),
+        Expanded(
+          child: _isLoadingVillages
+              ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+              : RefreshIndicator(
+                  onRefresh: _loadVillages,
                   color: AppColors.primary,
-                  size: 20,
+                  child: _villages.isEmpty
+                      ? ListView(
+                          children: const [
+                            SizedBox(height: 80),
+                            Center(
+                              child: Text(
+                                'Belum ada desa/kelurahan.\nTambah untuk mengaktifkan pendaftaran pasien.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
+                              ),
+                            ),
+                          ],
+                        )
+                      : ListView.builder(
+                          padding: EdgeInsets.symmetric(horizontal: ResponsiveSize.paddingMedium),
+                          itemCount: _villages.length,
+                          itemBuilder: (context, index) => _buildVillageCard(_villages[index]),
+                        ),
                 ),
-              ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVillageCard(Map<String, dynamic> village) {
+    final count = village['_count'] as Map<String, dynamic>? ?? {};
+    final rwCount = count['children'] as int? ?? 0;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.surface, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RwListScreen(
+                villageId: village['id'] as String,
+                villageName: village['name'] as String,
+              ),
             ),
+          ).then((_) => _loadVillages());
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.location_city, color: AppColors.primary, size: 28),
+              ),
+              SizedBox(width: ResponsiveSize.paddingMedium),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      village['name'] as String,
+                      style: TextStyle(
+                        fontSize: ResponsiveSize.fontLarge,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
+                    Text(
+                      '$rwCount RW',
+                      style: TextStyle(fontSize: ResponsiveSize.fontSmall, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios, color: AppColors.textSecondary, size: 16),
+            ],
           ),
         ),
       ),

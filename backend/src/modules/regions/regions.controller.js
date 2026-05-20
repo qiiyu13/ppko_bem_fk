@@ -37,4 +37,13 @@ const getUsersByRegion = async (req, res, next) => {
   }
 };
 
-module.exports = { getRegions, createRegion, getStats, getUsersByRegion };
+const getVillages = async (req, res, next) => {
+  try {
+    const villages = await regionsService.getVillages();
+    return success(res, villages);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getRegions, createRegion, getVillages, getStats, getUsersByRegion };

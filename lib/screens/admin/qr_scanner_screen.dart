@@ -80,8 +80,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         title: const Text('Pindai QR Pasien'),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.primary,
         surfaceTintColor: Colors.transparent,
       ),
       body: Stack(
