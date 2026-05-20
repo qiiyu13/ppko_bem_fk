@@ -212,4 +212,14 @@ class NotificationService {
       await prefs.setString(_localCacheKey, encoded);
     } catch (_) {}
   }
+
+  static Future<void> clearCache() async {
+    final instance = NotificationService.instance;
+    instance.notifications.value = [];
+    instance.unreadCount.value = 0;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_localCacheKey);
+    } catch (_) {}
+  }
 }

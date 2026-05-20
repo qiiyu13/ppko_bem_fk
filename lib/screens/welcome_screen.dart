@@ -25,6 +25,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   bool _isLoggedIn = false;
   String _userName = '';
   String _userRole = '';
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -314,7 +315,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
         TextField(
           controller: _passwordController,
-          obscureText: true,
+          obscureText: _obscurePassword,
           style: TextStyle(
             fontSize: isShortScreen ? 16 : 17,
             letterSpacing: 1.5,
@@ -330,6 +331,16 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               Icons.lock_outlined,
               color: AppColors.primary,
               size: isShortScreen ? 20 : 22,
+            ),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                color: AppColors.textSecondary,
+                size: isShortScreen ? 20 : 22,
+              ),
+              onPressed: () {
+                setState(() => _obscurePassword = !_obscurePassword);
+              },
             ),
             filled: true,
             fillColor: AppColors.surface,

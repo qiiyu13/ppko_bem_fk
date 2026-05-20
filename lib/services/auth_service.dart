@@ -1,4 +1,5 @@
 import 'api_service.dart';
+import 'notification_service.dart';
 import 'token_service.dart';
 import 'websocket_service.dart';
 
@@ -78,6 +79,7 @@ class AuthService {
     }
     WebSocketService.instance.disconnect();
     _cachedMe = null;
+    await NotificationService.clearCache();
     await TokenService.clearAll();
   }
 

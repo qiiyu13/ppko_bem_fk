@@ -17,6 +17,7 @@ async function main() {
   await prisma.article.deleteMany();
   await prisma.region.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.tokenBlacklist.deleteMany();
 
   console.log('✅ Cleaned existing data');
 
