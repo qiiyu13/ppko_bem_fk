@@ -8,7 +8,7 @@ describe('IRD Calculation', () => {
     });
     expect(result.irdScore).toBeDefined();
     expect(result.irdCategory).toBeDefined();
-    expect(['Rendah', 'Sedang', 'Berat']).toContain(result.irdCategory);
+    expect(['normal', 'attention', 'high']).toContain(result.irdCategory);
   });
 
   it('should calculate IRD score for female (wanita)', () => {
@@ -17,15 +17,15 @@ describe('IRD Calculation', () => {
       cholesterol: 180, uricAcid: 4.5, height: 160, weight: 55, gender: 'wanita',
     });
     expect(result.irdScore).toBeLessThan(1.0);
-    expect(result.irdCategory).toBe('Rendah');
+    expect(result.irdCategory).toBe('normal');
   });
 
   it('should categorize IRD correctly', () => {
-    expect(getIrdCategory(0.5)).toBe('Rendah');
-    expect(getIrdCategory(0.75)).toBe('Sedang');
-    expect(getIrdCategory(0.85)).toBe('Sedang');
-    expect(getIrdCategory(1.0)).toBe('Sedang');
-    expect(getIrdCategory(1.2)).toBe('Berat');
+    expect(getIrdCategory(0.5)).toBe('normal');
+    expect(getIrdCategory(0.75)).toBe('attention');
+    expect(getIrdCategory(0.85)).toBe('attention');
+    expect(getIrdCategory(1.0)).toBe('attention');
+    expect(getIrdCategory(1.2)).toBe('high');
   });
 
   it('should use correct AU denominator for gender', () => {

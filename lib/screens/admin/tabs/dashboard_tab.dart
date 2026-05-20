@@ -7,6 +7,8 @@ import '../../../utils/responsive_size.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/token_service.dart';
+import '../../../services/screening_service.dart';
+import '../../../services/region_service.dart';
 import '../admin_family_detail_screen.dart';
 import '../qr_scanner_screen.dart';
 
@@ -23,10 +25,10 @@ class _DashboardTabState extends State<DashboardTab> {
   bool _isLoading = false;
   bool _isLoadingMore = false;
   List<Map<String, dynamic>> _patients = [];
-  int _totalCount = 0;
-  int _totalHighRiskCount = 0;
-  int _totalAttentionCount = 0;
-  int _totalNormalCount = 0;
+  int _totalProfiles = 0;
+  int _totalHighRiskProfiles = 0;
+  int _totalAttentionProfiles = 0;
+  int _totalNormalProfiles = 0;
   int _currentPage = 1;
   int _totalPages = 1;
   Timer? _searchDebounce;
@@ -52,12 +54,6 @@ class _DashboardTabState extends State<DashboardTab> {
     });
   }
 
-  @override
-  void dispose() {
-    _searchDebounce?.cancel();
-    super.dispose();
-  }
-
   Future<void> _fetchPatients({bool loadMore = false}) async {
     if (loadMore) {
       setState(() => _isLoadingMore = true);
@@ -67,7 +63,7 @@ class _DashboardTabState extends State<DashboardTab> {
     }
 
     try {
-      const irdCategoryMap = {
+      final irdCategoryMap = {
         'High Risk': 'high',
         'Attention': 'attention',
         'Normal': 'normal',
@@ -78,31 +74,58 @@ class _DashboardTabState extends State<DashboardTab> {
       };
       if (_searchQuery.isNotEmpty) queryParams['search'] = _searchQuery;
       if (_selectedFilter != 'All') queryParams['irdCategory'] = irdCategoryMap[_selectedFilter];
-      final response = await ApiService.get(
-        '/admin/patients',
-        queryParameters: queryParams,
-      );
-      final List<dynamic> data = response.data['data'] ?? [];
-      final meta = response.data['meta'];
 
-      setState(() {
-        if (loadMore) {
+      if (loadMore) {
+        final response = await ApiService.get(
+          '/admin/patients',
+          queryParameters: queryParams,
+        );
+        final List<dynamic> data = response.data['data'] ?? [];
+        final meta = response.data['meta'];
+
+        setState(() {
           _patients.addAll(data.cast<Map<String, dynamic>>());
-        } else {
+          _totalPages = meta?['totalPages'] ?? 1;
+        });
+      } else {
+        final results = await Future.wait([
+          ScreeningService.getStats(),
+          RegionService.getStats(),
+          ApiService.get('/admin/patients', queryParameters: queryParams),
+        ]);
+        final screeningStats = results[0] as Map<String, dynamic>;
+        final regionStats = results[1] as Map<String, dynamic>;
+        final patientResponse = results[2] as dynamic;
+        final List<dynamic> data = patientResponse.data['data'] ?? [];
+        final meta = patientResponse.data['meta'];
+
+        if (!mounted) return;
+
+        final categories = screeningStats['categories'] as Map<String, dynamic>? ?? {};
+        final profileCount = (regionStats['profileCount'] as num?)?.toInt() ?? 0;
+        final highRiskProfiles = (categories['high'] as num?)?.toInt() ?? 0;
+        final attentionProfiles = (categories['attention'] as num?)?.toInt() ?? 0;
+        final normalProfiles = (categories['normal'] as num?)?.toInt() ?? 0;
+
+        final fallbackTotal = meta?['total'] as int? ?? data.length;
+        final fallbackHigh = meta?['totalHighRisk'] as int? ?? 0;
+        final fallbackAttention = meta?['totalAttention'] as int? ?? 0;
+        final fallbackNormal = meta?['totalNormal'] as int? ?? 0;
+
+        setState(() {
           _patients = data.cast<Map<String, dynamic>>();
-        }
-        _totalCount = meta?['total'] ?? _patients.length;
-        _totalHighRiskCount = meta?['totalHighRisk'] ?? 0;
-        _totalAttentionCount = meta?['totalAttention'] ?? 0;
-        _totalNormalCount = meta?['totalNormal'] ?? 0;
-        _totalPages = meta?['totalPages'] ?? 1;
-      });
+          _totalProfiles = profileCount > 0 ? profileCount : fallbackTotal;
+          _totalHighRiskProfiles = highRiskProfiles > 0 ? highRiskProfiles : fallbackHigh;
+          _totalAttentionProfiles = attentionProfiles > 0 ? attentionProfiles : fallbackAttention;
+          _totalNormalProfiles = normalProfiles > 0 ? normalProfiles : fallbackNormal;
+          _totalPages = meta?['totalPages'] ?? 1;
+        });
+      }
     } catch (e) {
       if (!loadMore) {
         if (!mounted) return;
         setState(() {
           _patients = [];
-          _totalCount = 0;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Gagal memuat data pasien')),
@@ -422,13 +445,13 @@ class _DashboardTabState extends State<DashboardTab> {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          _buildFilterChip('All', _totalCount, AppColors.textPrimary),
+                          _buildFilterChip('All', _totalProfiles, AppColors.textPrimary),
                           SizedBox(width: ResponsiveSize.paddingSmall),
-                          _buildFilterChip('High Risk', _totalHighRiskCount, AppColors.statusRed),
+                          _buildFilterChip('High Risk', _totalHighRiskProfiles, AppColors.statusRed),
                           SizedBox(width: ResponsiveSize.paddingSmall),
-                          _buildFilterChip('Attention', _totalAttentionCount, AppColors.statusAmber),
+                          _buildFilterChip('Attention', _totalAttentionProfiles, AppColors.statusAmber),
                           SizedBox(width: ResponsiveSize.paddingSmall),
-                          _buildFilterChip('Normal', _totalNormalCount, AppColors.statusGreen),
+                          _buildFilterChip('Normal', _totalNormalProfiles, AppColors.statusGreen),
                         ],
                       ),
                     ),
@@ -582,7 +605,7 @@ class _DashboardTabState extends State<DashboardTab> {
                       color: AppColors.primary,
                       size: 24,
                     ),
-                    if (_totalHighRiskCount > 0)
+                    if (_totalHighRiskProfiles > 0)
                       Positioned(
                         top: -4,
                         right: -4,
@@ -595,9 +618,9 @@ class _DashboardTabState extends State<DashboardTab> {
                           ),
                           child: Center(
                             child: Text(
-                              _totalHighRiskCount > 9
+                              _totalHighRiskProfiles > 9
                                   ? '9+'
-                                  : '$_totalHighRiskCount',
+                                  : '$_totalHighRiskProfiles',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 9,
@@ -628,21 +651,21 @@ class _DashboardTabState extends State<DashboardTab> {
         children: [
           Expanded(
             child: _statCell(
-              _totalCount,
+              _totalProfiles,
               'Total Pasien',
               AppColors.textPrimary,
             ),
           ),
           Expanded(
             child: _statCell(
-              _totalHighRiskCount,
+              _totalHighRiskProfiles,
               'High Risk',
               AppColors.statusRed,
             ),
           ),
           Expanded(
             child: _statCell(
-              _totalAttentionCount,
+              _totalAttentionProfiles,
               'Attn',
               AppColors.statusAmber,
             ),

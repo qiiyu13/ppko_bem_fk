@@ -113,9 +113,9 @@ const createScreening = async (data, userId) => {
     console.error('WebSocket broadcast failed:', e.message);
   }
   try {
-    const categoryLabel = result.irdCategory === 'RENDAH' ? 'Risiko Rendah'
-      : result.irdCategory === 'SEDANG' ? 'Risiko Sedang'
-      : result.irdCategory === 'TINGGI' ? 'Risiko Tinggi'
+    const categoryLabel = result.irdCategory === 'high' ? 'Risiko Tinggi'
+      : result.irdCategory === 'attention' ? 'Risiko Sedang'
+      : result.irdCategory === 'normal' ? 'Risiko Rendah'
       : result.irdCategory;
     await createAndSend(profile.userId, {
       title: 'Hasil Skrining Tersedia',
@@ -154,7 +154,7 @@ const getStats = async () => {
 
   return {
     total,
-    byCategory: all.reduce((acc, item) => {
+    categories: all.reduce((acc, item) => {
       acc[item.irdCategory] = item._count.irdCategory;
       return acc;
     }, {}),

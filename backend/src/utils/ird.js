@@ -12,9 +12,9 @@ const calculateIrdScore = ({ bloodSugar, systolic, diastolic, cholesterol, uricA
 };
 
 const getIrdCategory = (irdScore) => {
-  if (irdScore < 0.75) return 'Rendah';
-  if (irdScore <= 1.0) return 'Sedang';
-  return 'Berat';
+  if (irdScore < 0.75) return 'normal';
+  if (irdScore <= 1.0) return 'attention';
+  return 'high';
 };
 
 const calculateIrd = (params) => {

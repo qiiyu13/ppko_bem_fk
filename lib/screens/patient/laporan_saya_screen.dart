@@ -255,9 +255,9 @@ class BPScreeningData {
   }
 
   String get irdCategory {
-    if (ird < 0.75) return 'Rendah';
-    if (ird <= 1.0) return 'Sedang';
-    return 'Berat';
+    if (ird < 0.75) return 'normal';
+    if (ird <= 1.0) return 'attention';
+    return 'high';
   }
 }
 
@@ -307,11 +307,11 @@ class _ExpandableScreeningCardWidgetState
 
   Color _getIRDStatusColor(String category) {
     switch (category) {
-      case 'Rendah':
+      case 'normal':
         return AppColors.success;
-      case 'Sedang':
+      case 'attention':
         return const Color(0xFFFF9800);
-      case 'Berat':
+      case 'high':
         return const Color(0xFFEF5350);
       default:
         return AppColors.success;
@@ -642,11 +642,11 @@ class _ExpandableScreeningCardWidgetState
     PdfColor irdColor;
     PdfColor irdLightColor;
     switch (d.irdCategory) {
-      case 'Rendah':
+      case 'normal':
         irdColor = PdfColor.fromHex('4CAF50');
         irdLightColor = PdfColor.fromHex('E8F5E9');
         break;
-      case 'Sedang':
+      case 'attention':
         irdColor = PdfColor.fromHex('FFA726');
         irdLightColor = PdfColor.fromHex('FFF8E1');
         break;

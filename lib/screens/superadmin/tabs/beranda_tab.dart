@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/screening_service.dart';
-import '../../../services/admin_service.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/region_service.dart';
 import '../../../services/token_service.dart';
 import '../../../services/notification_service.dart';
 import '../../../models/notification_model.dart';
@@ -21,13 +21,12 @@ class BerandaTab extends StatefulWidget {
 class _BerandaTabState extends State<BerandaTab> {
   static const Color purpleAccent = Color(0xFF7B1FA2);
   static const Color blueAccent = Color(0xFF1976D2);
-  static const Color orangeAccent = Color(0xFFFF9800);
 
   bool _isLoading = true;
   int _totalPatients = 0;
   int _todayScreenings = 0;
-  int _activeSchedules = 0;
-  int _needAttention = 0;
+  int _highRiskCount = 0;
+  int _attentionCount = 0;
   String? _userName;
 
   @override
@@ -54,18 +53,17 @@ class _BerandaTabState extends State<BerandaTab> {
   Future<void> _loadStats() async {
     try {
       final stats = await ScreeningService.getStats();
-      final patientData = await AdminService.getPatients(page: 1, limit: 1);
-      final totalPatients = patientData['meta']?['total'] ?? 0;
+      final regionStats = await RegionService.getStats();
 
       final categoryCounts = stats['categories'] as Map<String, dynamic>? ?? {};
-      final attentionCount = (categoryCounts['attention'] as num?)?.toInt() ?? 0;
       final highRiskCount = (categoryCounts['high'] as num?)?.toInt() ?? 0;
+      final attentionCount = (categoryCounts['attention'] as num?)?.toInt() ?? 0;
 
       setState(() {
-        _totalPatients = totalPatients;
+        _totalPatients = (regionStats['profileCount'] as num?)?.toInt() ?? 0;
         _todayScreenings = (stats['total'] as num?)?.toInt() ?? 0;
-        _activeSchedules = 0;
-        _needAttention = attentionCount + highRiskCount;
+        _highRiskCount = highRiskCount;
+        _attentionCount = attentionCount;
         _isLoading = false;
       });
     } catch (e) {
@@ -279,7 +277,7 @@ class _BerandaTabState extends State<BerandaTab> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  'Jumlah Keluarga Terdaftar',
+                  'Jumlah Warga Terdaftar',
                   style: TextStyle(
                     fontSize: ResponsiveSize.fontMedium,
                     color: AppColors.textSecondary,
@@ -312,11 +310,11 @@ class _BerandaTabState extends State<BerandaTab> {
                 ),
                 Container(width: 1, height: 40, color: AppColors.surface),
                 Expanded(
-                  child: _buildMiniStat(_activeSchedules, 'Jadwal', purpleAccent),
+                  child: _buildMiniStat(_highRiskCount, 'High Risk', AppColors.statusRed),
                 ),
                 Container(width: 1, height: 40, color: AppColors.surface),
                 Expanded(
-                  child: _buildMiniStat(_needAttention, 'Perhatian', orangeAccent),
+                  child: _buildMiniStat(_attentionCount, 'Attention', AppColors.statusAmber),
                 ),
               ],
             ),

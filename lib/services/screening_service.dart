@@ -7,7 +7,7 @@ class ScreeningService {
       final response = await ApiService.get('/screenings/stats');
       return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
-      return {'total': 0, 'byCategory': {}};
+      return {'total': 0, 'categories': {}};
     }
   }
 
