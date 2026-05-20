@@ -16,7 +16,7 @@ const login = async (req, res, next) => {
     const result = await authService.login(req.body);
     return success(res, result, 'Login successful');
   } catch (err) {
-    if (err.message === 'Invalid credentials') return error(res, 'Invalid KK number or password', 401, 'INVALID_CREDENTIALS');
+    if (err.message === 'Invalid credentials') return error(res, 'Invalid credentials', 401, 'INVALID_CREDENTIALS');
     next(err);
   }
 };
@@ -73,4 +73,13 @@ const logout = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, getMe, forgotPassword, resetPassword, refreshToken, logout };
+const getPublicRegions = async (req, res, next) => {
+  try {
+    const regions = await authService.getPublicRegions();
+    return success(res, regions);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { register, login, getMe, forgotPassword, resetPassword, refreshToken, logout, getPublicRegions };

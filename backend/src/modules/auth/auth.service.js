@@ -4,13 +4,13 @@ const { verifyFirebaseToken } = require('../../utils/firebase');
 
 const prisma = require('../../utils/prisma');
 
-const register = async ({ kkNumber, responsibleName, password, phone }) => {
+const register = async ({ kkNumber, responsibleName, password, phone, regionId }) => {
   const existing = await prisma.user.findUnique({ where: { kkNumber } });
   if (existing) throw Object.assign(new Error('KK number already registered'), { code: 'P2002' });
 
   const hashedPassword = await hashPassword(password);
   const user = await prisma.user.create({
-    data: { kkNumber, responsibleName, password: hashedPassword, phone },
+    data: { kkNumber, responsibleName, password: hashedPassword, phone, regionId: regionId || null },
     select: { id: true, kkNumber: true, responsibleName: true, role: true },
   });
 
@@ -18,16 +18,36 @@ const register = async ({ kkNumber, responsibleName, password, phone }) => {
   return { user, token };
 };
 
-const login = async ({ kkNumber, password }) => {
-  const user = await prisma.user.findUnique({ where: { kkNumber } });
+const getPublicRegions = async () => {
+  return prisma.region.findMany({
+    where: { type: 'RT' },
+    select: {
+      id: true,
+      name: true,
+      parent: { select: { id: true, name: true } },
+    },
+    orderBy: [{ parent: { name: 'asc' } }, { name: 'asc' }],
+  });
+};
+
+const login = async ({ identifier, password }) => {
+  const isKK = /^\d{16}$/.test(identifier);
+  const user = isKK
+    ? await prisma.user.findUnique({ where: { kkNumber: identifier } })
+    : await prisma.user.findUnique({ where: { username: identifier } });
+
   if (!user) throw Object.assign(new Error('Invalid credentials'), { statusCode: 401 });
+
+  // KK login: patients only. Username login: admin/superadmin only.
+  if (isKK && user.role !== 'PATIENT') throw Object.assign(new Error('Invalid credentials'), { statusCode: 401 });
+  if (!isKK && user.role === 'PATIENT') throw Object.assign(new Error('Invalid credentials'), { statusCode: 401 });
 
   const valid = await comparePassword(password, user.password);
   if (!valid) throw Object.assign(new Error('Invalid credentials'), { statusCode: 401 });
 
   const token = generateToken({ userId: user.id, role: user.role });
   return {
-    user: { id: user.id, kkNumber: user.kkNumber, responsibleName: user.responsibleName, role: user.role },
+    user: { id: user.id, kkNumber: user.kkNumber, username: user.username, responsibleName: user.responsibleName, role: user.role },
     token,
   };
 };
@@ -73,4 +93,4 @@ const resetPassword = async ({ kkNumber, firebaseToken, newPassword }) => {
   return { message: 'Password reset successful' };
 };
 
-module.exports = { register, login, getMe, forgotPassword, resetPassword };
+module.exports = { register, login, getMe, forgotPassword, resetPassword, getPublicRegions };
