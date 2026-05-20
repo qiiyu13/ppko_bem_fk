@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:async';
 import '../constants/app_colors.dart';
 import '../screens/patient/patient_main_screen.dart';
 import '../screens/admin/admin_main_screen.dart';
@@ -19,10 +18,8 @@ class WelcomeScreen extends StatefulWidget {
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
-  final TextEditingController _kkController = TextEditingController();
+  final TextEditingController _identifierController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  int _logoTapCount = 0;
-  Timer? _tapResetTimer;
 
   bool _isLoading = true;
   bool _isLoggedIn = false;
@@ -54,172 +51,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         _isLoading = false;
       });
     }
-  }
-
-  void _onLogoTap() {
-    _logoTapCount++;
-
-    _tapResetTimer?.cancel();
-    _tapResetTimer = Timer(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _logoTapCount = 0;
-        });
-      }
-    });
-
-    if (_logoTapCount >= 5) {
-      _logoTapCount = 0;
-      _tapResetTimer?.cancel();
-      _showAdminLoginDialog();
-    }
-  }
-
-  void _showAdminLoginDialog() {
-    final adminKkController = TextEditingController();
-    final adminPasswordController = TextEditingController();
-    final textScaler = MediaQuery.textScalerOf(context);
-
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Akses Admin',
-          style: TextStyle(
-            fontSize: 22 * textScaler.scale(1.0),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Masukkan KK dan Password:',
-              style: TextStyle(fontSize: 16 * textScaler.scale(1.0)),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: adminKkController,
-              keyboardType: TextInputType.number,
-              style: TextStyle(fontSize: 18 * textScaler.scale(1.0)),
-              decoration: InputDecoration(
-                hintText: 'Nomor KK',
-                hintStyle: TextStyle(
-                  fontSize: 16 * textScaler.scale(1.0),
-                  color: AppColors.textSecondary,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.divider),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.divider),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: AppColors.primary,
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: adminPasswordController,
-              obscureText: true,
-              style: TextStyle(fontSize: 18 * textScaler.scale(1.0)),
-              decoration: InputDecoration(
-                hintText: 'Password',
-                hintStyle: TextStyle(
-                  fontSize: 16 * textScaler.scale(1.0),
-                  color: AppColors.textSecondary,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.divider),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.divider),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: AppColors.primary,
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Batal',
-              style: TextStyle(
-                fontSize: 16 * textScaler.scale(1.0),
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final kk = adminKkController.text.trim();
-              final password = adminPasswordController.text;
-              if (kk.isEmpty || password.isEmpty) return;
-
-              Navigator.pop(context);
-
-              try {
-                final data = await AuthService.login(
-                  kkNumber: kk,
-                  password: password,
-                );
-                if (!mounted) return;
-                final user = data['user'];
-                final role = user['role'];
-
-                if (role == 'ADMIN') {
-                  _navigateToAdminDashboard();
-                } else if (role == 'SUPERADMIN') {
-                  _navigateToSuperadminDashboard();
-                } else {
-                  _showErrorDialog('Akun ini bukan admin');
-                }
-              } catch (e) {
-                if (!mounted) return;
-                _showErrorDialog('Login gagal. Periksa kembali KK dan password Anda.');
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.textOnPrimary,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text(
-              'Masuk sebagai Admin',
-              style: TextStyle(fontSize: 16 * textScaler.scale(1.0)),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showForgotPasswordDialog() {
@@ -285,9 +116,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   @override
   void dispose() {
-    _kkController.dispose();
+    _identifierController.dispose();
     _passwordController.dispose();
-    _tapResetTimer?.cancel();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -430,7 +260,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             ),
             SizedBox(height: isShortScreen ? 4 : 6),
             Text(
-              'Masukkan KK dan Password',
+              'Masukkan Nomor KK atau Username dan Password',
               style: TextStyle(
                 fontSize: isShortScreen ? 12 : 13,
                 color: AppColors.textSecondary,
@@ -442,21 +272,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         SizedBox(height: isShortScreen ? 16 : 24),
 
         TextField(
-          controller: _kkController,
-          keyboardType: TextInputType.number,
+          controller: _identifierController,
+          keyboardType: TextInputType.text,
           style: TextStyle(
             fontSize: isShortScreen ? 16 : 17,
-            letterSpacing: 1.5,
             color: AppColors.textPrimary,
           ),
           decoration: InputDecoration(
-            hintText: 'Contoh: 3201...',
+            hintText: 'Nomor KK atau Username',
             hintStyle: TextStyle(
               fontSize: isShortScreen ? 14 : 15,
               color: AppColors.textSecondary,
             ),
             prefixIcon: Icon(
-              Icons.badge_outlined,
+              Icons.person_outline,
               color: AppColors.primary,
               size: isShortScreen ? 20 : 22,
             ),
@@ -552,10 +381,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           height: isShortScreen ? 44 : 48,
           child: ElevatedButton(
             onPressed: () async {
-              final kk = _kkController.text.trim();
+              final identifier = _identifierController.text.trim();
               final password = _passwordController.text;
-              if (kk.isEmpty) {
-                _showErrorDialog('KK tidak boleh kosong');
+              if (identifier.isEmpty) {
+                _showErrorDialog('Nomor KK atau Username tidak boleh kosong');
                 return;
               }
               if (password.isEmpty) {
@@ -564,7 +393,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               }
               try {
                 final data = await AuthService.login(
-                  kkNumber: kk,
+                  identifier: identifier,
                   password: password,
                 );
                 if (mounted) {
@@ -579,7 +408,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 }
               } catch (e) {
                 if (mounted) {
-                  _showErrorDialog('Login gagal. Periksa kembali KK dan password Anda.');
+                  _showErrorDialog('Login gagal. Periksa kembali KK/Username dan password Anda.');
                 }
               }
             },
@@ -839,22 +668,19 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         Positioned(
                           top: 16,
                           right: isSmallScreen ? 16 : 24,
-                          child: GestureDetector(
-                            onTap: _onLogoTap,
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: AppColors.primarySurface.withValues(
-                                  alpha: 0.2,
-                                ),
-                                shape: BoxShape.circle,
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppColors.primarySurface.withValues(
+                                alpha: 0.2,
                               ),
-                              child: const Icon(
-                                Icons.favorite,
-                                color: AppColors.textSecondary,
-                                size: 20,
-                              ),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.favorite,
+                              color: AppColors.textSecondary,
+                              size: 20,
                             ),
                           ),
                         ),

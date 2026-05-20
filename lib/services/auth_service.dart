@@ -3,17 +3,25 @@ import 'token_service.dart';
 import 'websocket_service.dart';
 
 class AuthService {
+  static Future<List<Map<String, dynamic>>> getPublicRegions() async {
+    final response = await ApiService.get('/auth/regions/rt');
+    final list = response.data['data'] as List;
+    return list.cast<Map<String, dynamic>>();
+  }
+
   static Future<Map<String, dynamic>> register({
     required String kkNumber,
     required String responsibleName,
     required String password,
     String? phone,
+    String? regionId,
   }) async {
     final response = await ApiService.post('/auth/register', data: {
       'kkNumber': kkNumber,
       'responsibleName': responsibleName,
       'password': password,
       'phone': phone,
+      if (regionId != null) 'regionId': regionId,
     });
 
     final data = response.data['data'];
@@ -27,18 +35,18 @@ class AuthService {
   }
 
   static Future<Map<String, dynamic>> login({
-    required String kkNumber,
+    required String identifier,
     required String password,
   }) async {
     final response = await ApiService.post('/auth/login', data: {
-      'kkNumber': kkNumber,
+      'identifier': identifier,
       'password': password,
     });
 
     final data = response.data['data'];
     final user = data['user'];
     await TokenService.setToken(data['token']);
-    await TokenService.setKKNumber(kkNumber);
+    await TokenService.setKKNumber(identifier);
     await TokenService.setResponsibleName(user['responsibleName']);
 
     WebSocketService.instance.connect();
