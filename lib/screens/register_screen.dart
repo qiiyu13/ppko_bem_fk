@@ -19,6 +19,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
+  List<Map<String, dynamic>> _rtList = [];
+  String? _selectedRwId;
+  String? _selectedRegionId;
+  bool _loadingRegions = false;
+
+  List<Map<String, dynamic>> get _rwList {
+    final seen = <String>{};
+    return _rtList
+        .where((rt) => rt['parent'] != null && seen.add(rt['parent']['id'] as String))
+        .map((rt) => rt['parent'] as Map<String, dynamic>)
+        .toList();
+  }
+
+  List<Map<String, dynamic>> get _filteredRtList => _selectedRwId == null
+      ? []
+      : _rtList.where((rt) => rt['parent']?['id'] == _selectedRwId).toList();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRegions();
+  }
+
+  Future<void> _loadRegions() async {
+    setState(() => _loadingRegions = true);
+    try {
+      final list = await AuthService.getPublicRegions();
+      if (mounted) setState(() => _rtList = list);
+    } catch (_) {
+      // Regions optional — registration still works without selection
+    } finally {
+      if (mounted) setState(() => _loadingRegions = false);
+    }
+  }
+
   @override
   void dispose() {
     _kkController.dispose();
@@ -73,6 +108,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         responsibleName: name,
         password: password,
         phone: phone,
+        regionId: _selectedRegionId,
       );
 
       if (!mounted) return;
@@ -172,6 +208,71 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   icon: Icons.phone_outlined,
                 ),
               ),
+              const SizedBox(height: 20),
+
+              // RW Selection
+              _buildInputLabel('RW (opsional)'),
+              const SizedBox(height: 8),
+              _loadingRegions
+                  ? const SizedBox(
+                      height: 48,
+                      child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
+                    )
+                  : _rwList.isEmpty
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'Belum ada RW yang terdaftar',
+                            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                          ),
+                        )
+                      : DropdownButtonFormField<String>(
+                          value: _selectedRwId,
+                          decoration: _buildInputDecoration(
+                            hint: 'Pilih RW Anda',
+                            icon: Icons.location_city_outlined,
+                          ),
+                          items: [
+                            const DropdownMenuItem(value: null, child: Text('— Tidak dipilih')),
+                            ..._rwList.map((rw) => DropdownMenuItem(
+                                  value: rw['id'] as String,
+                                  child: Text(rw['name'] as String),
+                                )),
+                          ],
+                          onChanged: (val) => setState(() {
+                            _selectedRwId = val;
+                            _selectedRegionId = null;
+                          }),
+                          dropdownColor: AppColors.card,
+                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                        ),
+
+              if (_selectedRwId != null) ...[
+                const SizedBox(height: 20),
+                _buildInputLabel('RT'),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: _selectedRegionId,
+                  decoration: _buildInputDecoration(
+                    hint: 'Pilih RT Anda',
+                    icon: Icons.location_on_outlined,
+                  ),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('— Tidak dipilih')),
+                    ..._filteredRtList.map((rt) => DropdownMenuItem(
+                          value: rt['id'] as String,
+                          child: Text(rt['name'] as String),
+                        )),
+                  ],
+                  onChanged: (val) => setState(() => _selectedRegionId = val),
+                  dropdownColor: AppColors.card,
+                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                ),
+              ],
               const SizedBox(height: 20),
 
               // Password/PIN Input
