@@ -73,13 +73,4 @@ const logout = async (req, res, next) => {
   }
 };
 
-const getPublicRegions = async (req, res, next) => {
-  try {
-    const regions = await authService.getPublicRegions();
-    return success(res, regions);
-  } catch (err) {
-    next(err);
-  }
-};
-
-module.exports = { register, login, getMe, forgotPassword, resetPassword, refreshToken, logout, getPublicRegions };
+module.exports = { register, login, getMe, forgotPassword, resetPassword, refreshToken, logout };

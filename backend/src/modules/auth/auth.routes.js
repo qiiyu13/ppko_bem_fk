@@ -17,13 +17,12 @@ const authLimiter = rateLimit({
   message: { success: false, error: { code: 'RATE_LIMIT', message: 'Too many attempts. Try again later.' } },
 });
 
-router.get('/regions/rt', controller.getPublicRegions);
-
 router.post('/register', [authLimiter,
   body('kkNumber').isString().matches(/^\d{16}$/).withMessage('KK number must be 16 digits'),
   body('responsibleName').isString().notEmpty(),
   body('password').isString().isLength({ min: 6 }),
-  body('regionId').optional({ nullable: true }).isString(),
+  body('rwNumber').optional({ nullable: true }).isInt({ min: 1, max: 100 }),
+  body('rtNumber').optional({ nullable: true }).isInt({ min: 1, max: 100 }),
   validate,
 ], controller.register);
 
