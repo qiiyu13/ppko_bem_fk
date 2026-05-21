@@ -33,150 +33,138 @@ class SuperadminSettingsTab extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Padding(
-                padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                child: IntrinsicHeight(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: ResponsiveSize.spacingXLarge),
+      body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: ResponsiveSize.spacingMedium),
 
-                      _buildSettingsItem(
-                        icon: Icons.notifications_outlined,
-                        title: 'Notifikasi',
-                        subtitle: 'Atur notifikasi pengingat',
-                        onTap: () => _push(context, const NotificationSettingsScreen()),
-                      ),
+              _buildSettingsItem(
+                icon: Icons.notifications_outlined,
+                title: 'Notifikasi',
+                subtitle: 'Atur notifikasi pengingat',
+                onTap: () => _push(context, const NotificationSettingsScreen()),
+              ),
 
-                      _buildSettingsItem(
-                        icon: Icons.language_outlined,
-                        title: 'Bahasa',
-                        subtitle: 'Bahasa Indonesia',
-                        onTap: () => _push(context, const LanguageScreen()),
-                      ),
+              _buildSettingsItem(
+                icon: Icons.language_outlined,
+                title: 'Bahasa',
+                subtitle: 'Bahasa Indonesia',
+                onTap: () => _push(context, const LanguageScreen()),
+              ),
 
-                      _buildSettingsItem(
-                        icon: Icons.help_outline,
-                        title: 'Bantuan',
-                        subtitle: 'Pusat bantuan dan FAQ',
-                        onTap: () => _push(context, const HelpScreen()),
-                      ),
+              _buildSettingsItem(
+                icon: Icons.help_outline,
+                title: 'Bantuan',
+                subtitle: 'Pusat bantuan dan FAQ',
+                onTap: () => _push(context, const HelpScreen()),
+              ),
 
-                      _buildSettingsItem(
-                        icon: Icons.info_outline,
-                        title: 'Tentang Aplikasi',
-                        subtitle: 'Versi 1.0.0',
-                        onTap: () => _push(context, const AboutScreen()),
-                      ),
+              _buildSettingsItem(
+                icon: Icons.info_outline,
+                title: 'Tentang Aplikasi',
+                subtitle: 'Versi 1.0.0',
+                onTap: () => _push(context, const AboutScreen()),
+              ),
 
-                      const Spacer(),
+              SizedBox(height: ResponsiveSize.spacingMedium),
 
-                      SizedBox(height: ResponsiveSize.spacingMedium),
-
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                backgroundColor: AppColors.background,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    ResponsiveSize.cardBorderRadius,
-                                  ),
-                                ),
-                                title: Text(
-                                  'Keluar',
-                                  style: TextStyle(
-                                    fontSize: ResponsiveSize.fontXLarge,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                content: Text(
-                                  'Apakah Anda yakin ingin keluar?',
-                                  style: TextStyle(
-                                    fontSize: ResponsiveSize.fontMedium,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: Text(
-                                      'Batal',
-                                      style: TextStyle(
-                                        fontSize: ResponsiveSize.fontMedium,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      Navigator.of(context).pushAndRemoveUntil(
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const WelcomeScreen(),
-                                        ),
-                                        (route) => false,
-                                      );
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
-                                    ),
-                                    child: Text(
-                                      'Keluar',
-                                      style: TextStyle(
-                                        fontSize: ResponsiveSize.fontMedium,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                          icon: Icon(
-                            Icons.logout,
-                            size: ResponsiveSize.iconSmall,
-                            color: AppColors.textOnPrimary,
-                          ),
-                          label: Text(
-                            'Keluar',
-                            style: TextStyle(
-                              fontSize: ResponsiveSize.fontMedium,
-                              color: AppColors.textOnPrimary,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.textOnPrimary,
-                            padding: EdgeInsets.symmetric(
-                              vertical: ResponsiveSize.paddingSmall * 1.2,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                ResponsiveSize.buttonBorderRadius,
-                              ),
-                            ),
-                            elevation: 0,
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: AppColors.background,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            ResponsiveSize.cardBorderRadius,
                           ),
                         ),
+                        title: Text(
+                          'Keluar',
+                          style: TextStyle(
+                            fontSize: ResponsiveSize.fontXLarge,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        content: Text(
+                          'Apakah Anda yakin ingin keluar?',
+                          style: TextStyle(
+                            fontSize: ResponsiveSize.fontMedium,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(
+                              'Batal',
+                              style: TextStyle(
+                                fontSize: ResponsiveSize.fontMedium,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const WelcomeScreen(),
+                                ),
+                                (route) => false,
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                            ),
+                            child: Text(
+                              'Keluar',
+                              style: TextStyle(
+                                fontSize: ResponsiveSize.fontMedium,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 100),
-                    ],
+                    );
+                  },
+                  icon: Icon(
+                    Icons.logout,
+                    size: ResponsiveSize.iconSmall,
+                    color: AppColors.textOnPrimary,
+                  ),
+                  label: Text(
+                    'Keluar',
+                    style: TextStyle(
+                      fontSize: ResponsiveSize.fontMedium,
+                      color: AppColors.textOnPrimary,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.textOnPrimary,
+                    padding: EdgeInsets.symmetric(
+                      vertical: ResponsiveSize.paddingSmall * 1.2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        ResponsiveSize.buttonBorderRadius,
+                      ),
+                    ),
+                    elevation: 0,
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            ],
+          ),
+        ),
       ),
     );
   }
