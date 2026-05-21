@@ -7,7 +7,6 @@ import '../../../utils/responsive_size.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/token_service.dart';
-import '../../../services/screening_service.dart';
 import '../../../services/region_service.dart';
 import '../../../services/notification_service.dart';
 import '../admin_family_detail_screen.dart';
@@ -60,21 +59,6 @@ class _DashboardTabState extends State<DashboardTab> {
     });
   }
 
-  Future<Map<String, dynamic>> _safeStats() async {
-    try {
-      return await ScreeningService.getStats();
-    } catch (_) {
-      return {'total': 0, 'categories': {}};
-    }
-  }
-
-  Future<Map<String, dynamic>> _safeRegionStats() async {
-    try {
-      return await RegionService.getStats();
-    } catch (_) {
-      return {};
-    }
-  }
 
   Future<void> _loadVillages() async {
     try {
@@ -104,7 +88,9 @@ class _DashboardTabState extends State<DashboardTab> {
       };
       if (_searchQuery.isNotEmpty) queryParams['search'] = _searchQuery;
       if (_selectedFilter != 'All') queryParams['irdCategory'] = irdCategoryMap[_selectedFilter];
-      if (_selectedVillageId != null) queryParams['regionId'] = _selectedVillageId;
+      if (_selectedVillageId != null && _selectedVillageId!.isNotEmpty) {
+        queryParams['regionId'] = _selectedVillageId;
+      }
 
       if (loadMore) {
         final response = await ApiService.get(
@@ -119,36 +105,23 @@ class _DashboardTabState extends State<DashboardTab> {
           _totalPages = meta?['totalPages'] ?? 1;
         });
       } else {
-        final results = await Future.wait([
-          _safeStats(),
-          _safeRegionStats(),
-          ApiService.get('/admin/patients', queryParameters: queryParams),
-        ]);
-        final screeningStats = results[0] as Map<String, dynamic>;
-        final regionStats = results[1] as Map<String, dynamic>;
-        final patientResponse = results[2] as dynamic;
-        final List<dynamic> data = patientResponse.data['data'] ?? [];
-        final meta = patientResponse.data['meta'];
+        final response = await ApiService.get('/admin/patients', queryParameters: queryParams);
+        final List<dynamic> data = response.data['data'] ?? [];
+        final meta = response.data['meta'];
 
         if (!mounted) return;
 
-        final categories = screeningStats['categories'] as Map<String, dynamic>? ?? {};
-        final profileCount = (regionStats['profileCount'] as num?)?.toInt() ?? 0;
-        final highRiskProfiles = (categories['high'] as num?)?.toInt() ?? 0;
-        final attentionProfiles = (categories['attention'] as num?)?.toInt() ?? 0;
-        final normalProfiles = (categories['normal'] as num?)?.toInt() ?? 0;
-
-        final fallbackTotal = meta?['total'] as int? ?? data.length;
-        final fallbackHigh = meta?['totalHighRisk'] as int? ?? 0;
-        final fallbackAttention = meta?['totalAttention'] as int? ?? 0;
-        final fallbackNormal = meta?['totalNormal'] as int? ?? 0;
+        final total = meta?['total'] as int? ?? data.length;
+        final high = meta?['totalHighRisk'] as int? ?? 0;
+        final attention = meta?['totalAttention'] as int? ?? 0;
+        final normal = meta?['totalNormal'] as int? ?? 0;
 
         setState(() {
           _patients = data.cast<Map<String, dynamic>>();
-          _totalProfiles = profileCount > 0 ? profileCount : fallbackTotal;
-          _totalHighRiskProfiles = highRiskProfiles > 0 ? highRiskProfiles : fallbackHigh;
-          _totalAttentionProfiles = attentionProfiles > 0 ? attentionProfiles : fallbackAttention;
-          _totalNormalProfiles = normalProfiles > 0 ? normalProfiles : fallbackNormal;
+          _totalProfiles = total;
+          _totalHighRiskProfiles = high;
+          _totalAttentionProfiles = attention;
+          _totalNormalProfiles = normal;
           _totalPages = meta?['totalPages'] ?? 1;
         });
       }

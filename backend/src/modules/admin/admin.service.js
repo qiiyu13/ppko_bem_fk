@@ -4,61 +4,68 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const take = parseInt(limit);
 
-  const where = { role: 'PATIENT' };
+  const userFilter = { role: 'PATIENT' };
 
-  if (regionId) where.regionId = regionId;
+  if (regionId && regionId !== '') {
+    userFilter.region = {
+      OR: [
+        { id: regionId },
+        { parentId: regionId },
+        { parent: { parentId: regionId } }
+      ]
+    };
+  }
 
   if (search) {
-    where.OR = [
+    userFilter.OR = [
       { responsibleName: { contains: search, mode: 'insensitive' } },
       { kkNumber: { contains: search, mode: 'insensitive' } },
       { familyProfiles: { some: { name: { contains: search, mode: 'insensitive' } } } },
     ];
   }
 
-  // If filtering by IRD category, we need to find patients whose latest screening matches
-  let patientIds = null;
-  if (irdCategory) {
-    const screenings = await prisma.medicalScreening.findMany({
-      where: { irdCategory },
-      orderBy: { screeningAt: 'desc' },
-      distinct: ['profileId'],
-      select: { profileId: true },
-    });
-
-    const profileIds = screenings.map((s) => s.profileId);
-    const profiles = await prisma.familyProfile.findMany({
-      where: { id: { in: profileIds } },
-      select: { userId: true },
-    });
-
-    patientIds = [...new Set(profiles.map((p) => p.userId))];
-    where.id = { in: patientIds };
-  }
-
-  // Get latest screening per profile to compute per-category totals (global, ignoring pagination)
-  const latestScreenings = await prisma.medicalScreening.findMany({
-    orderBy: { screeningAt: 'desc' },
-    distinct: ['profileId'],
-    select: { profileId: true, irdCategory: true },
+  // Get all matching users to compute their latest screenings and totals
+  const allFilteredUsers = await prisma.user.findMany({
+    where: userFilter,
+    select: {
+      id: true,
+      familyProfiles: {
+        select: {
+          screenings: {
+            orderBy: { screeningAt: 'desc' },
+            take: 1,
+            select: { irdCategory: true, screeningAt: true },
+          }
+        }
+      }
+    }
   });
-  const profilesByCategory = { high: [], attention: [], normal: [] };
-  for (const s of latestScreenings) {
-    if (s.irdCategory && profilesByCategory[s.irdCategory]) {
-      profilesByCategory[s.irdCategory].push(s.profileId);
+
+  let totalHighRisk = 0;
+  let totalAttention = 0;
+  let totalNormal = 0;
+  const matchedUserIds = [];
+
+  for (const user of allFilteredUsers) {
+    const allScreenings = user.familyProfiles.flatMap((p) => p.screenings);
+    const latest = allScreenings.sort((a, b) => new Date(b.screeningAt) - new Date(a.screeningAt))[0];
+    
+    let userCategory = null;
+    if (latest) {
+      userCategory = latest.irdCategory;
+      if (userCategory === 'high') totalHighRisk++;
+      else if (userCategory === 'attention') totalAttention++;
+      else if (userCategory === 'normal') totalNormal++;
+    }
+
+    if (!irdCategory || userCategory === irdCategory) {
+      matchedUserIds.push(user.id);
     }
   }
-  const countCategory = async (profileIds) => {
-    if (!profileIds.length) return 0;
-    const rows = await prisma.familyProfile.findMany({
-      where: { id: { in: profileIds } },
-      select: { userId: true },
-      distinct: ['userId'],
-    });
-    return rows.length;
-  };
 
-  const [users, total, totalHighRisk, totalAttention, totalNormal] = await Promise.all([
+  const where = { ...userFilter, id: { in: matchedUserIds } };
+
+  const [users, total] = await Promise.all([
     prisma.user.findMany({
       where,
       skip,
@@ -84,9 +91,6 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
       },
     }),
     prisma.user.count({ where }),
-    countCategory(profilesByCategory.high),
-    countCategory(profilesByCategory.attention),
-    countCategory(profilesByCategory.normal),
   ]);
 
   // Flatten latest IRD per patient
