@@ -434,18 +434,16 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
           backgroundColor: AppColors.background,
           elevation: 0,
           scrolledUnderElevation: 0.0,
-          leading: Container(
-            margin: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.divider, width: 1),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary, size: 16),
-              onPressed: () => Navigator.pop(context),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            'Detail Pasien',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: ResponsiveSize.fontXLarge,
+              fontWeight: FontWeight.w600,
             ),
           ),
           centerTitle: true,
@@ -465,25 +463,16 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         scrolledUnderElevation: 0.0,
-        leading: Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.divider, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary, size: 16),
-            onPressed: () => Navigator.pop(context),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Detail Pasien',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: ResponsiveSize.fontXLarge,
+            fontWeight: FontWeight.w600,
           ),
         ),
         centerTitle: true,
@@ -494,25 +483,6 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Large Premium Page Header
-              const Text(
-                'Detail Pasien',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Informasi lengkap profil dan riwayat kesehatan pasien',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 24),
               _buildProfileSection(data, overallRiskColor, overallRiskLabel),
               SizedBox(height: ResponsiveSize.spacingMedium),
               _buildIRDSection(overallRiskLevel, overallRiskColor, overallRiskLabel),
@@ -1085,48 +1055,48 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Left side Timeline track and indicators
+          // Left side Timeline track and indicators (Sleek Compact Width)
           SizedBox(
-            width: 44,
+            width: 32,
             child: Column(
               children: [
                 Container(
-                  width: 32,
-                  height: 32,
+                  width: 24,
+                  height: 24,
                   decoration: BoxDecoration(
                     color: dotColor.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
-                    border: Border.all(color: dotColor, width: 2),
+                    border: Border.all(color: dotColor, width: 1.5),
                   ),
                   alignment: Alignment.center,
-                  child: Icon(dotIcon, color: dotColor, size: 16),
+                  child: Icon(dotIcon, color: dotColor, size: 12),
                 ),
                 if (!isLast)
                   Expanded(
                     child: Container(
-                      width: 2,
-                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      width: 1.5,
+                      margin: const EdgeInsets.symmetric(vertical: 2),
                       color: AppColors.divider,
                     ),
                   ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          // Timeline glassmorphic metric card
+          const SizedBox(width: 4),
+          // Timeline compact metric card
           Expanded(
             child: Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(14),
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: AppColors.card,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.surface, width: 1.5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.surface, width: 1.2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.015),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    color: Colors.black.withValues(alpha: 0.01),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
@@ -1139,7 +1109,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                       Text(
                         formattedDate,
                         style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
                         ),
@@ -1147,19 +1117,19 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                       Text(
                         'Oleh: $screenerName',
                         style: const TextStyle(
-                          fontSize: 10,
+                          fontSize: 9,
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   
                   // Screening Metrics Grid
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: 6,
+                    runSpacing: 6,
                     children: [
                       if (sys > 0 && dia > 0)
                         _buildTimelineMetricBadge('Tensi', '$sys/$dia mmHg', AppColors.primary),
@@ -1178,10 +1148,10 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
 
                   // Screener notes if present
                   if (notes.isNotEmpty) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                       decoration: BoxDecoration(
                         color: AppColors.background.withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(8),
@@ -1190,13 +1160,13 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.note_alt_outlined, size: 14, color: AppColors.textSecondary),
+                          const Icon(Icons.note_alt_outlined, size: 12, color: AppColors.textSecondary),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               notes,
                               style: const TextStyle(
-                                fontSize: 11,
+                                fontSize: 10,
                                 color: AppColors.textPrimary,
                                 fontStyle: FontStyle.italic,
                               ),
@@ -1217,11 +1187,11 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
 
   Widget _buildTimelineMetricBadge(String label, String value, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.2), width: 0.5),
+        color: color.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.15), width: 0.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1229,7 +1199,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
           Text(
             '$label: ',
             style: const TextStyle(
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
             ),
@@ -1237,7 +1207,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
           Text(
             value,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.bold,
               color: color,
             ),

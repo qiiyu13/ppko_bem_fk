@@ -322,10 +322,10 @@ class _ExpandableScreeningCardWidgetState
   Widget build(BuildContext context) {
 
     return Container(
-      margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(ResponsiveSize.cardBorderRadius),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.surface, width: 1),
         boxShadow: [
           BoxShadow(
@@ -345,27 +345,27 @@ class _ExpandableScreeningCardWidgetState
               });
             },
             borderRadius: BorderRadius.vertical(
-              top: Radius.circular(ResponsiveSize.cardBorderRadius),
+              top: const Radius.circular(12),
               bottom: _isExpanded
                   ? Radius.zero
-                  : Radius.circular(ResponsiveSize.cardBorderRadius),
+                  : const Radius.circular(12),
             ),
             child: Padding(
-              padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Row(
                 children: [
                   // Document icon
                   SvgPicture.asset(
                     AssetHelper.getSvgPath('document_recolored_final_2.svg'),
-                    width: ResponsiveSize.iconMedium * 1.2,
-                    height: ResponsiveSize.iconMedium * 1.2,
+                    width: ResponsiveSize.iconMedium * 1.1,
+                    height: ResponsiveSize.iconMedium * 1.1,
                   ),
-                  SizedBox(width: ResponsiveSize.paddingSmall),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       _formatDate(widget.data.date),
-                      style: TextStyle(
-                        fontSize: ResponsiveSize.fontMedium,
+                      style: const TextStyle(
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
@@ -385,13 +385,13 @@ class _ExpandableScreeningCardWidgetState
           // Expanded content - detailed report
           if (_isExpanded)
             Container(
-              padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-              decoration: BoxDecoration(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: const BoxDecoration(
                 color: AppColors.card,
                 borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(ResponsiveSize.cardBorderRadius),
+                  bottom: Radius.circular(12),
                 ),
-                border: const Border(top: BorderSide(color: AppColors.surface)),
+                border: Border(top: BorderSide(color: AppColors.surface)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -408,7 +408,7 @@ class _ExpandableScreeningCardWidgetState
                           unit: 'mmHg',
                         ),
                       ),
-                      SizedBox(width: ResponsiveSize.paddingSmall),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _buildVitalChip(
                           icon: Icons.monitor_weight_outlined,
@@ -420,7 +420,7 @@ class _ExpandableScreeningCardWidgetState
                       ),
                     ],
                   ),
-                  SizedBox(height: ResponsiveSize.paddingSmall),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
@@ -432,7 +432,7 @@ class _ExpandableScreeningCardWidgetState
                           unit: 'cm',
                         ),
                       ),
-                      SizedBox(width: ResponsiveSize.paddingSmall),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _buildVitalChip(
                           icon: Icons.calculate_outlined,
@@ -444,26 +444,26 @@ class _ExpandableScreeningCardWidgetState
                       ),
                     ],
                   ),
-                  SizedBox(height: ResponsiveSize.spacingMedium),
+                  const SizedBox(height: 10),
                   // Lab results
-                  Text(
+                  const Text(
                     'Hasil Lab',
                     style: TextStyle(
-                      fontSize: ResponsiveSize.fontSmall,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  SizedBox(height: ResponsiveSize.spacingSmall),
+                  const SizedBox(height: 4),
                   _buildLabRow('Gula Darah', '${widget.data.bloodSugar.toStringAsFixed(0)} mg/dL', _labColor(widget.data.bloodSugar, normal: 100, borderline: 126)),
                   _buildLabRow('Asam Urat', '${widget.data.uricAcid.toStringAsFixed(1)} mg/dL', _labColor(widget.data.uricAcid, normal: 6, borderline: 7)),
                   _buildLabRow('Kolesterol', '${widget.data.cholesterol.toStringAsFixed(0)} mg/dL', _labColor(widget.data.cholesterol, normal: 200, borderline: 240)),
-                  SizedBox(height: ResponsiveSize.spacingMedium),
+                  const SizedBox(height: 10),
                   // IRD progress bar
                   _buildIRDBar(),
-                  SizedBox(height: ResponsiveSize.spacingMedium),
+                  const SizedBox(height: 10),
                   const Divider(color: AppColors.surface),
-                  SizedBox(height: ResponsiveSize.spacingSmall),
+                  const SizedBox(height: 6),
                   // Action button
                   _buildActionButton(
                     label: 'Unduh Laporan',
@@ -525,26 +525,46 @@ class _ExpandableScreeningCardWidgetState
     required String unit,
   }) {
     return Container(
-      padding: EdgeInsets.all(ResponsiveSize.paddingSmall),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: iconColor.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(10),
+        color: iconColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: iconColor, size: 16),
-          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(icon, color: iconColor, size: 14),
+              Text(
+                unit,
+                style: const TextStyle(
+                  fontSize: 8.5,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
           Text(
             value,
-            style: TextStyle(
-              fontSize: ResponsiveSize.fontMedium,
+            style: const TextStyle(
+              fontSize: 14,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
-          Text(unit, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-          Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 8.5,
+              color: AppColors.textSecondary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
