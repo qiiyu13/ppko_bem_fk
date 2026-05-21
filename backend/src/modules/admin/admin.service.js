@@ -47,18 +47,23 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
   const matchedUserIds = [];
 
   for (const user of allFilteredUsers) {
-    const allScreenings = user.familyProfiles.flatMap((p) => p.screenings);
-    const latest = allScreenings.sort((a, b) => new Date(b.screeningAt) - new Date(a.screeningAt))[0];
-    
-    let userCategory = null;
-    if (latest) {
-      userCategory = latest.irdCategory;
-      if (userCategory === 'high') totalHighRisk++;
-      else if (userCategory === 'attention') totalAttention++;
-      else if (userCategory === 'normal') totalNormal++;
+    let hasMatchingProfile = false;
+
+    for (const profile of user.familyProfiles) {
+      const latestProfileScreening = profile.screenings[0];
+      if (latestProfileScreening) {
+        const cat = latestProfileScreening.irdCategory;
+        if (cat === 'high') totalHighRisk++;
+        else if (cat === 'attention') totalAttention++;
+        else if (cat === 'normal') totalNormal++;
+
+        if (cat === irdCategory) {
+          hasMatchingProfile = true;
+        }
+      }
     }
 
-    if (!irdCategory || userCategory === irdCategory) {
+    if (!irdCategory || hasMatchingProfile) {
       matchedUserIds.push(user.id);
     }
   }
