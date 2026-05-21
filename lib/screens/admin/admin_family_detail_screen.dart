@@ -99,40 +99,6 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
           name,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        actions: [
-          if (widget.readOnly)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.statusAmber.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.statusAmber.withValues(alpha: 0.5),
-                    width: 1,
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.visibility_outlined,
-                        size: 14, color: AppColors.statusAmber),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Tinjau',
-                      style: TextStyle(
-                        color: AppColors.statusAmber,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -350,6 +316,7 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
           MaterialPageRoute(
             builder: (_) => AdminPatientDetailScreen(
               preloaded: true,
+              readOnly: widget.readOnly,
               patient: {
                 ...profile,
                 'familyName': familyName,

@@ -7,6 +7,7 @@ import '../../services/appointment_service.dart';
 import '../../services/websocket_service.dart';
 import '../../utils/date_utils.dart';
 import '../../utils/responsive_size.dart';
+import '../superadmin/screens/schedule_form_screen.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -132,6 +133,22 @@ class _ScheduleScreenState extends State<ScheduleScreen>
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'admin_schedule_create_fab',
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: const Text('Jadwal Baru'),
+        onPressed: () async {
+          final created = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ScheduleFormScreen(),
+            ),
+          );
+          if (created != null) _loadAppointments();
+        },
+      ),
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,

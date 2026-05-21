@@ -9,11 +9,13 @@ import '../../models/health_metric.dart';
 class AdminPatientDetailScreen extends StatefulWidget {
   final Map<String, dynamic> patient;
   final bool preloaded;
+  final bool readOnly;
 
   const AdminPatientDetailScreen({
     super.key,
     required this.patient,
     this.preloaded = false,
+    this.readOnly = false,
   });
 
   @override

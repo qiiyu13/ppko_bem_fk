@@ -51,22 +51,24 @@ class GreetingHeader extends StatelessWidget {
           ),
           SizedBox(width: ResponsiveSize.paddingSmall),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  displayName,
-                  style: TextStyle(
-                    fontSize: ResponsiveSize.fontLarge,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                Flexible(
+                  child: Text(
+                    displayName,
+                    style: TextStyle(
+                      fontSize: ResponsiveSize.fontLarge,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 if (roleBadge != null) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: (roleBadgeColor ?? AppColors.primary).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(6),
