@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_theme.dart';
 import '../screens/patient/patient_main_screen.dart';
 import '../screens/admin/admin_main_screen.dart';
 import '../screens/superadmin/superadmin_main_screen.dart';
@@ -23,6 +24,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   bool _isLoading = true;
   bool _isLoggedIn = false;
+  bool _illustrationVisible = false;
   String _userName = '';
   String _userRole = '';
   bool _obscurePassword = true;
@@ -34,6 +36,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
     _checkLoginStatus();
   }
 
@@ -52,6 +55,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         _isLoading = false;
       });
     }
+    if (mounted) setState(() => _illustrationVisible = true);
   }
 
   void _showForgotPasswordDialog() {
@@ -119,6 +123,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   void dispose() {
     _identifierController.dispose();
     _passwordController.dispose();
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -130,116 +135,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   Widget _buildLoadingForm() {
     return const SizedBox(
-      height: 300,
+      height: 280,
       child: Center(
         child: CircularProgressIndicator(color: AppColors.primary),
       ),
-    );
-  }
-
-  Widget _buildWelcomeBackForm(bool isShortScreen) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Selamat datang kembali,',
-              style: TextStyle(
-                fontSize: isShortScreen ? 14 : 16,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            SizedBox(height: isShortScreen ? 4 : 6),
-            Text(
-              _userName,
-              style: TextStyle(
-                fontSize: isShortScreen ? 20 : 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
-
-        SizedBox(height: isShortScreen ? 24 : 32),
-
-        SizedBox(
-          width: double.infinity,
-          height: isShortScreen ? 44 : 52,
-          child: ElevatedButton(
-            onPressed: () {
-              if (_userRole == 'ADMIN') {
-                _navigateToAdminDashboard();
-              } else if (_userRole == 'SUPERADMIN') {
-                _navigateToSuperadminDashboard();
-              } else {
-                _navigateToPatientDashboard();
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.textOnPrimary,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'LANJUTKAN',
-                  style: TextStyle(
-                    fontSize: isShortScreen ? 14 : 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                SizedBox(width: isShortScreen ? 6 : 8),
-                Icon(Icons.arrow_forward, size: isShortScreen ? 16 : 18),
-              ],
-            ),
-          ),
-        ),
-
-        SizedBox(height: isShortScreen ? 16 : 24),
-
-        Center(
-          child: TextButton(
-            onPressed: () async {
-              setState(() => _isLoading = true);
-              await AuthService.logout();
-              await _checkLoginStatus();
-            },
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            ),
-            child: Text(
-              'Bukan Anda? Masuk dengan akun lain',
-              style: TextStyle(
-                fontSize: isShortScreen ? 12 : 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.statusRed,
-              ),
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 20),
-
-        Center(
-          child: Text(
-            'v1.0 © 2026 MEDIKU',
-            style: TextStyle(
-              fontSize: isShortScreen ? 10 : 11,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -366,7 +265,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         SizedBox(height: isShortScreen ? 8 : 12),
 
         Align(
-          alignment: Alignment.centerLeft,
+          alignment: Alignment.centerRight,
           child: TextButton(
             onPressed: _showForgotPasswordDialog,
             style: TextButton.styleFrom(
@@ -431,20 +330,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'MASUK',
-                  style: TextStyle(
-                    fontSize: isShortScreen ? 14 : 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                SizedBox(width: isShortScreen ? 6 : 8),
-                Icon(Icons.arrow_forward, size: isShortScreen ? 16 : 18),
-              ],
+            child: Text(
+              'MASUK',
+              style: TextStyle(
+                fontSize: isShortScreen ? 14 : 16,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+              ),
             ),
           ),
         ),
@@ -502,247 +394,279 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
+  Widget _buildGreenBackground(bool isSmallScreen, bool isShortScreen) {
+    return SafeArea(
+      bottom: false,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(
+              left: isSmallScreen ? 20.0 : 28.0,
+              right: isSmallScreen ? 20.0 : 28.0,
+              top: 8.0,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      AssetHelper.getIconPath('leaf_icon.png'),
+                      width: 22,
+                      height: 22,
+                      color: Colors.white,
+                      colorBlendMode: BlendMode.srcIn,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'MEDIKU',
+                      style: TextStyle(
+                        fontFamily: AppTheme.fontFamily,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 1.5,
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Kesehatan keluarga di satu tempat',
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white.withValues(alpha: 0.70),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(height: isShortScreen ? 46 : 58),
+
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 400),
+            opacity: _illustrationVisible ? 1.0 : 0.0,
+            child: Image.asset(
+              AssetHelper.getIllustrationPath('welcome-illustration.webp'),
+              width: double.infinity,
+              fit: BoxFit.fitWidth,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWelcomeBackSheet(bool isSmallScreen, bool isShortScreen) {
+    final hPad = isSmallScreen ? 16.0 : 24.0;
+
+    return Padding(
+      padding: EdgeInsets.only(left: hPad, right: hPad, bottom: 20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Spacer(flex: 1),
+
+          Text(
+            'Selamat datang kembali,',
+            style: TextStyle(
+              fontSize: isShortScreen ? 18 : 20,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          SizedBox(height: isShortScreen ? 4 : 6),
+          Text(
+            _userName,
+            style: TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: isShortScreen ? 28 : 32,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+              height: 1.1,
+            ),
+          ),
+
+          SizedBox(height: isShortScreen ? 28 : 36),
+
+          SizedBox(
+            width: double.infinity,
+            height: isShortScreen ? 44 : 52,
+            child: ElevatedButton(
+              onPressed: () {
+                if (_userRole == 'ADMIN') {
+                  _navigateToAdminDashboard();
+                } else if (_userRole == 'SUPERADMIN') {
+                  _navigateToSuperadminDashboard();
+                } else {
+                  _navigateToPatientDashboard();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.textOnPrimary,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'LANJUTKAN',
+                    style: TextStyle(
+                      fontSize: isShortScreen ? 14 : 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  SizedBox(width: isShortScreen ? 6 : 8),
+                  Icon(Icons.arrow_forward, size: isShortScreen ? 16 : 18),
+                ],
+              ),
+            ),
+          ),
+
+          const Spacer(flex: 1),
+
+          Center(
+            child: TextButton(
+              onPressed: () async {
+                setState(() => _isLoading = true);
+                await AuthService.logout();
+                await _checkLoginStatus();
+              },
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              child: Text(
+                'Bukan Anda? Masuk dengan akun lain',
+                style: TextStyle(
+                  fontSize: isShortScreen ? 12 : 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.statusRed,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 2),
+
+          Center(
+            child: Text(
+              'v1.0 © 2026 MEDIKU',
+              style: TextStyle(
+                fontSize: isShortScreen ? 10 : 11,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomSheet(bool isSmallScreen, bool isShortScreen, double sheetHeight) {
+    final isWelcomeBack = !_isLoading && _isLoggedIn;
+    final hPad = isSmallScreen ? 16.0 : 24.0;
+
+    return AnimatedSlide(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.fastOutSlowIn,
+      offset: _illustrationVisible ? Offset.zero : const Offset(0, 0.12),
+      child: Container(
+        height: sheetHeight,
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(28),
+            topRight: Radius.circular(28),
+          ),
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 24,
+              color: AppColors.primary.withValues(alpha: 0.18),
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 4),
+                child: Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.divider,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: isWelcomeBack
+                    ? _buildWelcomeBackSheet(isSmallScreen, isShortScreen)
+                    : SingleChildScrollView(
+                        physics: const ClampingScrollPhysics(),
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            left: hPad,
+                            right: hPad,
+                            top: 20.0,
+                            bottom: 16.0,
+                          ),
+                          child: _isLoading
+                              ? _buildLoadingForm()
+                              : _buildLoginForm(isShortScreen),
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final isSmallScreen = screenWidth < 360;
     final isShortScreen = screenHeight < 700;
-    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final sheetHeight = (screenHeight * 0.48).clamp(280.0, 460.0);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        bottom: false,
-        child: CustomScrollView(
-          physics: const ClampingScrollPhysics(),
-          slivers: [
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.fastOutSlowIn,
-                    height: isKeyboardOpen
-                        ? 0
-                        : (screenHeight -
-                                (isShortScreen ? 380 : 460) -
-                                MediaQuery.of(context).padding.top)
-                            .clamp(100.0, 400.0),
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 250),
-                      opacity: isKeyboardOpen ? 0.0 : 1.0,
-                      child: ClipRect(
-                        child: Stack(
-                          children: [
-                            Positioned(
-                              top: -30,
-                              left: -30,
-                              child: Container(
-                                width: 120,
-                                height: 120,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.primarySurface.withValues(
-                                    alpha: 0.4,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 20,
-                              right: -20,
-                              child: Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.primaryLight.withValues(
-                                    alpha: 0.2,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 100,
-                              left: -10,
-                              child: Container(
-                                width: 60,
-                                height: 60,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.statusGreen.withValues(
-                                    alpha: 0.12,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 40,
-                              right: 40,
-                              child: Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.primary.withValues(alpha: 0.08),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 130,
-                              right: -30,
-                              child: Container(
-                                width: 70,
-                                height: 70,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.primarySurface.withValues(
-                                    alpha: 0.25,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 60,
-                              left: 80,
-                              child: Container(
-                                width: 35,
-                                height: 35,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.primaryLight.withValues(
-                                    alpha: 0.15,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 10,
-                              left: 50,
-                              child: Container(
-                                width: 25,
-                                height: 25,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.statusGreen.withValues(
-                                    alpha: 0.2,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 60,
-                              left: -40,
-                              child: Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.statusGreen.withValues(
-                                    alpha: 0.15,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 20,
-                              right: 20,
-                              child: Container(
-                                width: 60,
-                                height: 60,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.primary.withValues(alpha: 0.1),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 80,
-                              left: 60,
-                              child: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.primarySurface.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Align(
-                              alignment: Alignment.bottomCenter,
-                              child: ClipRRect(
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(24),
-                                  topRight: Radius.circular(24),
-                                ),
-                                child: Image.asset(
-                                  AssetHelper.getIllustrationPath('welcome-illustration.webp'),
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  alignment: Alignment.bottomCenter,
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 16,
-                              right: isSmallScreen ? 16 : 24,
-                              child: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: AppColors.primarySurface.withValues(
-                                    alpha: 0.2,
-                                  ),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.favorite,
-                                  color: AppColors.textSecondary,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  Container(
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: AppColors.card,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(24),
-                        topRight: Radius.circular(24),
-                      ),
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        left: isSmallScreen ? 16.0 : 24.0,
-                        right: isSmallScreen ? 16.0 : 24.0,
-                        top: isShortScreen ? 12.0 : 16.0,
-                        bottom: 16.0 + MediaQuery.of(context).padding.bottom,
-                      ),
-                      child: _isLoading
-                          ? _buildLoadingForm()
-                          : _isLoggedIn
-                          ? _buildWelcomeBackForm(isShortScreen)
-                          : _buildLoginForm(isShortScreen),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      backgroundColor: AppColors.primary,
+      resizeToAvoidBottomInset: false,
+      body: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: sheetHeight - 28,
+            child: _buildGreenBackground(isSmallScreen, isShortScreen),
+          ),
+          Positioned(
+            bottom: keyboardHeight,
+            left: 0,
+            right: 0,
+            child: _buildBottomSheet(isSmallScreen, isShortScreen, sheetHeight),
+          ),
+        ],
       ),
     );
   }
