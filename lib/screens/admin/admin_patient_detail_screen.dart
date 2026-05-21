@@ -62,21 +62,86 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
   }
 
   Map<String, dynamic> get _extendedData {
-    if (_patientData == null) return {...widget.patient};
-    final metrics =
-        _patientData!['metrics'] as Map<String, dynamic>? ?? {};
+    final patientMap = _patientData ?? widget.patient;
+
+    // Find the latest screening if available
+    Map<String, dynamic>? latestScreening;
+    if (_screenings.isNotEmpty) {
+      final sortedScreenings = List<Map<String, dynamic>>.from(_screenings);
+      sortedScreenings.sort((a, b) {
+        final aTime = a['screeningAt']?.toString() ?? '';
+        final bTime = b['screeningAt']?.toString() ?? '';
+        return bTime.compareTo(aTime);
+      });
+      latestScreening = sortedScreenings.first;
+    }
+
+    // Helper to get latest from generic metrics list if needed
+    double? getLatestMetricValue(String type, {bool isSecondary = false}) {
+      final metricsList = patientMap['metrics'];
+      if (metricsList is List) {
+        final matching = metricsList.where((m) => m is Map && m['type'] == type).toList();
+        if (matching.isNotEmpty) {
+          final sortedMatching = List<dynamic>.from(matching);
+          sortedMatching.sort((a, b) {
+            final aTime = a['recordedAt']?.toString() ?? '';
+            final bTime = b['recordedAt']?.toString() ?? '';
+            return bTime.compareTo(aTime);
+          });
+          final latest = sortedMatching.first as Map;
+          final val = isSecondary ? latest['secondaryValue'] : latest['value'];
+          return (val as num?)?.toDouble();
+        }
+      }
+      return null;
+    }
+
+    // Extract values with robust fallbacks:
+    // 1. Latest Screening
+    // 2. Metrics List
+    // 3. Root attributes
+    // 4. Default to 0
+    final systolic = latestScreening?['systolic'] ??
+                     getLatestMetricValue('blood_pressure') ??
+                     patientMap['systolic'] ?? 0;
+
+    final diastolic = latestScreening?['diastolic'] ??
+                      getLatestMetricValue('blood_pressure', isSecondary: true) ??
+                      patientMap['diastolic'] ?? 0;
+
+    final glucose = latestScreening?['bloodSugar'] ??
+                    getLatestMetricValue('blood_sugar') ??
+                    patientMap['glucose'] ??
+                    patientMap['bloodSugar'] ?? 0;
+
+    final weight = latestScreening?['weight'] ??
+                   patientMap['weight'] ??
+                   getLatestMetricValue('weight') ?? 0;
+
+    final height = latestScreening?['height'] ??
+                   patientMap['height'] ??
+                   getLatestMetricValue('height') ?? 0;
+
+    final uricAcid = latestScreening?['uricAcid'] ??
+                     getLatestMetricValue('uric_acid') ??
+                     patientMap['uricAcid'] ?? 0;
+
+    final cholesterol = latestScreening?['cholesterol'] ??
+                        getLatestMetricValue('cholesterol') ??
+                        patientMap['cholesterol'] ?? 0;
+
     return {
-      'name': _patientData!['name'] ?? widget.patient['name'] ?? '',
-      'nik': _patientData!['nik'] ?? widget.patient['nik'] ?? '',
-      'age': _patientData!['age'] ?? 0,
-      'gender': _patientData!['gender'] ?? '',
-      'systolic': metrics['systolic'] ?? 0,
-      'diastolic': metrics['diastolic'] ?? 0,
-      'glucose': metrics['bloodSugar'] ?? metrics['glucose'] ?? 0,
-      'weight': metrics['weight'] ?? 0,
-      'height': metrics['height'] ?? 0,
-      'uricAcid': metrics['uricAcid'] ?? 0,
-      'cholesterol': metrics['cholesterol'] ?? 0,
+      'name': patientMap['name'] ?? '',
+      'nik': patientMap['nik'] ?? '',
+      'age': patientMap['age'] ?? 0,
+      'gender': patientMap['gender'] ?? '',
+      'systolic': (systolic as num).toInt(),
+      'diastolic': (diastolic as num).toInt(),
+      'glucose': (glucose as num).toDouble(),
+      'weight': (weight as num).toDouble(),
+      'height': (height as num).toDouble(),
+      'uricAcid': (uricAcid as num).toDouble(),
+      'cholesterol': (cholesterol as num).toDouble(),
     };
   }
 
@@ -108,7 +173,8 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
         }
       ];
     }
-    return _screenings.map((s) {
+
+    final list = _screenings.map((s) {
       final sys = (s['systolic'] ?? 0) as num;
       final dia = (s['diastolic'] ?? 0) as num;
       String status;
@@ -147,12 +213,17 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
         'status': status,
         'statusLabel': statusLabel,
         'date': formattedDate,
+        'rawDate': dateStr.toString(),
       };
-    }).toList()
-      ..sort((a, b) {
-        if (a['date'] == '-' || a['date'] == '-') return 0;
-        return -(a['date'] as String).compareTo(b['date'] as String);
-      });
+    }).toList();
+
+    list.sort((a, b) {
+      final aDate = a['rawDate'] as String;
+      final bDate = b['rawDate'] as String;
+      return bDate.compareTo(aDate); // Descending order (latest first)
+    });
+
+    return list;
   }
 
   Color _getStatusColor(String status) {
