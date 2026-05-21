@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
+import '../../admin/admin_family_detail_screen.dart';
 
 class FamilyAccountsScreen extends StatefulWidget {
   final String rtId;
@@ -114,7 +115,25 @@ class _FamilyAccountsScreenState extends State<FamilyAccountsScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.surface, width: 1),
       ),
-      child: Padding(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AdminFamilyDetailScreen(
+                family: {
+                  'id': family['id'],
+                  'name': name,
+                  'nik': kkNumber,
+                  'phone': family['phone'],
+                },
+                readOnly: true,
+              ),
+            ),
+          );
+        },
+        child: Padding(
         padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
         child: Row(
           children: [
@@ -193,6 +212,7 @@ class _FamilyAccountsScreenState extends State<FamilyAccountsScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

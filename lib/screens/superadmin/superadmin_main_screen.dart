@@ -33,9 +33,9 @@ class _SuperadminMainScreenState extends State<SuperadminMainScreen> {
       label: 'Beranda',
     ),
     NavBarItem(
-      icon: Icons.dashboard_outlined,
-      activeIcon: Icons.dashboard,
-      label: 'Manajemen',
+      icon: Icons.insert_chart_outlined,
+      activeIcon: Icons.insert_chart,
+      label: 'Laporan',
     ),
     NavBarItem(
       icon: Icons.people_outline,

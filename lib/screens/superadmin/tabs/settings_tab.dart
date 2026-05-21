@@ -6,6 +6,7 @@ import '../../../screens/common/settings/language_screen.dart';
 import '../../../screens/common/settings/notification_settings_screen.dart';
 import '../../../screens/welcome_screen.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../widgets/superadmin_badge.dart';
 
 void _push(BuildContext context, Widget screen) {
   Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
@@ -32,6 +33,7 @@ class SuperadminSettingsTab extends StatelessWidget {
           ),
         ),
         centerTitle: true,
+        actions: const [SuperadminBadge()],
       ),
       body: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),

@@ -7,11 +7,11 @@ import '../../../utils/responsive_size.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/token_service.dart';
-import '../../../services/region_service.dart';
 import '../../../services/notification_service.dart';
+import '../../../widgets/dashboard/greeting_header.dart';
+import '../../../widgets/dashboard/stat_cell.dart';
 import '../admin_family_detail_screen.dart';
 import '../qr_scanner_screen.dart';
-import '../../patient/notification_screen.dart';
 
 class DashboardTab extends StatefulWidget {
   const DashboardTab({super.key});
@@ -34,16 +34,19 @@ class _DashboardTabState extends State<DashboardTab> {
   int _totalPages = 1;
   Timer? _searchDebounce;
   String? _userName;
-  List<Map<String, dynamic>> _villages = [];
-  String? _selectedVillageId;
 
   @override
   void initState() {
     super.initState();
     _fetchPatients();
     _loadUser();
-    _loadVillages();
     NotificationService.instance.fetchFromApi();
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadUser() async {
@@ -59,14 +62,6 @@ class _DashboardTabState extends State<DashboardTab> {
     });
   }
 
-
-  Future<void> _loadVillages() async {
-    try {
-      final villages = await RegionService.getVillages();
-      if (!mounted) return;
-      setState(() => _villages = villages);
-    } catch (_) {}
-  }
 
   Future<void> _fetchPatients({bool loadMore = false}) async {
     if (loadMore) {
@@ -88,9 +83,6 @@ class _DashboardTabState extends State<DashboardTab> {
       };
       if (_searchQuery.isNotEmpty) queryParams['search'] = _searchQuery;
       if (_selectedFilter != 'All') queryParams['irdCategory'] = irdCategoryMap[_selectedFilter];
-      if (_selectedVillageId != null && _selectedVillageId!.isNotEmpty) {
-        queryParams['regionId'] = _selectedVillageId;
-      }
 
       if (loadMore) {
         final response = await ApiService.get(
@@ -136,10 +128,12 @@ class _DashboardTabState extends State<DashboardTab> {
         );
       }
     } finally {
-      setState(() {
-        _isLoading = false;
-        _isLoadingMore = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isLoadingMore = false;
+        });
+      }
     }
   }
 
@@ -158,179 +152,6 @@ class _DashboardTabState extends State<DashboardTab> {
     return null;
   }
 
-
-  void _showActionModal(Map<String, dynamic> patient) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                SizedBox(height: ResponsiveSize.spacingMedium),
-                Text(
-                  patient['name'] ?? '-',
-                  style: TextStyle(
-                    fontSize: ResponsiveSize.fontXLarge,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                SizedBox(height: ResponsiveSize.spacingSmall),
-                Text(
-                  'KK: ${patient['nik'] ?? '-'}',
-                  style: TextStyle(
-                    fontSize: ResponsiveSize.fontMedium,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                SizedBox(height: ResponsiveSize.spacingXLarge),
-                _buildActionButton(
-                  icon: Icons.phone,
-                  title: 'Contact Patient',
-                  subtitle: 'Call or message the patient',
-                  color: AppColors.primary,
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                SizedBox(height: ResponsiveSize.spacingMedium),
-                _buildActionButton(
-                  icon: Icons.local_hospital,
-                  title: 'Refer to Doctor',
-                  subtitle: 'Send referral to medical professional',
-                  color: AppColors.statusRed,
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                SizedBox(height: ResponsiveSize.spacingMedium),
-                _buildActionButton(
-                  icon: Icons.check_circle,
-                  title: 'Mark as Resolved',
-                  subtitle: 'Patient condition has improved',
-                  color: AppColors.statusGreen,
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                SizedBox(height: ResponsiveSize.spacingMedium),
-                _buildActionButton(
-                  icon: Icons.calendar_today,
-                  title: 'Schedule Follow-up',
-                  subtitle: 'Set next screening appointment',
-                  color: AppColors.statusAmber,
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                SizedBox(height: ResponsiveSize.spacingXLarge),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(
-                        vertical: ResponsiveSize.paddingMedium,
-                      ),
-                    ),
-                    child: Text(
-                      'Cancel',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: ResponsiveSize.fontLarge,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(ResponsiveSize.paddingSmall),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: ResponsiveSize.iconMedium),
-            ),
-            SizedBox(width: ResponsiveSize.paddingMedium),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: ResponsiveSize.fontLarge,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: ResponsiveSize.fontSmall,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: color,
-              size: ResponsiveSize.iconSmall,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -355,7 +176,9 @@ class _DashboardTabState extends State<DashboardTab> {
       ),
       body: CustomScrollView(
         slivers: [
-            SliverToBoxAdapter(child: _buildGreetingHeader()),
+            SliverToBoxAdapter(
+              child: GreetingHeader(name: _userName, fallbackName: 'Pengguna'),
+            ),
 
             SliverToBoxAdapter(
               child: Container(
@@ -363,116 +186,42 @@ class _DashboardTabState extends State<DashboardTab> {
                 color: AppColors.card,
                 child: Column(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: AppColors.surface.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: TextField(
-                              onChanged: (value) {
-                                _searchDebounce?.cancel();
-                                _searchDebounce = Timer(const Duration(milliseconds: 500), () {
-                                  setState(() {
-                                    _searchQuery = value;
-                                  });
-                                  _fetchPatients();
-                                });
-                              },
-                              decoration: InputDecoration(
-                                isDense: true,
-                                isCollapsed: true,
-                                hintText: 'Cari KK atau NIK...',
-                                hintStyle: TextStyle(
-                                  color: AppColors.textSecondary.withValues(
-                                    alpha: 0.7,
-                                  ),
-                                  fontSize: ResponsiveSize.fontMedium,
-                                ),
-                                prefixIcon: Icon(
-                                  Icons.search,
-                                  color: AppColors.textSecondary,
-                                  size: ResponsiveSize.iconSmall,
-                                ),
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: ResponsiveSize.paddingSmall,
-                                  vertical: ResponsiveSize.paddingSmall,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: ResponsiveSize.paddingSmall),
-                        PopupMenuButton<String>(
-                          offset: const Offset(0, 48),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          onSelected: (id) {
-                            setState(() => _selectedVillageId = id);
+                    Container(
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.surface.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: TextField(
+                        onChanged: (value) {
+                          _searchDebounce?.cancel();
+                          _searchDebounce = Timer(const Duration(milliseconds: 500), () {
+                            setState(() {
+                              _searchQuery = value;
+                            });
                             _fetchPatients();
-                          },
-                          itemBuilder: (_) => [
-                            const PopupMenuItem<String>(
-                              value: '',
-                              child: Text('Semua Desa',
-                                  style: TextStyle(fontWeight: FontWeight.w600)),
-                            ),
-                            ..._villages.map((v) => PopupMenuItem<String>(
-                              value: v['id'] as String,
-                              child: Text(v['name'] as String),
-                            )),
-                          ],
-                          child: Container(
-                            height: 44,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: ResponsiveSize.paddingMedium,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.surface.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  color: AppColors.primary,
-                                  size: ResponsiveSize.iconSmall,
-                                ),
-                                SizedBox(
-                                  width: ResponsiveSize.paddingSmall * 0.5,
-                                ),
-                                Flexible(
-                                  child: Text(
-                                    _selectedVillageId != null
-                                        ? (_villages.firstWhere(
-                                            (v) => v['id'] == _selectedVillageId,
-                                            orElse: () => {'name': 'Desa'},
-                                          )['name'] as String)
-                                        : 'Desa',
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: AppColors.textPrimary,
-                                      fontSize: ResponsiveSize.fontMedium,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                                Icon(
-                                  Icons.arrow_drop_down,
-                                  color: AppColors.textSecondary,
-                                  size: ResponsiveSize.iconSmall,
-                                ),
-                              ],
-                            ),
+                          });
+                        },
+                        decoration: InputDecoration(
+                          isDense: true,
+                          isCollapsed: true,
+                          hintText: 'Cari KK atau NIK...',
+                          hintStyle: TextStyle(
+                            color: AppColors.textSecondary.withValues(alpha: 0.7),
+                            fontSize: ResponsiveSize.fontMedium,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: AppColors.textSecondary,
+                            size: ResponsiveSize.iconSmall,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: ResponsiveSize.paddingSmall,
+                            vertical: ResponsiveSize.paddingSmall,
                           ),
                         ),
-                      ],
+                      ),
                     ),
                     SizedBox(height: ResponsiveSize.spacingMedium),
                     SingleChildScrollView(
@@ -568,118 +317,6 @@ class _DashboardTabState extends State<DashboardTab> {
     );
   }
 
-  Widget _buildGreetingHeader() {
-    final name = _userName ?? 'Pengguna';
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        ResponsiveSize.paddingMedium,
-        MediaQuery.of(context).padding.top + ResponsiveSize.paddingMedium,
-        ResponsiveSize.paddingMedium,
-        ResponsiveSize.paddingMedium,
-      ),
-      color: AppColors.card,
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              initial,
-              style: const TextStyle(
-                color: AppColors.textOnPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          SizedBox(width: ResponsiveSize.paddingSmall),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: TextStyle(
-                    fontSize: ResponsiveSize.fontLarge,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ValueListenableBuilder<int>(
-            valueListenable: NotificationService.instance.unreadCount,
-            builder: (_, count, _) => GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const NotificationScreen()),
-                );
-              },
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(
-                        Icons.notifications_outlined,
-                        color: AppColors.primary,
-                        size: 24,
-                      ),
-                      if (count > 0)
-                        Positioned(
-                          top: -4,
-                          right: -4,
-                          child: Container(
-                            width: 16,
-                            height: 16,
-                            decoration: const BoxDecoration(
-                              color: AppColors.statusRed,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                count > 9 ? '9+' : '$count',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildStatsRow() {
     return Container(
       color: AppColors.card,
@@ -691,68 +328,38 @@ class _DashboardTabState extends State<DashboardTab> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
-            child: _statCell(
-              _totalProfiles,
-              'Total Pasien',
-              AppColors.textPrimary,
+            child: StatCell(
+              value: _totalProfiles,
+              label: 'Total Pasien',
+              color: AppColors.textPrimary,
             ),
           ),
           Container(width: 1, height: 28, color: AppColors.divider),
           Expanded(
-            child: _statCell(
-              _totalHighRiskProfiles,
-              'High Risk',
-              AppColors.statusRed,
+            child: StatCell(
+              value: _totalHighRiskProfiles,
+              label: 'High Risk',
+              color: AppColors.statusRed,
             ),
           ),
           Container(width: 1, height: 28, color: AppColors.divider),
           Expanded(
-            child: _statCell(
-              _totalAttentionProfiles,
-              'Attention',
-              AppColors.statusAmber,
+            child: StatCell(
+              value: _totalAttentionProfiles,
+              label: 'Attention',
+              color: AppColors.statusAmber,
             ),
           ),
           Container(width: 1, height: 28, color: AppColors.divider),
           Expanded(
-            child: _statCell(
-              _totalNormalProfiles,
-              'Normal',
-              AppColors.statusGreen,
+            child: StatCell(
+              value: _totalNormalProfiles,
+              label: 'Normal',
+              color: AppColors.statusGreen,
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _statCell(int value, String label, Color valueColor) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          value.toString(),
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: valueColor,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.2,
-          ),
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
     );
   }
 
@@ -958,7 +565,6 @@ class _DashboardTabState extends State<DashboardTab> {
           ),
         );
       },
-      onLongPress: () => _showActionModal(patient),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: Row(

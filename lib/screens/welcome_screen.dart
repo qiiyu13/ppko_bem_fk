@@ -508,6 +508,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
     final isSmallScreen = screenWidth < 360;
     final isShortScreen = screenHeight < 700;
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -523,180 +524,194 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 mainAxisSize: MainAxisSize.max,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: -30,
-                          left: -30,
-                          child: Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.primarySurface.withValues(
-                                alpha: 0.4,
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.fastOutSlowIn,
+                    height: isKeyboardOpen
+                        ? 0
+                        : (screenHeight -
+                                (isShortScreen ? 380 : 460) -
+                                MediaQuery.of(context).padding.top)
+                            .clamp(100.0, 400.0),
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 250),
+                      opacity: isKeyboardOpen ? 0.0 : 1.0,
+                      child: ClipRect(
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              top: -30,
+                              left: -30,
+                              child: Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.primarySurface.withValues(
+                                    alpha: 0.4,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 20,
-                          right: -20,
-                          child: Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.primaryLight.withValues(
-                                alpha: 0.2,
+                            Positioned(
+                              top: 20,
+                              right: -20,
+                              child: Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.primaryLight.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 100,
-                          left: -10,
-                          child: Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.statusGreen.withValues(
-                                alpha: 0.12,
+                            Positioned(
+                              top: 100,
+                              left: -10,
+                              child: Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.statusGreen.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 40,
-                          right: 40,
-                          child: Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.primary.withValues(alpha: 0.08),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 130,
-                          right: -30,
-                          child: Container(
-                            width: 70,
-                            height: 70,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.primarySurface.withValues(
-                                alpha: 0.25,
+                            Positioned(
+                              top: 40,
+                              right: 40,
+                              child: Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.primary.withValues(alpha: 0.08),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 60,
-                          left: 80,
-                          child: Container(
-                            width: 35,
-                            height: 35,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.primaryLight.withValues(
-                                alpha: 0.15,
+                            Positioned(
+                              top: 130,
+                              right: -30,
+                              child: Container(
+                                width: 70,
+                                height: 70,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.primarySurface.withValues(
+                                    alpha: 0.25,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 10,
-                          left: 50,
-                          child: Container(
-                            width: 25,
-                            height: 25,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.statusGreen.withValues(
-                                alpha: 0.2,
+                            Positioned(
+                              top: 60,
+                              left: 80,
+                              child: Container(
+                                width: 35,
+                                height: 35,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.primaryLight.withValues(
+                                    alpha: 0.15,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 60,
-                          left: -40,
-                          child: Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.statusGreen.withValues(
-                                alpha: 0.15,
+                            Positioned(
+                              top: 10,
+                              left: 50,
+                              child: Container(
+                                width: 25,
+                                height: 25,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.statusGreen.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 20,
-                          right: 20,
-                          child: Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 80,
-                          left: 60,
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.primarySurface.withValues(
-                                alpha: 0.3,
+                            Positioned(
+                              bottom: 60,
+                              left: -40,
+                              child: Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.statusGreen.withValues(
+                                    alpha: 0.15,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        Align(
-                          alignment: Alignment.bottomCenter,
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(24),
-                              topRight: Radius.circular(24),
+                            Positioned(
+                              bottom: 20,
+                              right: 20,
+                              child: Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                ),
+                              ),
                             ),
-                            child: Image.asset(
-                              AssetHelper.getIllustrationPath('welcome-illustration.webp'),
-                              width: double.infinity,
-                              fit: BoxFit.cover,
+                            Positioned(
+                              top: 80,
+                              left: 60,
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.primarySurface.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Align(
                               alignment: Alignment.bottomCenter,
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 16,
-                          right: isSmallScreen ? 16 : 24,
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: AppColors.primarySurface.withValues(
-                                alpha: 0.2,
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(24),
+                                  topRight: Radius.circular(24),
+                                ),
+                                child: Image.asset(
+                                  AssetHelper.getIllustrationPath('welcome-illustration.webp'),
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  alignment: Alignment.bottomCenter,
+                                ),
                               ),
-                              shape: BoxShape.circle,
                             ),
-                            child: const Icon(
-                              Icons.favorite,
-                              color: AppColors.textSecondary,
-                              size: 20,
+                            Positioned(
+                              top: 16,
+                              right: isSmallScreen ? 16 : 24,
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primarySurface.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.favorite,
+                                  color: AppColors.textSecondary,
+                                  size: 20,
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
 

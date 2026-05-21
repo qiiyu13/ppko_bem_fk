@@ -80,6 +80,19 @@ class AdminService {
     return response.data['data'] as Map<String, dynamic>;
   }
 
+  static Future<List<Map<String, dynamic>>> getThroughput({int days = 7}) async {
+    try {
+      final response = await ApiService.get(
+        '/admin/users/throughput',
+        queryParameters: {'days': days},
+      );
+      final List<dynamic> data = response.data['data'] ?? [];
+      return data.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
   static Future<void> deleteUser(String id, DateTime updatedAt) async {
     await ApiService.delete('/admin/users/$id', data: {
       'updatedAt': updatedAt.toIso8601String(),

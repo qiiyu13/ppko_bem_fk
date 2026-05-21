@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../services/api_service.dart';
+import '../../services/audit_service.dart';
 import '../../utils/patient_utils.dart';
 import '../../utils/responsive_size.dart';
 import 'admin_patient_detail_screen.dart';
 
 class AdminFamilyDetailScreen extends StatefulWidget {
   final Map<String, dynamic> family;
+  final bool readOnly;
 
-  const AdminFamilyDetailScreen({super.key, required this.family});
+  const AdminFamilyDetailScreen({
+    super.key,
+    required this.family,
+    this.readOnly = false,
+  });
 
   @override
   State<AdminFamilyDetailScreen> createState() =>
@@ -93,6 +99,40 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
           name,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
+        actions: [
+          if (widget.readOnly)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.statusAmber.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.statusAmber.withValues(alpha: 0.5),
+                    width: 1,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.visibility_outlined,
+                        size: 14, color: AppColors.statusAmber),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Tinjau',
+                      style: TextStyle(
+                        color: AppColors.statusAmber,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -272,7 +312,39 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
     ].join(' · ');
 
     return InkWell(
-      onTap: () {
+      onTap: () async {
+        if (widget.readOnly) {
+          final proceed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Buka data pasien'),
+              content: const Text(
+                  'Anda mengakses sebagai SUPERADMIN. Setiap perubahan akan tercatat di audit log.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                  ),
+                  child: const Text('Lanjutkan',
+                      style: TextStyle(color: AppColors.textOnPrimary)),
+                ),
+              ],
+            ),
+          );
+          if (proceed != true) return;
+          await AuditService.logAdminAction(
+            action: 'PATIENT_VIEW',
+            targetType: 'PROFILE',
+            targetId: (profile['id'] as String?) ?? '',
+            metadata: {'familyId': widget.family['id']},
+          );
+        }
+        if (!mounted) return;
         Navigator.push(
           context,
           MaterialPageRoute(

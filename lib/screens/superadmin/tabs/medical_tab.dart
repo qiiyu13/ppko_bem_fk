@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../utils/responsive_size.dart';
-import '../screens/jadwal_management_screen.dart';
-import '../screens/medical_screening_screen.dart';
+import '../../../widgets/superadmin_badge.dart';
 
 class MedicalTab extends StatelessWidget {
   const MedicalTab({super.key});
@@ -17,7 +16,7 @@ class MedicalTab extends StatelessWidget {
         backgroundColor: AppColors.background,
         elevation: 0,
         title: Text(
-          'Manajemen Medis',
+          'Laporan',
           style: TextStyle(
             color: AppColors.primary,
             fontSize: ResponsiveSize.fontXLarge,
@@ -25,132 +24,62 @@ class MedicalTab extends StatelessWidget {
           ),
         ),
         centerTitle: true,
+        actions: const [SuperadminBadge()],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Pilih aktivitas yang ingin dilakukan',
-                style: TextStyle(
-                  fontSize: ResponsiveSize.fontMedium,
-                  color: AppColors.textSecondary,
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(ResponsiveSize.paddingLarge),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.insert_chart_outlined,
+                  size: 64,
+                  color: AppColors.textSecondary.withValues(alpha: 0.6),
                 ),
-              ),
-
-              SizedBox(height: ResponsiveSize.spacingXLarge),
-
-              _buildOptionCard(
-                context,
-                icon: Icons.assignment_outlined,
-                title: 'Screening Pasien',
-                subtitle:
-                    'Tambah data screening untuk pasien yang sudah terdaftar',
-                color: AppColors.primary,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MedicalScreeningScreen(),
-                    ),
-                  );
-                },
-              ),
-
-              SizedBox(height: ResponsiveSize.spacingMedium),
-
-              _buildOptionCard(
-                context,
-                icon: Icons.calendar_today_outlined,
-                title: 'Kelola Jadwal',
-                subtitle: 'Atur jadwal pemeriksaan dan screening massal',
-                color: AppColors.primary,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const JadwalManagementScreen(),
-                    ),
-                  );
-                },
-              ),
-
-              SizedBox(height: ResponsiveSize.spacingXLarge * 2),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOptionCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surface, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                SizedBox(height: ResponsiveSize.spacingMedium),
+                Text(
+                  'Laporan & Analitik',
+                  style: TextStyle(
+                    fontSize: ResponsiveSize.fontLarge,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-                child: Icon(icon, color: color, size: ResponsiveSize.iconLarge),
-              ),
-              SizedBox(width: ResponsiveSize.paddingMedium),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: ResponsiveSize.fontLarge,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: ResponsiveSize.fontMedium,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
+                SizedBox(height: ResponsiveSize.spacingSmall),
+                Text(
+                  'Tren screening per desa, throughput admin, dan ekspor data akan tersedia di sini.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: ResponsiveSize.fontMedium,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                color: color,
-                size: ResponsiveSize.iconSmall,
-              ),
-            ],
+                SizedBox(height: ResponsiveSize.spacingLarge),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: ResponsiveSize.paddingMedium,
+                    vertical: ResponsiveSize.paddingSmall,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.statusAmber.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppColors.statusAmber.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Text(
+                    'Segera Hadir',
+                    style: TextStyle(
+                      color: AppColors.statusAmber,
+                      fontSize: ResponsiveSize.fontSmall,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -3,6 +3,7 @@ import '../../../constants/app_colors.dart';
 import '../../../services/admin_service.dart';
 import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../widgets/superadmin_badge.dart';
 import '../screens/rw_list_screen.dart';
 import '../screens/user_form_screen.dart';
 
@@ -79,6 +80,7 @@ class _UsersTabState extends State<UsersTab>
           ),
         ),
         centerTitle: true,
+        actions: const [SuperadminBadge()],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.primary,
