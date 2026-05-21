@@ -1,10 +1,12 @@
 const prisma = require('../../utils/prisma');
 
-const getPatients = async ({ search, irdCategory, page = 1, limit = 10 }) => {
+const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId }) => {
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const take = parseInt(limit);
 
   const where = { role: 'PATIENT' };
+
+  if (regionId) where.regionId = regionId;
 
   if (search) {
     where.OR = [

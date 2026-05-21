@@ -1,21 +1,59 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
+import '../../../services/auth_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../patient/tabs/settings_tab.dart';
+import '../admin_profile_edit_screen.dart';
 
-class AdminProfilTab extends StatelessWidget {
+class AdminProfilTab extends StatefulWidget {
   const AdminProfilTab({super.key});
 
-  static const String adminName = 'Dr. Windah Basudara';
-  static const String adminId = '1312';
-  static const String adminRole = 'Dokter perut';
-  static const String adminWilayah = 'Kecamatan Simokerto';
-  static const String adminKontak = '081234567890';
-  static const String adminAlamat = 'Jl. Kesehatan No. 45, Kec. Simokerto';
+  @override
+  State<AdminProfilTab> createState() => _AdminProfilTabState();
+}
+
+class _AdminProfilTabState extends State<AdminProfilTab> {
+  Map<String, dynamic>? _user;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final me = await AuthService.getMe(force: true);
+    if (!mounted) return;
+    setState(() {
+      _user = me;
+      _isLoading = false;
+    });
+  }
+
+  String _roleLabel(String role) {
+    switch (role) {
+      case 'SUPERADMIN':
+        return 'Super Admin';
+      case 'ADMIN':
+        return 'Admin Desa';
+      default:
+        return role;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     ResponsiveSize.init(context);
+
+    final name = _user?['responsibleName'] as String? ?? '—';
+    final id = (_user?['id'] as String?) ?? '';
+    final role = _user?['role'] as String? ?? '';
+    final position = _user?['position'] as String? ?? '—';
+    final phone = _user?['phone'] as String? ?? '—';
+    final region = _user?['region'] as Map<String, dynamic>?;
+    final wilayah = region?['name'] as String? ?? '—';
+    final idDisplay = id.length > 8 ? '${id.substring(0, 8)}...' : id;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -51,22 +89,31 @@ class AdminProfilTab extends StatelessWidget {
           const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(height: ResponsiveSize.spacingLarge),
-            _buildUnifiedCard(),
-            const SizedBox(height: 100),
-          ],
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(height: ResponsiveSize.spacingLarge),
+                  _buildUnifiedCard(name, idDisplay, role, position, wilayah, phone),
+                  const SizedBox(height: 100),
+                ],
+              ),
+            ),
     );
   }
 
-  Widget _buildUnifiedCard() {
+  Widget _buildUnifiedCard(
+    String name,
+    String idDisplay,
+    String role,
+    String position,
+    String wilayah,
+    String phone,
+  ) {
     final avatarSize = ResponsiveSize.screenWidth * 0.22;
 
     return Container(
@@ -84,7 +131,6 @@ class AdminProfilTab extends StatelessWidget {
         borderRadius: BorderRadius.circular(ResponsiveSize.cardBorderRadius),
         child: Column(
           children: [
-            // Zone A — Hero header
             Container(
               width: double.infinity,
               color: AppColors.primary,
@@ -105,7 +151,7 @@ class AdminProfilTab extends StatelessWidget {
                           left: ResponsiveSize.paddingSmall * 0.5,
                         ),
                         child: Text(
-                          'ID: $adminId',
+                          'ID: $idDisplay',
                           style: TextStyle(
                             fontSize: ResponsiveSize.fontMedium,
                             color: AppColors.textOnPrimary.withValues(alpha: 0.7),
@@ -120,7 +166,16 @@ class AdminProfilTab extends StatelessWidget {
                           size: ResponsiveSize.iconSmall,
                         ),
                         tooltip: 'Edit Profil',
-                        onPressed: () {},
+                        onPressed: () async {
+                          if (_user == null) return;
+                          final result = await Navigator.push<bool>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AdminProfileEditScreen(user: _user!),
+                            ),
+                          );
+                          if (result == true) _loadProfile();
+                        },
                       ),
                     ],
                   ),
@@ -143,7 +198,7 @@ class AdminProfilTab extends StatelessWidget {
                   ),
                   SizedBox(height: ResponsiveSize.spacingMedium),
                   Text(
-                    adminName,
+                    name,
                     style: TextStyle(
                       fontSize: ResponsiveSize.fontXLarge,
                       fontWeight: FontWeight.bold,
@@ -161,7 +216,7 @@ class AdminProfilTab extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      adminRole,
+                      _roleLabel(role),
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontMedium,
                         color: AppColors.textOnPrimary,
@@ -172,8 +227,6 @@ class AdminProfilTab extends StatelessWidget {
                 ],
               ),
             ),
-
-            // Zone B — Info rows
             Container(
               width: double.infinity,
               color: AppColors.card,
@@ -183,10 +236,9 @@ class AdminProfilTab extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _buildInfoRow('Jabatan', adminRole),
-                  _buildInfoRow('Wilayah Monitoring', adminWilayah),
-                  _buildInfoRow('Kontak', adminKontak),
-                  _buildInfoRow('Alamat', adminAlamat, last: true),
+                  _buildInfoRow('Jabatan', position == '—' ? position : position),
+                  _buildInfoRow('Wilayah Monitoring', wilayah),
+                  _buildInfoRow('Kontak', phone),
                 ],
               ),
             ),

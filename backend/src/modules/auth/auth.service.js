@@ -57,7 +57,11 @@ const login = async ({ identifier, password }) => {
 const getMe = async (userId) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, kkNumber: true, responsibleName: true, phone: true, role: true },
+    select: {
+      id: true, kkNumber: true, responsibleName: true, phone: true, role: true,
+      position: true,
+      region: { select: { id: true, name: true } },
+    },
   });
   if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
   return user;

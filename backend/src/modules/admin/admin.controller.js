@@ -3,8 +3,8 @@ const { success, error, paginated } = require('../../utils/response');
 
 const getPatients = async (req, res, next) => {
   try {
-    const { search, irdCategory, page, limit } = req.query;
-    const result = await adminService.getPatients({ search, irdCategory, page, limit });
+    const { search, irdCategory, page, limit, regionId } = req.query;
+    const result = await adminService.getPatients({ search, irdCategory, page, limit, regionId });
     return paginated(res, result.data, result.total, result.page, result.limit, {
       totalHighRisk: result.totalHighRisk,
       totalAttention: result.totalAttention,

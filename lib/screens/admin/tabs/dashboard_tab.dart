@@ -11,6 +11,7 @@ import '../../../services/screening_service.dart';
 import '../../../services/region_service.dart';
 import '../admin_family_detail_screen.dart';
 import '../qr_scanner_screen.dart';
+import '../../patient/notification_screen.dart';
 
 class DashboardTab extends StatefulWidget {
   const DashboardTab({super.key});
@@ -33,12 +34,15 @@ class _DashboardTabState extends State<DashboardTab> {
   int _totalPages = 1;
   Timer? _searchDebounce;
   String? _userName;
+  List<Map<String, dynamic>> _villages = [];
+  String? _selectedVillageId;
 
   @override
   void initState() {
     super.initState();
     _fetchPatients();
     _loadUser();
+    _loadVillages();
   }
 
   Future<void> _loadUser() async {
@@ -70,6 +74,14 @@ class _DashboardTabState extends State<DashboardTab> {
     }
   }
 
+  Future<void> _loadVillages() async {
+    try {
+      final villages = await RegionService.getVillages();
+      if (!mounted) return;
+      setState(() => _villages = villages);
+    } catch (_) {}
+  }
+
   Future<void> _fetchPatients({bool loadMore = false}) async {
     if (loadMore) {
       setState(() => _isLoadingMore = true);
@@ -90,6 +102,7 @@ class _DashboardTabState extends State<DashboardTab> {
       };
       if (_searchQuery.isNotEmpty) queryParams['search'] = _searchQuery;
       if (_selectedFilter != 'All') queryParams['irdCategory'] = irdCategoryMap[_selectedFilter];
+      if (_selectedVillageId != null) queryParams['regionId'] = _selectedVillageId;
 
       if (loadMore) {
         final response = await ApiService.get(
@@ -419,39 +432,69 @@ class _DashboardTabState extends State<DashboardTab> {
                           ),
                         ),
                         SizedBox(width: ResponsiveSize.paddingSmall),
-                        Container(
-                          height: 44,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: ResponsiveSize.paddingMedium,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface.withValues(alpha: 0.5),
+                        PopupMenuButton<String>(
+                          offset: const Offset(0, 48),
+                          shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.location_on,
-                                color: AppColors.primary,
-                                size: ResponsiveSize.iconSmall,
-                              ),
-                              SizedBox(
-                                width: ResponsiveSize.paddingSmall * 0.5,
-                              ),
-                              Text(
-                                'Desa',
-                                style: TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontSize: ResponsiveSize.fontMedium,
-                                  fontWeight: FontWeight.w500,
+                          onSelected: (id) {
+                            setState(() => _selectedVillageId = id);
+                            _fetchPatients();
+                          },
+                          itemBuilder: (_) => [
+                            const PopupMenuItem<String>(
+                              value: '',
+                              child: Text('Semua Desa',
+                                  style: TextStyle(fontWeight: FontWeight.w600)),
+                            ),
+                            ..._villages.map((v) => PopupMenuItem<String>(
+                              value: v['id'] as String,
+                              child: Text(v['name'] as String),
+                            )),
+                          ],
+                          child: Container(
+                            height: 44,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: ResponsiveSize.paddingMedium,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  color: AppColors.primary,
+                                  size: ResponsiveSize.iconSmall,
                                 ),
-                              ),
-                              Icon(
-                                Icons.arrow_drop_down,
-                                color: AppColors.textSecondary,
-                                size: ResponsiveSize.iconSmall,
-                              ),
-                            ],
+                                SizedBox(
+                                  width: ResponsiveSize.paddingSmall * 0.5,
+                                ),
+                                Flexible(
+                                  child: Text(
+                                    _selectedVillageId != null
+                                        ? (_villages.firstWhere(
+                                            (v) => v['id'] == _selectedVillageId,
+                                            orElse: () => {'name': 'Desa'},
+                                          )['name'] as String)
+                                        : 'Desa',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: ResponsiveSize.fontMedium,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.arrow_drop_down,
+                                  color: AppColors.textSecondary,
+                                  size: ResponsiveSize.iconSmall,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -597,7 +640,12 @@ class _DashboardTabState extends State<DashboardTab> {
             ),
           ),
           GestureDetector(
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationScreen()),
+              );
+            },
             child: Container(
               width: 44,
               height: 44,
