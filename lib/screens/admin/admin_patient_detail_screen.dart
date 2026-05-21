@@ -347,14 +347,21 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
           // Custom medical indicator slider bar
           Column(
             children: [
-              // Visual axis/ticks labels
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('0.00 (Rendah)', style: TextStyle(fontSize: 9, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
-                  Text('0.75 (Waspada)', style: TextStyle(fontSize: 9, color: AppColors.statusAmber, fontWeight: FontWeight.bold)),
-                  Text('1.00 (Tinggi)', style: TextStyle(fontSize: 9, color: AppColors.statusRed, fontWeight: FontWeight.bold)),
-                ],
+              // Visual axis/ticks labels - Top Row (Rendah & Tinggi)
+              const SizedBox(
+                height: 14,
+                child: Stack(
+                  children: [
+                    Align(
+                      alignment: Alignment(-1.0, 0.0),
+                      child: Text('0.00 (Rendah)', style: TextStyle(fontSize: 9, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                    ),
+                    Align(
+                      alignment: Alignment(0.334, 0.0), // 1.00 / 1.5 = 66.7% width (alignment 0.334)
+                      child: Text('1.00 (Tinggi)', style: TextStyle(fontSize: 9, color: AppColors.statusRed, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 6),
               // Linear track with colored sections
@@ -368,7 +375,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                     clipBehavior: Clip.none,
                     alignment: Alignment.centerLeft,
                     children: [
-                      // Underlay Track with risk ranges colors
+                      // Underlay Track with risk ranges colors aligned to thresholds
                       Container(
                         height: 8,
                         width: double.infinity,
@@ -377,10 +384,13 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                           gradient: const LinearGradient(
                             colors: [
                               AppColors.statusGreen,
+                              AppColors.statusGreen,
+                              AppColors.statusAmber,
                               AppColors.statusAmber,
                               AppColors.statusRed,
+                              AppColors.statusRed,
                             ],
-                            stops: [0.35, 0.65, 1.0],
+                            stops: [0.0, 0.50, 0.50, 0.6667, 0.6667, 1.0],
                           ),
                         ),
                       ),
@@ -388,9 +398,9 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                       Positioned(
                         left: clampedOffset,
                         child: Container(
-                          width: 16,
-                          height: 16,
-                          decoration: const BoxDecoration(
+                           width: 16,
+                           height: 16,
+                           decoration: const BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
                             boxShadow: [
@@ -415,6 +425,19 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                     ],
                   );
                 },
+              ),
+              const SizedBox(height: 6),
+              // Visual axis/ticks labels - Bottom Row (Waspada)
+              const SizedBox(
+                height: 14,
+                child: Stack(
+                  children: [
+                    Align(
+                      alignment: Alignment(0.0, 0.0), // 0.75 / 1.5 = 50% width (alignment 0.0)
+                      child: Text('0.75 (Waspada)', style: TextStyle(fontSize: 9, color: AppColors.statusAmber, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
