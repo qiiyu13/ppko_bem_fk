@@ -174,6 +174,9 @@ class _UsersTabState extends State<UsersTab>
     final role = admin['role'] ?? 'ADMIN';
     final id = admin['id'] ?? '';
 
+    final region = admin['region'] as Map<String, dynamic>?;
+    final villageName = region?['name'] as String? ?? 'Belum ditentukan';
+
     return Container(
       margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
       padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
@@ -214,6 +217,15 @@ class _UsersTabState extends State<UsersTab>
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontMedium,
                         color: AppColors.textSecondary,
+                      ),
+                    ),
+                    SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
+                    Text(
+                      'Wilayah: $villageName',
+                      style: TextStyle(
+                        fontSize: ResponsiveSize.fontMedium,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     SizedBox(height: ResponsiveSize.spacingSmall * 0.5),

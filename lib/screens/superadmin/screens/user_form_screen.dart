@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/admin_service.dart';
+import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
 
 class UserFormScreen extends StatefulWidget {
@@ -23,10 +24,14 @@ class _UserFormScreenState extends State<UserFormScreen> {
   bool _isActive = true;
   bool _obscurePassword = true;
   bool _isSubmitting = false;
+  String? _selectedVillageId;
+  List<Map<String, dynamic>> _villages = [];
+  bool _isLoadingVillages = true;
 
   @override
   void initState() {
     super.initState();
+    _loadVillages();
     final a = widget.admin;
     if (a != null) {
       _nameController.text = (a['responsibleName'] ?? a['name'] ?? '') as String;
@@ -34,6 +39,19 @@ class _UserFormScreenState extends State<UserFormScreen> {
       _positionController.text = (a['position'] ?? '') as String? ?? '';
       _phoneController.text = (a['phone'] ?? '') as String? ?? '';
       _isActive = a['isActive'] == true;
+      _selectedVillageId = a['regionId'] as String?;
+    }
+  }
+
+  Future<void> _loadVillages() async {
+    try {
+      final villages = await RegionService.getVillages();
+      setState(() {
+        _villages = villages;
+        _isLoadingVillages = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingVillages = false);
     }
   }
 
@@ -61,6 +79,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
           phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
           isActive: _isActive,
           password: _passwordController.text.isEmpty ? null : _passwordController.text,
+          regionId: _selectedVillageId,
           updatedAt: DateTime.parse(widget.admin!['updatedAt'] as String),
         );
       } else {
@@ -72,6 +91,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
           phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
           isActive: _isActive,
           role: 'ADMIN',
+          regionId: _selectedVillageId,
         );
       }
       if (!mounted) return;
@@ -171,6 +191,8 @@ class _UserFormScreenState extends State<UserFormScreen> {
                     return null;
                   },
                 ),
+                SizedBox(height: ResponsiveSize.spacingLarge),
+                _villageDropdown(),
                 SizedBox(height: ResponsiveSize.spacingLarge),
                 _statusToggle(),
                 SizedBox(height: ResponsiveSize.spacingXLarge * 2),
@@ -291,6 +313,59 @@ class _UserFormScreenState extends State<UserFormScreen> {
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _villageDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Wilayah Monitoring (Desa / Kelurahan)',
+            style: TextStyle(
+              fontSize: ResponsiveSize.fontMedium,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            )),
+        SizedBox(height: ResponsiveSize.spacingSmall),
+        _isLoadingVillages
+            ? const SizedBox(
+                height: 50,
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
+                ),
+              )
+            : DropdownButtonFormField<String>(
+                initialValue: _selectedVillageId,
+                decoration: InputDecoration(
+                  hintText: 'Pilih desa/kelurahan',
+                  hintStyle: const TextStyle(color: AppColors.surface),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.surface),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.surface),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.primary),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: ResponsiveSize.paddingMedium,
+                    vertical: ResponsiveSize.paddingMedium,
+                  ),
+                ),
+                items: _villages.map((v) => DropdownMenuItem(
+                  value: v['id'] as String,
+                  child: Text(v['name'] as String),
+                )).toList(),
+                onChanged: (val) => setState(() => _selectedVillageId = val),
+                validator: (v) => v == null ? 'Wilayah monitoring wajib dipilih' : null,
+                dropdownColor: AppColors.card,
+                style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+              ),
       ],
     );
   }
