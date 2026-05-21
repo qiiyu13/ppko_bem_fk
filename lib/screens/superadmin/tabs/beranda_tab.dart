@@ -27,6 +27,7 @@ class _BerandaTabState extends State<BerandaTab> {
   int _todayScreenings = 0;
   int _highRiskCount = 0;
   int _attentionCount = 0;
+  int _normalCount = 0;
   String? _userName;
 
   @override
@@ -58,12 +59,14 @@ class _BerandaTabState extends State<BerandaTab> {
       final categoryCounts = stats['categories'] as Map<String, dynamic>? ?? {};
       final highRiskCount = (categoryCounts['high'] as num?)?.toInt() ?? 0;
       final attentionCount = (categoryCounts['attention'] as num?)?.toInt() ?? 0;
+      final normalCount = (categoryCounts['normal'] as num?)?.toInt() ?? 0;
 
       setState(() {
         _totalPatients = (regionStats['profileCount'] as num?)?.toInt() ?? 0;
         _todayScreenings = (stats['total'] as num?)?.toInt() ?? 0;
         _highRiskCount = highRiskCount;
         _attentionCount = attentionCount;
+        _normalCount = normalCount;
         _isLoading = false;
       });
     } catch (e) {
@@ -302,11 +305,14 @@ class _BerandaTabState extends State<BerandaTab> {
           ),
           Container(height: 1, color: AppColors.surface),
           Padding(
-            padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+            padding: EdgeInsets.symmetric(
+              vertical: ResponsiveSize.paddingMedium,
+              horizontal: ResponsiveSize.paddingSmall,
+            ),
             child: Row(
               children: [
                 Expanded(
-                  child: _buildMiniStat(_todayScreenings, 'Screening', AppColors.primary),
+                  child: _buildMiniStat(_todayScreenings, 'Screened', AppColors.primary),
                 ),
                 Container(width: 1, height: 40, color: AppColors.surface),
                 Expanded(
@@ -315,6 +321,10 @@ class _BerandaTabState extends State<BerandaTab> {
                 Container(width: 1, height: 40, color: AppColors.surface),
                 Expanded(
                   child: _buildMiniStat(_attentionCount, 'Attention', AppColors.statusAmber),
+                ),
+                Container(width: 1, height: 40, color: AppColors.surface),
+                Expanded(
+                  child: _buildMiniStat(_normalCount, 'Normal', AppColors.statusGreen),
                 ),
               ],
             ),
@@ -329,7 +339,7 @@ class _BerandaTabState extends State<BerandaTab> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: 24,
+          width: 20,
           height: 3,
           decoration: BoxDecoration(
             color: color,
@@ -340,7 +350,7 @@ class _BerandaTabState extends State<BerandaTab> {
         Text(
           value.toString(),
           style: const TextStyle(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
           ),
@@ -349,10 +359,10 @@ class _BerandaTabState extends State<BerandaTab> {
         SizedBox(height: ResponsiveSize.spacingSmall * 0.25),
         Text(
           label,
-          style: TextStyle(
-            fontSize: ResponsiveSize.fontSmall,
+          style: const TextStyle(
+            fontSize: 10,
             color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
           textAlign: TextAlign.center,
           overflow: TextOverflow.ellipsis,

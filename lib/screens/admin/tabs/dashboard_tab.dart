@@ -118,7 +118,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
         setState(() {
           _patients = data.cast<Map<String, dynamic>>();
-          _totalProfiles = total;
+          _totalProfiles = (high + attention + normal) > 0 ? (high + attention + normal) : total;
           _totalHighRiskProfiles = high;
           _totalAttentionProfiles = attention;
           _totalNormalProfiles = normal;
@@ -688,6 +688,7 @@ class _DashboardTabState extends State<DashboardTab> {
         vertical: ResponsiveSize.paddingMedium,
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
             child: _statCell(
@@ -696,6 +697,7 @@ class _DashboardTabState extends State<DashboardTab> {
               AppColors.textPrimary,
             ),
           ),
+          Container(width: 1, height: 28, color: AppColors.divider),
           Expanded(
             child: _statCell(
               _totalHighRiskProfiles,
@@ -703,11 +705,20 @@ class _DashboardTabState extends State<DashboardTab> {
               AppColors.statusRed,
             ),
           ),
+          Container(width: 1, height: 28, color: AppColors.divider),
           Expanded(
             child: _statCell(
               _totalAttentionProfiles,
-              'Attn',
+              'Attention',
               AppColors.statusAmber,
+            ),
+          ),
+          Container(width: 1, height: 28, color: AppColors.divider),
+          Expanded(
+            child: _statCell(
+              _totalNormalProfiles,
+              'Normal',
+              AppColors.statusGreen,
             ),
           ),
         ],
@@ -716,28 +727,30 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   Widget _statCell(int value, String label, Color valueColor) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
           value.toString(),
           style: TextStyle(
-            fontSize: 24,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: valueColor,
           ),
         ),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: ResponsiveSize.fontSmall,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
           ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
