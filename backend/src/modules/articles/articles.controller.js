@@ -1,11 +1,14 @@
 const articlesService = require('./articles.service');
-const { success, error } = require('../../utils/response');
+const { success, error, paginated } = require('../../utils/response');
 
 // Public
 const getPublishedArticles = async (req, res, next) => {
   try {
-    const articles = await articlesService.getPublishedArticles();
-    return success(res, articles);
+    const result = await articlesService.getPublishedArticles(req.query);
+    if (result && result.data !== undefined) {
+      return paginated(res, result.data, result.total, result.page, result.limit);
+    }
+    return success(res, result);
   } catch (err) {
     next(err);
   }
@@ -24,8 +27,11 @@ const getPublishedArticle = async (req, res, next) => {
 // Admin
 const getAllArticles = async (req, res, next) => {
   try {
-    const articles = await articlesService.getAllArticles();
-    return success(res, articles);
+    const result = await articlesService.getAllArticles(req.query);
+    if (result && result.data !== undefined) {
+      return paginated(res, result.data, result.total, result.page, result.limit);
+    }
+    return success(res, result);
   } catch (err) {
     next(err);
   }

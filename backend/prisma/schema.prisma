@@ -129,6 +129,7 @@ model Appointment {
   @@index([userId])
   @@index([profileId])
   @@index([date])
+  @@index([type])
   @@map("appointments")
 }
 
@@ -165,6 +166,8 @@ model Region {
   children Region[] @relation("RegionHierarchy")
   users    User[]
 
+  @@index([parentId])
+  @@index([name])
   @@map("regions")
 }
 
@@ -221,5 +224,6 @@ model Notification {
 
   @@index([userId])
   @@index([createdAt])
+  @@index([userId, isRead])
   @@map("notifications")
 }

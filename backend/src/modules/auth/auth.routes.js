@@ -28,6 +28,12 @@ router.post('/register', [authLimiter,
 ], controller.register);
 
 router.post('/login', [authLimiter,
+  (req, res, next) => {
+    if (req.body.kkNumber && !req.body.identifier) {
+      req.body.identifier = req.body.kkNumber;
+    }
+    next();
+  },
   body('identifier').isString().notEmpty().withMessage('KK number or username is required'),
   body('password').isString().notEmpty(),
   validate,

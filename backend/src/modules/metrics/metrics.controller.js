@@ -29,8 +29,11 @@ const getHistory = async (req, res, next) => {
     const { profileId } = req.query;
     if (!profileId) return error(res, 'profileId is required', 400, 'VALIDATION_ERROR');
 
-    const history = await metricsService.getHistory(profileId, req.params.type, req.user.id);
-    return success(res, history);
+    const result = await metricsService.getHistory(profileId, req.params.type, req.user.id, req.query);
+    if (result && result.data !== undefined) {
+      return paginated(res, result.data, result.total, result.page, result.limit);
+    }
+    return success(res, result);
   } catch (err) {
     if (err.message === 'Profile not found') return error(res, err.message, 404, 'NOT_FOUND');
     next(err);

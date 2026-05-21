@@ -34,6 +34,7 @@ class _HomeTabState extends State<HomeTab> {
   String? _error;
   StreamSubscription<FamilyProfile?>? _profileSubscription;
   StreamSubscription<Map<String, dynamic>>? _wsSub;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -47,7 +48,12 @@ class _HomeTabState extends State<HomeTab> {
     _wsSub = WebSocketService.instance.dataUpdateStream.listen((payload) {
       final type = payload['type'];
       if ((type == 'appointments' || type == 'metrics') && mounted) {
-        _loadData();
+        _debounceTimer?.cancel();
+        _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            _loadData();
+          }
+        });
       }
     });
   }
@@ -56,12 +62,14 @@ class _HomeTabState extends State<HomeTab> {
   void dispose() {
     _profileSubscription?.cancel();
     _wsSub?.cancel();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
   Future<void> _loadData() async {
     final hasExistingData = _metrics.isNotEmpty;
     if (!hasExistingData) {
+      if (!mounted) return;
       setState(() {
         _isLoading = true;
         _error = null;
@@ -71,6 +79,7 @@ class _HomeTabState extends State<HomeTab> {
     try {
       final profileId = ProfileService.instance.activeProfile?.id;
       if (profileId == null) {
+        if (!mounted) return;
         setState(() {
           _isLoading = false;
           _error = 'Tidak ada profil aktif';
@@ -99,6 +108,7 @@ class _HomeTabState extends State<HomeTab> {
       final age = profile?.age ?? 0;
       final gender = profile?.gender ?? 'Pria';
 
+      if (!mounted) return;
       setState(() {
         _metrics = metricsData
             .map(
@@ -125,6 +135,7 @@ class _HomeTabState extends State<HomeTab> {
         }
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _error = 'Gagal memuat data. Periksa koneksi Anda.';
@@ -593,31 +604,22 @@ class _HomeTabState extends State<HomeTab> {
                                   ),
                                 )
                               else
-                                LayoutBuilder(
-                                  builder: (context, gridConstraints) {
-                                    final gridWidth = gridConstraints.maxWidth;
-                                    final cardWidth = (gridWidth - 16) / 2;
-                                    final cardHeight = cardWidth;
-                                    final gridHeight = (cardHeight * 2) + 16;
-
-                                    return GridView.count(
-                                      crossAxisCount: 2,
-                                      shrinkWrap: true,
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      crossAxisSpacing: 16,
-                                      mainAxisSpacing: 16,
-                                      childAspectRatio: 1.0,
-                                      padding: EdgeInsets.zero,
-                                      children: _metrics.map((metric) {
-                                        return _buildMetricCard(
-                                          context: context,
-                                          metric: metric,
-                                          screenWidth: screenWidth,
-                                        );
-                                      }).toList(),
+                                GridView.count(
+                                  crossAxisCount: 2,
+                                  shrinkWrap: true,
+                                  physics:
+                                      const NeverScrollableScrollPhysics(),
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
+                                  childAspectRatio: 1.0,
+                                  padding: EdgeInsets.zero,
+                                  children: _metrics.map((metric) {
+                                    return _buildMetricCard(
+                                      context: context,
+                                      metric: metric,
+                                      screenWidth: screenWidth,
                                     );
-                                  },
+                                  }).toList(),
                                 ),
 
                               const SizedBox(height: 10),

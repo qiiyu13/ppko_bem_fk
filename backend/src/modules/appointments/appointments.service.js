@@ -2,19 +2,37 @@ const { broadcastToUsers, broadcastToAll, events } = require('../../websocket');
 const { createAndSend, createAndSendToAllPatients } = require('../notifications/notifications.service');
 
 const prisma = require('../../utils/prisma');
+const { parsePagination } = require('../../utils/pagination');
 
-const getAppointments = async (userId, profileId) => {
+const getAppointments = async (userId, profileId, query = {}) => {
   const personalWhere = { userId };
   if (profileId) personalWhere.profileId = profileId;
 
+  const where = {
+    OR: [
+      personalWhere,
+      { type: 'JADWAL' },
+    ],
+  };
+
+  if (query.page !== undefined || query.limit !== undefined) {
+    const { page, limit, skip } = parsePagination(query);
+    const [data, total] = await Promise.all([
+      prisma.appointment.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { date: 'asc' },
+      }),
+      prisma.appointment.count({ where }),
+    ]);
+    return { data, total, page, limit };
+  }
+
   return prisma.appointment.findMany({
-    where: {
-      OR: [
-        personalWhere,
-        { type: 'JADWAL' },
-      ],
-    },
+    where,
     orderBy: { date: 'asc' },
+    take: 200,
   });
 };
 

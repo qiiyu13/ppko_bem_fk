@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const config = require('./config');
@@ -12,6 +13,7 @@ const app = express();
 
 // Security
 app.use(helmet());
+app.use(compression());
 if (config.nodeEnv === 'production') {
   app.use((req, res, next) => {
     if (req.headers['x-forwarded-proto'] !== 'https') {

@@ -151,14 +151,6 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
     return weight / (heightInMeters * heightInMeters);
   }
 
-  String get _bmiCategory {
-    if (_bmi <= 0) return '-';
-    if (_bmi < 18.5) return 'Kurus';
-    if (_bmi < 25) return 'Normal';
-    if (_bmi < 30) return 'Gemuk';
-    return 'Obesitas';
-  }
-
   String get _overallRisk {
     final score = _overallIrdScore;
     if (score >= 1.0) {
@@ -234,17 +226,12 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
   Widget _buildIRDSection(String riskLevel, Color riskColor, String riskLabel) {
     final score = _overallIrdScore;
     
-    // Medical explanation based on risk category
-    final String explanation;
     final String subtitle;
     if (riskLevel.toLowerCase() == 'high') {
-      explanation = 'Skor IRD berada di atas batas kritis (≥1.0), menunjukkan risiko tinggi diabetes melitus. Diperlukan konsultasi dokter spesialis segera, diet ketat rendah gula, dan pemantauan berkala.';
       subtitle = 'Risiko Tinggi Diabetes';
     } else if (riskLevel.toLowerCase() == 'attention') {
-      explanation = 'Skor IRD berada di ambang batas waspada (0.75 - 1.0). Disarankan untuk membatasi karbohidrat sederhana/gula, rutin berolahraga, dan melakukan screening ulang dalam 1-3 bulan.';
       subtitle = 'Waspada / Perlu Pemantauan';
     } else {
-      explanation = 'Skor IRD stabil di bawah batas normal (<0.75). Risiko diabetes melitus saat ini tergolong rendah. Pertahankan pola hidup sehat dan lakukan pemeriksaan berkala.';
       subtitle = 'Tingkat Risiko Normal';
     }
 
@@ -272,75 +259,40 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: riskColor.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
+                    const Text(
+                      'INDEX RISK DIABETES (IRD)',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textSecondary,
+                        letterSpacing: 0.5,
                       ),
-                      child: Icon(Icons.analytics_rounded, color: riskColor, size: 20),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'INDEX RISK DIABETES (IRD)',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textSecondary,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            subtitle,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: riskColor,
-                            ),
-                          ),
-                        ],
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: riskColor,
                       ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-              // Big Score representation
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: riskColor.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: riskColor.withValues(alpha: 0.2), width: 1),
-                ),
-                child: Text(
-                  score > 0 ? score.toStringAsFixed(2) : '0.00',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: riskColor,
-                  ),
+              Text(
+                score > 0 ? score.toStringAsFixed(2) : '0.00',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: riskColor,
                 ),
               ),
             ],
-          ),
-          SizedBox(height: ResponsiveSize.spacingMedium),
-          
-          // Explanatory medical note
-          Text(
-            explanation,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textPrimary,
-              height: 1.5,
-            ),
           ),
           SizedBox(height: ResponsiveSize.spacingLarge),
 
@@ -775,19 +727,15 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
     // Real dynamic status checks using HealthMetricData utility:
     final bpStatus = HealthMetricData.getBloodPressureStatus(data['systolic'], data['diastolic'], age);
     final bpColor = HealthMetricData.getStatusColor(bpStatus);
-    final bpLabel = HealthMetricData.getStatusLabel(bpStatus);
 
     final sugarStatus = HealthMetricData.getBloodSugarStatus(data['glucose'], age);
     final sugarColor = HealthMetricData.getStatusColor(sugarStatus);
-    final sugarLabel = HealthMetricData.getStatusLabel(sugarStatus);
 
     final uricAcidStatus = HealthMetricData.getUricAcidStatus(data['uricAcid'], age, genderStr);
     final uricAcidColor = HealthMetricData.getStatusColor(uricAcidStatus);
-    final uricAcidLabel = HealthMetricData.getStatusLabel(uricAcidStatus);
 
     final cholesterolStatus = HealthMetricData.getCholesterolStatus(data['cholesterol'], age);
     final cholesterolColor = HealthMetricData.getStatusColor(cholesterolStatus);
-    final cholesterolLabel = HealthMetricData.getStatusLabel(cholesterolStatus);
 
     // Calculate dynamic fraction representation for range bars:
     final bpFraction = data['systolic'] > 0 ? (data['systolic'] / 180.0) : 0.0;
@@ -803,7 +751,6 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
         : (bmiVal < 18.5 || bmiVal >= 25)
             ? (bmiVal >= 30 ? AppColors.error : attentionOrange)
             : AppColors.success;
-    final bmiLabel = _bmiCategory;
 
     return GridView.count(
       crossAxisCount: 2,
@@ -811,63 +758,51 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      childAspectRatio: 1.25,
+      childAspectRatio: 1.5,
       children: [
         _buildRedesignedVitalCard(
-          icon: Icons.favorite_rounded,
           label: 'TEKANAN DARAH',
           value: data['systolic'] > 0 && data['diastolic'] > 0
               ? '${data['systolic']}/${data['diastolic']}'
               : '-',
           unit: 'mmHg',
-          status: data['systolic'] > 0 ? bpLabel : 'Tidak Ada',
           statusColor: data['systolic'] > 0 ? bpColor : AppColors.textSecondary,
           fraction: bpFraction,
         ),
         _buildRedesignedVitalCard(
-          icon: Icons.opacity_rounded,
           label: 'GULA DARAH',
           value: data['glucose'] > 0 ? '${data['glucose'].toStringAsFixed(0)}' : '-',
           unit: 'mg/dL',
-          status: data['glucose'] > 0 ? sugarLabel : 'Tidak Ada',
           statusColor: data['glucose'] > 0 ? sugarColor : AppColors.textSecondary,
           fraction: sugarFraction,
         ),
         _buildRedesignedVitalCard(
-          icon: Icons.speed_rounded,
           label: 'KOLESTEROL',
           value: data['cholesterol'] > 0 ? '${data['cholesterol'].toStringAsFixed(0)}' : '-',
           unit: 'mg/dL',
-          status: data['cholesterol'] > 0 ? cholesterolLabel : 'Tidak Ada',
           statusColor: data['cholesterol'] > 0 ? cholesterolColor : AppColors.textSecondary,
           fraction: cholesterolFraction,
         ),
         _buildRedesignedVitalCard(
-          icon: Icons.science_outlined,
           label: 'ASAM URAT',
           value: data['uricAcid'] > 0 ? '${data['uricAcid'].toStringAsFixed(1)}' : '-',
           unit: 'mg/dL',
-          status: data['uricAcid'] > 0 ? uricAcidLabel : 'Tidak Ada',
           statusColor: data['uricAcid'] > 0 ? uricAcidColor : AppColors.textSecondary,
           fraction: uricAcidFraction,
         ),
         _buildRedesignedVitalCard(
-          icon: Icons.monitor_weight_outlined,
           label: 'BERAT / TINGGI',
           value: data['weight'] > 0 && data['height'] > 0
               ? '${data['weight'].toStringAsFixed(0)}/${data['height'].toStringAsFixed(0)}'
               : '-',
           unit: 'kg/cm',
-          status: data['weight'] > 0 ? 'Tercatat' : 'Tidak Ada',
           statusColor: data['weight'] > 0 ? AppColors.primary : AppColors.textSecondary,
           fraction: 0.5,
         ),
         _buildRedesignedVitalCard(
-          icon: Icons.analytics_outlined,
           label: 'INDEX MASSA TUBUH',
           value: _bmi > 0 ? _bmi.toStringAsFixed(1) : '-',
           unit: 'BMI',
-          status: _bmi > 0 ? bmiLabel : 'Tidak Ada',
           statusColor: _bmi > 0 ? bmiColor : AppColors.textSecondary,
           fraction: bmiFraction,
         ),
@@ -876,16 +811,12 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
   }
 
   Widget _buildRedesignedVitalCard({
-    required IconData icon,
     required String label,
     required String value,
     required String unit,
-    required String status,
     required Color statusColor,
     required double fraction,
   }) {
-    final statusBgColor = statusColor.withValues(alpha: 0.08);
-
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -903,35 +834,6 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: statusBgColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: statusColor, size: 16),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: statusBgColor,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: statusColor.withValues(alpha: 0.2), width: 0.5),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    color: statusColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
           const Spacer(),
           Text(
             label,
@@ -1147,31 +1049,41 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  
-                  // Screening Metrics Grid
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
+                  // Screening Metrics Grid (Two Columns: 3 Left, 3 Right)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (sys > 0 && dia > 0)
-                        _buildTimelineMetricBadge('Tensi', '$sys/$dia mmHg', AppColors.primary),
-                      if (bloodSugar > 0)
-                        _buildTimelineMetricBadge('Gula', '${bloodSugar.toStringAsFixed(0)} mg/dL', attentionOrange),
-                      if (cholesterol > 0)
-                        _buildTimelineMetricBadge('Kolesterol', '${cholesterol.toStringAsFixed(0)} mg/dL', Colors.purple),
-                      if (uricAcid > 0)
-                        _buildTimelineMetricBadge('Asam Urat', '${uricAcid.toStringAsFixed(1)} mg/dL', Colors.pink),
-                      if (weight > 0)
-                        _buildTimelineMetricBadge('Berat', '${weight.toStringAsFixed(0)} kg', Colors.blueGrey),
-                      if (height > 0)
-                        _buildTimelineMetricBadge('Tinggi', '${height.toStringAsFixed(0)} cm', Colors.blueGrey),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildHistoryMetricItem('Tensi', sys > 0 && dia > 0 ? '$sys/$dia mmHg' : '-', AppColors.primary),
+                            const SizedBox(height: 8),
+                            _buildHistoryMetricItem('Gula Darah', bloodSugar > 0 ? '${bloodSugar.toStringAsFixed(0)} mg/dL' : '-', attentionOrange),
+                            const SizedBox(height: 8),
+                            _buildHistoryMetricItem('Kolesterol', cholesterol > 0 ? '${cholesterol.toStringAsFixed(0)} mg/dL' : '-', Colors.purple),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildHistoryMetricItem('Asam Urat', uricAcid > 0 ? '${uricAcid.toStringAsFixed(1)} mg/dL' : '-', Colors.pink),
+                            const SizedBox(height: 8),
+                            _buildHistoryMetricItem('Berat', weight > 0 ? '${weight.toStringAsFixed(0)} kg' : '-', Colors.blueGrey),
+                            const SizedBox(height: 8),
+                            _buildHistoryMetricItem('Tinggi', height > 0 ? '${height.toStringAsFixed(0)} cm' : '-', Colors.blueGrey),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
 
                   // Screener notes if present
                   if (notes.isNotEmpty) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -1208,35 +1120,29 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
     );
   }
 
-  Widget _buildTimelineMetricBadge(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.15), width: 0.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '$label: ',
-            style: const TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
+  Widget _buildHistoryMetricItem(String label, String value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textSecondary,
+            letterSpacing: 0.5,
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: value == '-' ? AppColors.textSecondary : color,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

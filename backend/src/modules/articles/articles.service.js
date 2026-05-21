@@ -1,13 +1,40 @@
 const { broadcastToUsers, broadcastToAll, events } = require('../../websocket');
 
 const prisma = require('../../utils/prisma');
+const { parsePagination } = require('../../utils/pagination');
 
 // Public
-const getPublishedArticles = async () => {
+const getPublishedArticles = async (query = {}) => {
+  const where = { isPublished: true, isDraft: false };
+  const select = {
+    id: true,
+    title: true,
+    imagePath: true,
+    tags: true,
+    publishDate: true,
+    author: { select: { responsibleName: true } }
+  };
+
+  if (query.page !== undefined || query.limit !== undefined) {
+    const { page, limit, skip } = parsePagination(query);
+    const [data, total] = await Promise.all([
+      prisma.article.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { publishDate: 'desc' },
+        select,
+      }),
+      prisma.article.count({ where }),
+    ]);
+    return { data, total, page, limit };
+  }
+
   return prisma.article.findMany({
-    where: { isPublished: true, isDraft: false },
+    where,
     orderBy: { publishDate: 'desc' },
-    select: { id: true, title: true, content: true, imagePath: true, tags: true, publishDate: true, author: { select: { responsibleName: true } } },
+    select,
+    take: 200,
   });
 };
 
@@ -21,10 +48,38 @@ const getPublishedArticle = async (id) => {
 };
 
 // Admin
-const getAllArticles = async () => {
+const getAllArticles = async (query = {}) => {
+  const select = {
+    id: true,
+    title: true,
+    imagePath: true,
+    tags: true,
+    isPublished: true,
+    isDraft: true,
+    publishDate: true,
+    createdAt: true,
+    updatedAt: true,
+    author: { select: { responsibleName: true } }
+  };
+
+  if (query.page !== undefined || query.limit !== undefined) {
+    const { page, limit, skip } = parsePagination(query);
+    const [data, total] = await Promise.all([
+      prisma.article.findMany({
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select,
+      }),
+      prisma.article.count(),
+    ]);
+    return { data, total, page, limit };
+  }
+
   return prisma.article.findMany({
     orderBy: { createdAt: 'desc' },
-    include: { author: { select: { responsibleName: true } } },
+    select,
+    take: 200,
   });
 };
 

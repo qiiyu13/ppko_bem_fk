@@ -37,23 +37,50 @@ const createMetric = async (data, userId) => {
   });
 };
 
-const getHistory = async (profileId, type, userId) => {
+const getHistory = async (profileId, type, userId, query = {}) => {
   const profile = await prisma.familyProfile.findFirst({
     where: { id: profileId, userId },
   });
   if (!profile) throw Object.assign(new Error('Profile not found'), { statusCode: 404 });
 
+  const where = { profileId, type };
+
+  if (query.page !== undefined || query.limit !== undefined) {
+    const { page, limit, skip } = parsePagination(query);
+    const [records, total] = await Promise.all([
+      prisma.healthMetric.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { recordedAt: 'desc' },
+      }),
+      prisma.healthMetric.count({ where }),
+    ]);
+
+    const formatted = records.map((r) => ({
+      type: r.type,
+      date: r.recordedAt,
+      value: r.value,
+      secondaryValue: r.secondaryValue,
+      notes: r.notes,
+    })).reverse();
+
+    return { data: formatted, total, page, limit };
+  }
+
   const records = await prisma.healthMetric.findMany({
-    where: { profileId, type },
-    orderBy: { recordedAt: 'asc' },
+    where,
+    orderBy: { recordedAt: 'desc' },
+    take: 200,
   });
 
   return records.map((r) => ({
+    type: r.type,
     date: r.recordedAt,
     value: r.value,
     secondaryValue: r.secondaryValue,
     notes: r.notes,
-  }));
+  })).reverse();
 };
 
 const getLatest = async (profileId, userId) => {
@@ -66,18 +93,22 @@ const getLatest = async (profileId, userId) => {
 
   const results = await Promise.all(
     metricTypes.map(async (type) => {
-      const latest = await prisma.healthMetric.findFirst({
-        where: { profileId, type },
-        orderBy: { recordedAt: 'desc' },
-      });
-      if (!latest) return null;
-
       const recent = await prisma.healthMetric.findMany({
         where: { profileId, type },
         orderBy: { recordedAt: 'desc' },
         take: 7,
-        select: { value: true },
+        select: {
+          type: true,
+          value: true,
+          secondaryValue: true,
+          unit: true,
+          notes: true,
+          recordedAt: true,
+        },
       });
+      if (recent.length === 0) return null;
+
+      const latest = recent[0];
 
       return {
         type: latest.type,

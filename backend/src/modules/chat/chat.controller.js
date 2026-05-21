@@ -21,8 +21,11 @@ const createConversation = async (req, res, next) => {
 
 const getMessages = async (req, res, next) => {
   try {
-    const messages = await chatService.getMessages(req.params.id, req.user.id);
-    return success(res, messages);
+    const result = await chatService.getMessages(req.params.id, req.user.id, req.query);
+    if (result && result.data !== undefined) {
+      return paginated(res, result.data, result.total, result.page, result.limit);
+    }
+    return success(res, result);
   } catch (err) {
     if (err.message === 'Conversation not found') return error(res, err.message, 404, 'NOT_FOUND');
     next(err);

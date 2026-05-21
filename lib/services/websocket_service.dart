@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../config/env.dart';
 import 'token_service.dart';
+import 'api_service.dart';
 
 class WebSocketService {
   static final WebSocketService instance = WebSocketService._internal();
@@ -75,6 +76,10 @@ class WebSocketService {
       final payload = message['data'] as Map<String, dynamic>?;
 
       if (event == 'data:update' && payload != null) {
+        final type = payload['type'];
+        if (type != null) {
+          ApiService.cacheInterceptor.invalidate('/$type');
+        }
         _dataUpdateController.add(payload);
       } else if (event == 'chat:message:new' && payload != null) {
         _chatMessageController.add(payload);

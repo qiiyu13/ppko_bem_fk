@@ -4,12 +4,14 @@ import 'package:dio/dio.dart';
 import '../config/env.dart';
 import '../exceptions/sync_conflict_exception.dart';
 import 'token_service.dart';
+import 'dio_cache_interceptor.dart';
 
 class ApiService {
   static const String baseUrl = Env.apiBaseUrl;
   static bool _interceptorsSetup = false;
   static Completer<bool>? _refreshCompleter;
   static bool _isRefreshing = false;
+  static final DioCacheInterceptor cacheInterceptor = DioCacheInterceptor();
 
   static final Dio dio = Dio(
     BaseOptions(
@@ -23,6 +25,8 @@ class ApiService {
   static void setupInterceptors() {
     if (_interceptorsSetup) return;
     _interceptorsSetup = true;
+
+    dio.interceptors.add(cacheInterceptor);
 
     dio.interceptors.add(
       InterceptorsWrapper(

@@ -27,16 +27,34 @@ const createConversation = async (userId) => {
   });
 };
 
-const getMessages = async (conversationId, userId) => {
+const getMessages = async (conversationId, userId, query = {}) => {
   const conversation = await prisma.chatConversation.findFirst({
     where: { id: conversationId, userId },
   });
   if (!conversation) throw Object.assign(new Error('Conversation not found'), { statusCode: 404 });
 
-  return prisma.chatMessage.findMany({
-    where: { conversationId },
-    orderBy: { createdAt: 'asc' },
+  const where = { conversationId };
+
+  if (query.page !== undefined || query.limit !== undefined) {
+    const { page, limit, skip } = parsePagination(query);
+    const [data, total] = await Promise.all([
+      prisma.chatMessage.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.chatMessage.count({ where }),
+    ]);
+    return { data: data.reverse(), total, page, limit };
+  }
+
+  const messages = await prisma.chatMessage.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    take: 200,
   });
+  return messages.reverse();
 };
 
 const sendMessage = async (conversationId, content, userId) => {

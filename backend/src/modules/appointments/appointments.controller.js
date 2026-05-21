@@ -1,11 +1,14 @@
 const appointmentsService = require('./appointments.service');
-const { success, error } = require('../../utils/response');
+const { success, error, paginated } = require('../../utils/response');
 
 const getAppointments = async (req, res, next) => {
   try {
     const { profileId } = req.query;
-    const appointments = await appointmentsService.getAppointments(req.user.id, profileId);
-    return success(res, appointments);
+    const result = await appointmentsService.getAppointments(req.user.id, profileId, req.query);
+    if (result && result.data !== undefined) {
+      return paginated(res, result.data, result.total, result.page, result.limit);
+    }
+    return success(res, result);
   } catch (err) {
     next(err);
   }

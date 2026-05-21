@@ -145,21 +145,25 @@ const getScreenings = async (profileId, query) => {
 };
 
 const getStats = async () => {
-  // Get latest screening per profile to compute per-category totals
-  const latestScreenings = await prisma.medicalScreening.findMany({
-    orderBy: { screeningAt: 'desc' },
-    distinct: ['profileId'],
-    select: { irdCategory: true },
-  });
+  const stats = await prisma.$queryRaw`
+    SELECT ird_category as "irdCategory", COUNT(*)::int as "count"
+    FROM (
+      SELECT DISTINCT ON (profile_id) ird_category
+      FROM medical_screenings
+      ORDER BY profile_id, screening_at DESC
+    ) t
+    GROUP BY ird_category
+  `;
 
   const categories = { high: 0, attention: 0, normal: 0 };
-  for (const s of latestScreenings) {
-    if (s.irdCategory && categories[s.irdCategory] !== undefined) {
-      categories[s.irdCategory]++;
+  let total = 0;
+  for (const s of stats) {
+    const cat = s.irdCategory;
+    if (cat && categories[cat] !== undefined) {
+      categories[cat] = Number(s.count);
+      total += Number(s.count);
     }
   }
-
-  const total = latestScreenings.length;
 
   return {
     total,

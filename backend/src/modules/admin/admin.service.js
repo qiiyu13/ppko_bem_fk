@@ -24,52 +24,62 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
     ];
   }
 
-  // Get all matching users to compute their latest screenings and totals
-  const allFilteredUsers = await prisma.user.findMany({
-    where: userFilter,
-    select: {
-      id: true,
-      familyProfiles: {
-        select: {
-          screenings: {
-            orderBy: { screeningAt: 'desc' },
-            take: 1,
-            select: { irdCategory: true, screeningAt: true },
-          }
-        }
+  // 1. Get all screenings matching the userFilter, sorted by date desc to find the latest for each profile
+  const allScreenings = await prisma.medicalScreening.findMany({
+    where: {
+      profile: {
+        user: userFilter
       }
+    },
+    orderBy: {
+      screeningAt: 'desc'
+    },
+    select: {
+      profileId: true,
+      irdCategory: true
     }
   });
 
-  let totalHighRisk = 0;
-  let totalAttention = 0;
-  let totalNormal = 0;
-  const matchedUserIds = [];
-
-  for (const user of allFilteredUsers) {
-    let hasMatchingProfile = false;
-
-    for (const profile of user.familyProfiles) {
-      const latestProfileScreening = profile.screenings[0];
-      if (latestProfileScreening) {
-        const cat = latestProfileScreening.irdCategory;
-        if (cat === 'high') totalHighRisk++;
-        else if (cat === 'attention') totalAttention++;
-        else if (cat === 'normal') totalNormal++;
-
-        if (cat === irdCategory) {
-          hasMatchingProfile = true;
-        }
-      }
-    }
-
-    if (!irdCategory || hasMatchingProfile) {
-      matchedUserIds.push(user.id);
+  // 2. Identify the latest screening category per profile
+  const latestScreeningsMap = new Map();
+  for (const s of allScreenings) {
+    if (!latestScreeningsMap.has(s.profileId)) {
+      latestScreeningsMap.set(s.profileId, s.irdCategory);
     }
   }
 
-  const where = { ...userFilter, id: { in: matchedUserIds } };
+  // 3. Compute risk stats
+  let totalHighRisk = 0;
+  let totalAttention = 0;
+  let totalNormal = 0;
 
+  for (const cat of latestScreeningsMap.values()) {
+    if (cat === 'high') totalHighRisk++;
+    else if (cat === 'attention') totalAttention++;
+    else if (cat === 'normal') totalNormal++;
+  }
+
+  // 4. Handle filtering by irdCategory
+  let where = userFilter;
+  if (irdCategory) {
+    const matchedProfileIds = [];
+    for (const [profileId, cat] of latestScreeningsMap.entries()) {
+      if (cat === irdCategory) {
+        matchedProfileIds.push(profileId);
+      }
+    }
+
+    // Query userIds corresponding to matched profiles
+    const profiles = await prisma.familyProfile.findMany({
+      where: { id: { in: matchedProfileIds } },
+      select: { userId: true }
+    });
+
+    const matchedUserIds = Array.from(new Set(profiles.map(p => p.userId)));
+    where = { ...userFilter, id: { in: matchedUserIds } };
+  }
+
+  // 5. Paginated fetch
   const [users, total] = await Promise.all([
     prisma.user.findMany({
       where,

@@ -1,5 +1,5 @@
 const service = require('./notifications.service');
-const { success, error } = require('../../utils/response');
+const { success, error, paginated } = require('../../utils/response');
 
 const registerToken = async (req, res, next) => {
   try {
@@ -12,8 +12,11 @@ const registerToken = async (req, res, next) => {
 
 const getNotifications = async (req, res, next) => {
   try {
-    const list = await service.getNotifications(req.user.id);
-    return success(res, list);
+    const result = await service.getNotifications(req.user.id, req.query);
+    if (result && result.data !== undefined) {
+      return paginated(res, result.data, result.total, result.page, result.limit);
+    }
+    return success(res, result);
   } catch (err) {
     next(err);
   }

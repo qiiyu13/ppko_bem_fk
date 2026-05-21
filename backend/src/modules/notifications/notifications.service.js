@@ -1,5 +1,6 @@
 const prisma = require('../../utils/prisma');
 const { sendToUser, sendToUsers } = require('../../utils/fcm');
+const { parsePagination } = require('../../utils/pagination');
 
 const registerToken = async (userId, fcmToken) => {
   await prisma.user.update({
@@ -9,9 +10,25 @@ const registerToken = async (userId, fcmToken) => {
   return { registered: true };
 };
 
-const getNotifications = async (userId) => {
+const getNotifications = async (userId, query = {}) => {
+  const where = { userId };
+
+  if (query.page !== undefined || query.limit !== undefined) {
+    const { page, limit, skip } = parsePagination(query);
+    const [data, total] = await Promise.all([
+      prisma.notification.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.notification.count({ where }),
+    ]);
+    return { data, total, page, limit };
+  }
+
   return prisma.notification.findMany({
-    where: { userId },
+    where,
     orderBy: { createdAt: 'desc' },
     take: 100,
   });
