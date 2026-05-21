@@ -232,7 +232,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
         Center(
           child: Text(
-            'v1.0 © 2024 MEDIKU',
+            'v1.0 © 2026 MEDIKU',
             style: TextStyle(
               fontSize: isShortScreen ? 10 : 11,
               color: AppColors.textSecondary,
@@ -491,7 +491,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
         Center(
           child: Text(
-            'v1.0 © 2024 MEDIKU',
+            'v1.0 © 2026 MEDIKU',
             style: TextStyle(
               fontSize: isShortScreen ? 10 : 11,
               color: AppColors.textSecondary,
@@ -513,6 +513,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       backgroundColor: AppColors.background,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
+        bottom: false,
         child: CustomScrollView(
           physics: const ClampingScrollPhysics(),
           slivers: [
@@ -713,7 +714,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         left: isSmallScreen ? 16.0 : 24.0,
                         right: isSmallScreen ? 16.0 : 24.0,
                         top: isShortScreen ? 12.0 : 16.0,
-                        bottom: 16.0,
+                        bottom: 16.0 + MediaQuery.of(context).padding.bottom,
                       ),
                       child: _isLoading
                           ? _buildLoadingForm()
