@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_theme.dart';
 import '../screens/patient/patient_main_screen.dart';
@@ -66,29 +67,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   void _showErrorDialog(String message) {
-    final textScaler = MediaQuery.textScalerOf(context);
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          'Error',
-          style: TextStyle(fontSize: 20 * textScaler.scale(1.0)),
-        ),
-        content: Text(
-          message,
-          style: TextStyle(fontSize: 16 * textScaler.scale(1.0)),
-        ),
+        title: const Text('Error'),
+        content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              'OK',
-              style: TextStyle(
-                fontSize: 16 * textScaler.scale(1.0),
-                color: AppColors.primary,
-              ),
-            ),
+            child: const Text('OK'),
           ),
         ],
       ),
@@ -133,109 +120,116 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     super.dispose();
   }
 
-  Widget _buildLoadingForm() {
-    return const SizedBox(
-      height: 280,
-      child: Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
+  Widget _buildIllustration() {
+    return SizedBox(
+      height: 140,
+      child: SvgPicture.asset(
+        AssetHelper.getSvgPath(
+          'sammy-line-doctor-prescribing-medicine-during-clinical-consultation.svg',
+        ),
+        fit: BoxFit.contain,
       ),
     );
   }
 
-  Widget _buildLoginForm(bool isShortScreen) {
+  Widget _buildBrandingHeader() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
+        _buildIllustration(),
+        const SizedBox(height: AppTheme.spaceLarge),
+        Row(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Selamat datang di MEDIKU',
-              style: TextStyle(
-                fontSize: isShortScreen ? 20 : 22,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+            Image.asset(
+              AssetHelper.getIconPath('leaf_icon.png'),
+              width: 20,
+              height: 20,
+              color: AppColors.primary,
+              colorBlendMode: BlendMode.srcIn,
             ),
-            SizedBox(height: isShortScreen ? 4 : 6),
+            const SizedBox(width: AppTheme.spaceSmall),
             Text(
-              'Masukkan Nomor KK atau Username dan Password',
-              style: TextStyle(
-                fontSize: isShortScreen ? 12 : 13,
-                color: AppColors.textSecondary,
+              'MEDIKU',
+              style: AppTheme.screenTitle.copyWith(
+                fontSize: 26,
+                letterSpacing: 1.2,
               ),
             ),
           ],
         ),
+        const SizedBox(height: AppTheme.spaceXSmall),
+        Text(
+          'Kesehatan keluarga di satu tempat',
+          style: AppTheme.bodySmall,
+        ),
+      ],
+    );
+  }
 
-        SizedBox(height: isShortScreen ? 16 : 24),
-
+  Widget _buildLoginForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         TextField(
           controller: _identifierController,
           keyboardType: TextInputType.text,
-          style: TextStyle(
-            fontSize: isShortScreen ? 16 : 17,
+          style: const TextStyle(
+            fontSize: 16,
             color: AppColors.textPrimary,
           ),
           decoration: InputDecoration(
             hintText: 'Nomor KK atau Username',
-            hintStyle: TextStyle(
-              fontSize: isShortScreen ? 14 : 15,
+            hintStyle: const TextStyle(
+              fontSize: 15,
               color: AppColors.textSecondary,
             ),
-            prefixIcon: Icon(
+            prefixIcon: const Icon(
               Icons.person_outline,
               color: AppColors.primary,
-              size: isShortScreen ? 20 : 22,
             ),
             filled: true,
             fillColor: AppColors.surface,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
               borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
               borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: isShortScreen ? 12 : 14,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.spaceMedium,
+              vertical: 14,
             ),
           ),
         ),
-
-        SizedBox(height: isShortScreen ? 12 : 16),
-
+        const SizedBox(height: AppTheme.spaceLarge),
         TextField(
           controller: _passwordController,
           obscureText: _obscurePassword,
-          style: TextStyle(
-            fontSize: isShortScreen ? 16 : 17,
+          style: const TextStyle(
+            fontSize: 16,
             letterSpacing: 1.5,
             color: AppColors.textPrimary,
           ),
           decoration: InputDecoration(
             hintText: 'Password',
-            hintStyle: TextStyle(
-              fontSize: isShortScreen ? 14 : 15,
+            hintStyle: const TextStyle(
+              fontSize: 15,
               color: AppColors.textSecondary,
             ),
-            prefixIcon: Icon(
+            prefixIcon: const Icon(
               Icons.lock_outlined,
               color: AppColors.primary,
-              size: isShortScreen ? 20 : 22,
             ),
             suffixIcon: IconButton(
               icon: Icon(
                 _obscurePassword ? Icons.visibility_off : Icons.visibility,
                 color: AppColors.textSecondary,
-                size: isShortScreen ? 20 : 22,
               ),
               onPressed: () {
                 setState(() => _obscurePassword = !_obscurePassword);
@@ -244,26 +238,24 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             filled: true,
             fillColor: AppColors.surface,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
               borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
               borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: isShortScreen ? 12 : 14,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.spaceMedium,
+              vertical: 14,
             ),
           ),
         ),
-
-        SizedBox(height: isShortScreen ? 8 : 12),
-
+        const SizedBox(height: AppTheme.spaceMedium),
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
@@ -273,22 +265,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: Text(
+            child: const Text(
               'Lupa password?',
               style: TextStyle(
-                fontSize: isShortScreen ? 12 : 13,
+                fontSize: 13,
                 color: AppColors.primary,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
         ),
-
-        SizedBox(height: isShortScreen ? 8 : 12),
-
+        const SizedBox(height: AppTheme.spaceMedium),
         SizedBox(
           width: double.infinity,
-          height: isShortScreen ? 44 : 48,
+          height: 48,
           child: ElevatedButton(
             onPressed: () async {
               final identifier = _identifierController.text.trim();
@@ -318,7 +308,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 }
               } catch (e) {
                 if (mounted) {
-                  _showErrorDialog('Login gagal. Periksa kembali KK/Username dan password Anda.');
+                  _showErrorDialog(
+                    'Login gagal. Periksa kembali KK/Username dan password Anda.',
+                  );
                 }
               }
             },
@@ -327,29 +319,27 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               foregroundColor: AppColors.textOnPrimary,
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
               ),
             ),
-            child: Text(
+            child: const Text(
               'MASUK',
               style: TextStyle(
-                fontSize: isShortScreen ? 14 : 16,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.5,
               ),
             ),
           ),
         ),
-
-        SizedBox(height: isShortScreen ? 12 : 16),
-
+        const SizedBox(height: AppTheme.spaceLarge),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            const Text(
               'Belum punya akun?',
               style: TextStyle(
-                fontSize: isShortScreen ? 12 : 14,
+                fontSize: 14,
                 color: AppColors.textSecondary,
               ),
             ),
@@ -367,10 +357,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: Text(
+              child: const Text(
                 'Daftar',
                 style: TextStyle(
-                  fontSize: isShortScreen ? 12 : 14,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,
                 ),
@@ -378,15 +368,90 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             ),
           ],
         ),
+      ],
+    );
+  }
 
-        const SizedBox(height: 20),
-
+  Widget _buildWelcomeBackContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.textSecondary),
+            onPressed: () {
+              setState(() => _isLoggedIn = false);
+            },
+          ),
+        ),
+        const SizedBox(height: AppTheme.spaceMedium),
+        const Text(
+          'Selamat datang kembali,',
+          style: TextStyle(
+            fontSize: 18,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: AppTheme.spaceXSmall),
+        Text(
+          _userName,
+          style: AppTheme.screenTitle.copyWith(
+            fontSize: 28,
+            height: 1.1,
+          ),
+        ),
+        const SizedBox(height: AppTheme.spaceXXLarge),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              if (_userRole == 'ADMIN') {
+                _navigateToAdminDashboard();
+              } else if (_userRole == 'SUPERADMIN') {
+                _navigateToSuperadminDashboard();
+              } else {
+                _navigateToPatientDashboard();
+              }
+            },
+            icon: const Icon(Icons.arrow_forward, size: 18),
+            label: const Text(
+              'LANJUTKAN',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.textOnPrimary,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppTheme.spaceXLarge),
         Center(
-          child: Text(
-            'v1.0 © 2026 MEDIKU',
-            style: TextStyle(
-              fontSize: isShortScreen ? 10 : 11,
-              color: AppColors.textSecondary,
+          child: TextButton(
+            onPressed: () async {
+              setState(() => _isLoading = true);
+              await AuthService.logout();
+              await _checkLoginStatus();
+            },
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: const Text(
+              'Bukan Anda? Masuk dengan akun lain',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.statusRed,
+              ),
             ),
           ),
         ),
@@ -394,279 +459,90 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  Widget _buildGreenBackground(bool isSmallScreen, bool isShortScreen) {
-    return SafeArea(
-      bottom: false,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(
-              left: isSmallScreen ? 20.0 : 28.0,
-              right: isSmallScreen ? 20.0 : 28.0,
-              top: 8.0,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+  Widget _buildCardContent() {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: _isLoading
+          ? const SizedBox(
+              key: ValueKey('loading'),
+              height: 200,
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+            )
+          : _isLoggedIn
+              ? Column(
+                  key: const ValueKey('welcome'),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Image.asset(
-                      AssetHelper.getIconPath('leaf_icon.png'),
-                      width: 22,
-                      height: 22,
-                      color: Colors.white,
-                      colorBlendMode: BlendMode.srcIn,
+                    _buildBrandingHeader(),
+                    _buildWelcomeBackContent(),
+                    const SizedBox(height: AppTheme.spaceXLarge),
+                    Center(
+                      child: Text(
+                        'v1.0 © 2026 MEDIKU',
+                        style: AppTheme.bodySmall,
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'MEDIKU',
-                      style: TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 1.5,
-                        height: 1.2,
+                  ],
+                )
+              : Column(
+                  key: const ValueKey('login'),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildBrandingHeader(),
+                    const SizedBox(height: AppTheme.spaceXLarge),
+                    _buildLoginForm(),
+                    const SizedBox(height: AppTheme.spaceMedium),
+                    Center(
+                      child: Text(
+                        'v1.0 © 2026 MEDIKU',
+                        style: AppTheme.bodySmall,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  'Kesehatan keluarga di satu tempat',
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.white.withValues(alpha: 0.70),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          SizedBox(height: isShortScreen ? 46 : 58),
-
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 400),
-            opacity: _illustrationVisible ? 1.0 : 0.0,
-            child: Image.asset(
-              AssetHelper.getIllustrationPath('welcome-illustration.webp'),
-              width: double.infinity,
-              fit: BoxFit.fitWidth,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWelcomeBackSheet(bool isSmallScreen, bool isShortScreen) {
-    final hPad = isSmallScreen ? 16.0 : 24.0;
-
-    return Padding(
-      padding: EdgeInsets.only(left: hPad, right: hPad, bottom: 20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Spacer(flex: 1),
-
-          Text(
-            'Selamat datang kembali,',
-            style: TextStyle(
-              fontSize: isShortScreen ? 18 : 20,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          SizedBox(height: isShortScreen ? 4 : 6),
-          Text(
-            _userName,
-            style: TextStyle(
-              fontFamily: AppTheme.fontFamily,
-              fontSize: isShortScreen ? 28 : 32,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-              height: 1.1,
-            ),
-          ),
-
-          SizedBox(height: isShortScreen ? 28 : 36),
-
-          SizedBox(
-            width: double.infinity,
-            height: isShortScreen ? 44 : 52,
-            child: ElevatedButton(
-              onPressed: () {
-                if (_userRole == 'ADMIN') {
-                  _navigateToAdminDashboard();
-                } else if (_userRole == 'SUPERADMIN') {
-                  _navigateToSuperadminDashboard();
-                } else {
-                  _navigateToPatientDashboard();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.textOnPrimary,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'LANJUTKAN',
-                    style: TextStyle(
-                      fontSize: isShortScreen ? 14 : 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  SizedBox(width: isShortScreen ? 6 : 8),
-                  Icon(Icons.arrow_forward, size: isShortScreen ? 16 : 18),
-                ],
-              ),
-            ),
-          ),
-
-          const Spacer(flex: 1),
-
-          Center(
-            child: TextButton(
-              onPressed: () async {
-                setState(() => _isLoading = true);
-                await AuthService.logout();
-                await _checkLoginStatus();
-              },
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
-              child: Text(
-                'Bukan Anda? Masuk dengan akun lain',
-                style: TextStyle(
-                  fontSize: isShortScreen ? 12 : 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.statusRed,
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 2),
-
-          Center(
-            child: Text(
-              'v1.0 © 2026 MEDIKU',
-              style: TextStyle(
-                fontSize: isShortScreen ? 10 : 11,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomSheet(bool isSmallScreen, bool isShortScreen, double sheetHeight) {
-    final isWelcomeBack = !_isLoading && _isLoggedIn;
-    final hPad = isSmallScreen ? 16.0 : 24.0;
-
-    return AnimatedSlide(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.fastOutSlowIn,
-      offset: _illustrationVisible ? Offset.zero : const Offset(0, 0.12),
-      child: Container(
-        height: sheetHeight,
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(28),
-            topRight: Radius.circular(28),
-          ),
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 24,
-              color: AppColors.primary.withValues(alpha: 0.18),
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 12, bottom: 4),
-                child: Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.divider,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: isWelcomeBack
-                    ? _buildWelcomeBackSheet(isSmallScreen, isShortScreen)
-                    : SingleChildScrollView(
-                        physics: const ClampingScrollPhysics(),
-                        child: Padding(
-                          padding: EdgeInsets.only(
-                            left: hPad,
-                            right: hPad,
-                            top: 20.0,
-                            bottom: 16.0,
-                          ),
-                          child: _isLoading
-                              ? _buildLoadingForm()
-                              : _buildLoginForm(isShortScreen),
-                        ),
-                      ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final isSmallScreen = screenWidth < 360;
-    final isShortScreen = screenHeight < 700;
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final sheetHeight = (screenHeight * 0.48).clamp(280.0, 460.0);
-
     return Scaffold(
-      backgroundColor: AppColors.primary,
-      resizeToAvoidBottomInset: false,
-      body: Stack(
-        children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: sheetHeight - 28,
-            child: _buildGreenBackground(isSmallScreen, isShortScreen),
+      backgroundColor: AppColors.background,
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.spaceXLarge,
+              vertical: AppTheme.spaceMedium,
+            ),
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.fastOutSlowIn,
+              offset: _illustrationVisible ? Offset.zero : const Offset(0, 0.05),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 400),
+                opacity: _illustrationVisible ? 1.0 : 0.0,
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+                    boxShadow: AppTheme.cardShadow,
+                  ),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppTheme.spaceXLarge,
+                    AppTheme.spaceXXLarge,
+                    AppTheme.spaceXLarge,
+                    AppTheme.spaceXLarge,
+                  ),
+                  child: _buildCardContent(),
+                ),
+              ),
+            ),
           ),
-          Positioned(
-            bottom: keyboardHeight,
-            left: 0,
-            right: 0,
-            child: _buildBottomSheet(isSmallScreen, isShortScreen, sheetHeight),
-          ),
-        ],
+        ),
       ),
     );
   }
