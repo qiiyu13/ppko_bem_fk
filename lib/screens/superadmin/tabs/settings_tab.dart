@@ -5,10 +5,12 @@ import '../../../screens/common/settings/help_screen.dart';
 import '../../../screens/common/settings/language_screen.dart';
 import '../../../screens/common/settings/notification_settings_screen.dart';
 import '../../../screens/welcome_screen.dart';
+import '../../../services/profile_service.dart';
 import '../../../utils/responsive_size.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 void _push(BuildContext context, Widget screen) {
-  Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  Navigator.push(context, ParallaxPageRoute(page: screen));
 }
 
 class SuperadminSettingsTab extends StatelessWidget {
@@ -111,15 +113,18 @@ class SuperadminSettingsTab extends StatelessWidget {
                             ),
                           ),
                           ElevatedButton(
-                            onPressed: () {
+                            onPressed: () async {
                               Navigator.pop(context);
-                              Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const WelcomeScreen(),
-                                ),
-                                (route) => false,
-                              );
+                              await ProfileService.instance.logout();
+                              if (context.mounted) {
+                                Navigator.of(context).pushAndRemoveUntil(
+                                  ParallaxPageRoute(
+                                    page:
+                                        const WelcomeScreen(),
+                                  ),
+                                  (route) => false,
+                                );
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,

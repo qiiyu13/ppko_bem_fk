@@ -6,6 +6,7 @@ import '../../../models/family_profile.dart';
 import '../../../services/profile_service.dart';
 import '../add_profile_screen.dart';
 import '../edit_profile_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class ProfilTab extends StatelessWidget {
   const ProfilTab({super.key});
@@ -124,8 +125,8 @@ class ProfilTab extends StatelessWidget {
                             IconButton(
                               onPressed: () => Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (context) => const AddProfileScreen(),
+                                ParallaxPageRoute(
+                                  page: const AddProfileScreen(),
                                 ),
                               ),
                               icon: const Icon(
@@ -578,8 +579,8 @@ class ProfilTab extends StatelessWidget {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => EditProfileScreen(profile: profile),
+                    ParallaxPageRoute(
+                      page: EditProfileScreen(profile: profile),
                     ),
                   );
                 },

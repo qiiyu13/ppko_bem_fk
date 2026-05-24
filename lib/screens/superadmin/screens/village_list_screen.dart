@@ -3,6 +3,7 @@ import '../../../constants/app_colors.dart';
 import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
 import 'rw_list_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class VillageListScreen extends StatefulWidget {
   const VillageListScreen({super.key});
@@ -156,8 +157,8 @@ class _VillageListScreenState extends State<VillageListScreen> {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => RwListScreen(
+            ParallaxPageRoute(
+              page: RwListScreen(
                 villageId: village['id'] as String,
                 villageName: village['name'] as String,
               ),

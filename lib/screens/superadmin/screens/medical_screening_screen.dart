@@ -4,6 +4,7 @@ import '../../../constants/app_colors.dart';
 import '../../../services/api_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../admin/qr_scanner_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class MedicalScreeningScreen extends StatefulWidget {
   final Map<String, dynamic>? initialPatient;
@@ -358,8 +359,8 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
   void _openQrScanner() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => QrScannerScreen(
+      ParallaxPageRoute(
+        page: QrScannerScreen(
           onScanResult: (data) {
             setState(() {
               _selectedProfile = data;

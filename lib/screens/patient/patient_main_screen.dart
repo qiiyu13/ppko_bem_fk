@@ -12,6 +12,7 @@ import 'tabs/settings_tab.dart';
 import 'tabs/tanaman_toga_tab.dart';
 import 'asisten_landing_screen.dart';
 import 'jadwal_saya_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class PatientMainScreen extends StatefulWidget {
   const PatientMainScreen({super.key});
@@ -189,8 +190,8 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => const SettingsTab(),
+                            ParallaxPageRoute(
+                              page: const SettingsTab(),
                             ),
                           );
                         },

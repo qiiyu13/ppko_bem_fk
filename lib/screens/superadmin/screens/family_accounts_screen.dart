@@ -3,6 +3,7 @@ import '../../../constants/app_colors.dart';
 import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../admin/admin_family_detail_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class FamilyAccountsScreen extends StatefulWidget {
   final String rtId;
@@ -120,8 +121,8 @@ class _FamilyAccountsScreenState extends State<FamilyAccountsScreen> {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => AdminFamilyDetailScreen(
+            ParallaxPageRoute(
+              page: AdminFamilyDetailScreen(
                 family: {
                   'id': family['id'],
                   'name': name,

@@ -4,6 +4,7 @@ import '../../../models/tanaman_article.dart';
 import '../../../services/article_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../article_editor_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class PublishTab extends StatefulWidget {
   const PublishTab({super.key});
@@ -68,8 +69,8 @@ class _PublishTabState extends State<PublishTab> {
   void _createNewArticle() async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const ArticleEditorScreen(),
+      ParallaxPageRoute(
+        page: const ArticleEditorScreen(),
       ),
     );
 
@@ -85,8 +86,8 @@ class _PublishTabState extends State<PublishTab> {
   void _editArticle(TanamanArticle article) async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => ArticleEditorScreen(article: article),
+      ParallaxPageRoute(
+        page: ArticleEditorScreen(article: article),
       ),
     );
 

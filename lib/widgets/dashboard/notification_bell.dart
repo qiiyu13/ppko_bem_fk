@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../services/notification_service.dart';
 import '../../screens/patient/notification_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class NotificationBell extends StatelessWidget {
   const NotificationBell({super.key});
@@ -13,7 +14,7 @@ class NotificationBell extends StatelessWidget {
       builder: (_, count, _) => GestureDetector(
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const NotificationScreen()),
+          ParallaxPageRoute(page: const NotificationScreen()),
         ),
         child: Container(
           width: 44,

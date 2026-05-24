@@ -12,6 +12,7 @@ import '../../../widgets/dashboard/greeting_header.dart';
 import '../../../widgets/dashboard/stat_cell.dart';
 import '../admin_family_detail_screen.dart';
 import '../qr_scanner_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class DashboardTab extends StatefulWidget {
   const DashboardTab({super.key});
@@ -168,7 +169,7 @@ class _DashboardTabState extends State<DashboardTab> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+            ParallaxPageRoute(page: const QrScannerScreen()),
           );
         },
         backgroundColor: AppColors.primary,
@@ -560,8 +561,8 @@ class _DashboardTabState extends State<DashboardTab> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => AdminFamilyDetailScreen(family: patient),
+          ParallaxPageRoute(
+            page: AdminFamilyDetailScreen(family: patient),
           ),
         );
       },

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../utils/responsive_size.dart';
 import 'family_accounts_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class RtListScreen extends StatefulWidget {
   final String rwId;
@@ -96,8 +97,8 @@ class _RtListScreenState extends State<RtListScreen> {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => FamilyAccountsScreen(
+            ParallaxPageRoute(
+              page: FamilyAccountsScreen(
                 rtId: rt['id'] as String,
                 rtName: rt['name']?.toString() ?? 'RT',
                 rwName: widget.rwName,

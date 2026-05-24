@@ -6,11 +6,12 @@ import '../../../screens/common/settings/help_screen.dart';
 import '../../../screens/common/settings/language_screen.dart';
 import '../../../screens/common/settings/notification_settings_screen.dart';
 import '../../../services/profile_service.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 const String _kAppVersion = '1.0.0';
 
 void _push(BuildContext context, Widget screen) {
-  Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  Navigator.push(context, ParallaxPageRoute(page: screen));
 }
 
 class SettingsTab extends StatelessWidget {
@@ -132,8 +133,8 @@ class SettingsTab extends StatelessWidget {
                               if (context.mounted) {
                                 Navigator.pop(context);
                                 Navigator.of(context).pushAndRemoveUntil(
-                                  MaterialPageRoute(
-                                    builder: (context) => const WelcomeScreen(),
+                                  ParallaxPageRoute(
+                                    page: const WelcomeScreen(),
                                   ),
                                   (route) => false,
                                 );

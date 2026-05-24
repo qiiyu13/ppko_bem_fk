@@ -4,6 +4,7 @@ import '../../../models/tanaman_article.dart';
 import '../../../services/article_service.dart';
 import '../../../utils/asset_helper.dart';
 import '../tanaman_article_detail_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class TanamanTogaTab extends StatefulWidget {
   const TanamanTogaTab({super.key});
@@ -135,8 +136,8 @@ class _ArticleCard extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => TanamanArticleDetailScreen(article: article),
+          ParallaxPageRoute(
+            page: TanamanArticleDetailScreen(article: article),
           ),
         );
       },

@@ -4,6 +4,7 @@ import '../../../services/auth_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../patient/tabs/settings_tab.dart';
 import '../admin_profile_edit_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class AdminProfilTab extends StatefulWidget {
   const AdminProfilTab({super.key});
@@ -80,8 +81,8 @@ class _AdminProfilTabState extends State<AdminProfilTab> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const SettingsTab(),
+                ParallaxPageRoute(
+                  page: const SettingsTab(),
                 ),
               );
             },
@@ -170,8 +171,8 @@ class _AdminProfilTabState extends State<AdminProfilTab> {
                           if (_user == null) return;
                           final result = await Navigator.push<bool>(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => AdminProfileEditScreen(user: _user!),
+                            ParallaxPageRoute(
+                              page: AdminProfileEditScreen(user: _user!),
                             ),
                           );
                           if (result == true) _loadProfile();

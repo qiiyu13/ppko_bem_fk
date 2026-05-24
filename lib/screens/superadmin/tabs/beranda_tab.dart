@@ -11,6 +11,7 @@ import '../../../utils/responsive_size.dart';
 import '../../../widgets/dashboard/greeting_header.dart';
 import '../../admin/qr_scanner_screen.dart';
 import '../screens/appointment_detail_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class BerandaTab extends StatefulWidget {
   const BerandaTab({super.key});
@@ -129,7 +130,7 @@ class _BerandaTabState extends State<BerandaTab> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+              ParallaxPageRoute(page: const QrScannerScreen()),
             );
           },
           backgroundColor: AppColors.primary,
@@ -361,8 +362,8 @@ class _BerandaTabState extends State<BerandaTab> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => AppointmentDetailScreen(appointment: appt),
+          ParallaxPageRoute(
+            page: AppointmentDetailScreen(appointment: appt),
           ),
         );
       },

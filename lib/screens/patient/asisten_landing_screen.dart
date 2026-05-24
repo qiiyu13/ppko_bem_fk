@@ -4,6 +4,7 @@ import '../../constants/app_colors.dart';
 import '../../services/chat_service.dart';
 import '../../services/chat_storage_service.dart';
 import 'tanya_asisten_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class AsistenLandingScreen extends StatefulWidget {
   const AsistenLandingScreen({super.key});
@@ -177,7 +178,7 @@ class _AsistenLandingScreenState extends State<AsistenLandingScreen> {
 
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => TanyaAsistenScreen(conversationId: conversationId)),
+      ParallaxPageRoute(page: TanyaAsistenScreen(conversationId: conversationId)),
     );
     _loadConversations();
   }

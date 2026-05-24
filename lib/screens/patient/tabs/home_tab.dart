@@ -18,6 +18,7 @@ import '../../../services/websocket_service.dart';
 import '../../../widgets/mini_sparkline.dart';
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:mediku/utils/page_transitions.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -428,8 +429,8 @@ class _HomeTabState extends State<HomeTab> {
                               onTap: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
+                                  ParallaxPageRoute(
+                                    page:
                                         const NotificationScreen(),
                                   ),
                                 );
@@ -631,8 +632,8 @@ class _HomeTabState extends State<HomeTab> {
                                 onTap: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
+                                    ParallaxPageRoute(
+                                      page:
                                           LaporanSayaScreen(gender: userGender),
                                     ),
                                   );

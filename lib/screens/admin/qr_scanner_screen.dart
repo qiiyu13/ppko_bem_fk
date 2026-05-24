@@ -3,6 +3,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'dart:convert';
 import '../../constants/app_colors.dart';
 import '../superadmin/screens/medical_screening_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class QrScannerScreen extends StatefulWidget {
   final void Function(Map<String, dynamic>)? onScanResult;
@@ -53,8 +54,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => MedicalScreeningScreen(initialPatient: data),
+          ParallaxPageRoute(
+            page: MedicalScreeningScreen(initialPatient: data),
           ),
         );
       }

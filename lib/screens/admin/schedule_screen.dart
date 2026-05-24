@@ -8,6 +8,7 @@ import '../../services/websocket_service.dart';
 import '../../utils/date_utils.dart';
 import '../../utils/responsive_size.dart';
 import '../superadmin/screens/schedule_form_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -142,8 +143,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
         onPressed: () async {
           final created = await Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const ScheduleFormScreen(),
+            ParallaxPageRoute(
+              page: const ScheduleFormScreen(),
             ),
           );
           if (created != null) _loadAppointments();

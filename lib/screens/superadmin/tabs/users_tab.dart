@@ -5,6 +5,7 @@ import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../screens/rw_list_screen.dart';
 import '../screens/user_form_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class UsersTab extends StatefulWidget {
   const UsersTab({super.key});
@@ -113,8 +114,8 @@ class _UsersTabState extends State<UsersTab>
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const UserFormScreen(),
+                  ParallaxPageRoute(
+                    page: const UserFormScreen(),
                   ),
                 ).then((_) => _loadUsers());
               },
@@ -275,8 +276,8 @@ class _UsersTabState extends State<UsersTab>
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => UserFormScreen(admin: admin),
+                        ParallaxPageRoute(
+                          page: UserFormScreen(admin: admin),
                         ),
                       ).then((_) => _loadUsers());
                     },
@@ -474,8 +475,8 @@ class _UsersTabState extends State<UsersTab>
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => RwListScreen(
+            ParallaxPageRoute(
+              page: RwListScreen(
                 villageId: village['id'] as String,
                 villageName: village['name'] as String,
               ),

@@ -3,6 +3,7 @@ import '../constants/app_colors.dart';
 import '../models/family_profile.dart';
 import '../services/profile_service.dart';
 import '../screens/patient/add_profile_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class ProfileSelector extends StatelessWidget {
   const ProfileSelector({super.key});
@@ -150,7 +151,7 @@ class ProfileSwitcherSheet extends StatelessWidget {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const AddProfileScreen()),
+                      ParallaxPageRoute(page: const AddProfileScreen()),
                     );
                   },
                   icon: const Icon(Icons.add, size: 20),

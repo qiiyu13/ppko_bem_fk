@@ -5,6 +5,7 @@ import '../../services/audit_service.dart';
 import '../../utils/patient_utils.dart';
 import '../../utils/responsive_size.dart';
 import 'admin_patient_detail_screen.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class AdminFamilyDetailScreen extends StatefulWidget {
   final Map<String, dynamic> family;
@@ -313,8 +314,8 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
         if (!mounted) return;
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => AdminPatientDetailScreen(
+          ParallaxPageRoute(
+            page: AdminPatientDetailScreen(
               preloaded: true,
               readOnly: widget.readOnly,
               patient: {

@@ -4,6 +4,7 @@ import '../constants/app_colors.dart';
 import 'patient/patient_main_screen.dart';
 import '../services/auth_service.dart';
 import '../services/region_service.dart';
+import 'package:mediku/utils/page_transitions.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -117,7 +118,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const PatientMainScreen()),
+        ParallaxPageRoute(page: const PatientMainScreen()),
         (route) => false,
       );
     } catch (e) {
