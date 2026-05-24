@@ -32,6 +32,7 @@ class _BerandaTabState extends State<BerandaTab> {
   int _normalCount = 0;
   List<Map<String, dynamic>> _upcomingAppointments = [];
   String? _userName;
+  String? _userAvatarUrl;
 
   @override
   void initState() {
@@ -50,6 +51,7 @@ class _BerandaTabState extends State<BerandaTab> {
     final name = (me['name'] ?? me['responsibleName']) as String? ?? _userName;
     setState(() {
       _userName = name;
+      _userAvatarUrl = AuthService.userAvatarUrl(me);
     });
   }
 
@@ -149,6 +151,7 @@ class _BerandaTabState extends State<BerandaTab> {
                   fallbackName: 'Superadmin',
                   roleBadge: 'SUPERADMIN',
                   roleBadgeColor: purpleAccent,
+                  imageUrl: _userAvatarUrl,
                 ),
                 Padding(
                   padding: EdgeInsets.all(ResponsiveSize.paddingMedium),

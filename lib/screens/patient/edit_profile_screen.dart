@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../constants/app_colors.dart';
 import '../../models/family_profile.dart';
 import '../../services/profile_service.dart';
+import '../../widgets/app_avatar.dart';
 import '../../widgets/profile_form_field.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -23,9 +26,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late String _selectedGender;
   String? _selectedBloodType;
   DateTime? _selectedBirthDate;
+  File? _avatarFile;
   bool _isLoading = false;
 
   static const List<String> _bloodTypes = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked != null) {
+      setState(() => _avatarFile = File(picked.path));
+    }
+  }
 
   @override
   void initState() {
@@ -89,6 +101,45 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              Center(
+                child: GestureDetector(
+                  onTap: _pickImage,
+                  child: _avatarFile != null
+                      ? ClipOval(
+                          child: Image.file(
+                            _avatarFile!,
+                            width: 90,
+                            height: 90,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : AppAvatar(
+                          imageUrl: widget.profile.avatarUrl,
+                          fallback: Icon(
+                            _selectedGender == 'Wanita' ? Icons.female : Icons.male,
+                            size: 40,
+                            color: AppColors.textOnPrimary,
+                          ),
+                          size: 90,
+                          backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                          borderColor: AppColors.primary,
+                          borderWidth: 2,
+                        ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton.icon(
+                  onPressed: _pickImage,
+                  icon: const Icon(Icons.camera_alt, size: 18, color: AppColors.primary),
+                  label: Text(
+                    _avatarFile != null ? 'Ganti Foto' : 'Tambah Foto',
+                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -334,7 +385,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         phone: _phoneController.text.isEmpty ? null : _phoneController.text,
       );
 
-      await ProfileService.instance.updateProfile(updatedProfile);
+      await ProfileService.instance.updateProfile(updatedProfile, avatar: _avatarFile);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

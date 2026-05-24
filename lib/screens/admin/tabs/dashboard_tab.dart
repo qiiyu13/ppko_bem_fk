@@ -35,6 +35,7 @@ class _DashboardTabState extends State<DashboardTab> {
   int _totalPages = 1;
   Timer? _searchDebounce;
   String? _userName;
+  String? _userAvatarUrl;
 
   @override
   void initState() {
@@ -60,6 +61,7 @@ class _DashboardTabState extends State<DashboardTab> {
     final name = (me['name'] ?? me['responsibleName']) as String? ?? _userName;
     setState(() {
       _userName = name;
+      _userAvatarUrl = AuthService.userAvatarUrl(me);
     });
   }
 
@@ -178,7 +180,7 @@ class _DashboardTabState extends State<DashboardTab> {
       body: CustomScrollView(
         slivers: [
             SliverToBoxAdapter(
-              child: GreetingHeader(name: _userName, fallbackName: 'Pengguna'),
+              child: GreetingHeader(name: _userName, fallbackName: 'Pengguna', imageUrl: _userAvatarUrl),
             ),
 
             SliverToBoxAdapter(

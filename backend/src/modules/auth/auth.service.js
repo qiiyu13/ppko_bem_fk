@@ -59,12 +59,19 @@ const getMe = async (userId) => {
     where: { id: userId },
     select: {
       id: true, kkNumber: true, responsibleName: true, phone: true, role: true,
-      position: true,
+      position: true, avatarPath: true,
       region: { select: { id: true, name: true } },
     },
   });
   if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
   return user;
+};
+
+const updateAvatar = async (userId, avatarPath) => {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { avatarPath },
+  });
 };
 
 const forgotPassword = async ({ kkNumber, phone }) => {
@@ -99,4 +106,4 @@ const resetPassword = async ({ kkNumber, firebaseToken, newPassword }) => {
   return { message: 'Password reset successful' };
 };
 
-module.exports = { register, login, getMe, forgotPassword, resetPassword };
+module.exports = { register, login, getMe, updateAvatar, forgotPassword, resetPassword };

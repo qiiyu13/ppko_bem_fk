@@ -22,7 +22,9 @@ const getProfile = async (req, res, next) => {
 
 const createProfile = async (req, res, next) => {
   try {
-    const profile = await profilesService.createProfile(req.body, req.user.id);
+    const data = { ...req.body };
+    if (req.file) data.avatarPath = `/uploads/avatars/${req.file.filename}`;
+    const profile = await profilesService.createProfile(data, req.user.id);
     return success(res, profile, 'Profile created successfully', 201);
   } catch (err) {
     next(err);
@@ -31,7 +33,9 @@ const createProfile = async (req, res, next) => {
 
 const updateProfile = async (req, res, next) => {
   try {
-    const profile = await profilesService.updateProfile(req.params.id, req.body, req.user.id);
+    const data = { ...req.body };
+    if (req.file) data.avatarPath = `/uploads/avatars/${req.file.filename}`;
+    const profile = await profilesService.updateProfile(req.params.id, data, req.user.id);
     return success(res, profile, 'Profile updated successfully');
   } catch (err) {
     if (err.message === 'Profile not found') return error(res, err.message, 404, 'NOT_FOUND');

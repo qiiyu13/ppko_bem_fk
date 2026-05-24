@@ -84,6 +84,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           'mapsUrl': mapsUrl,
           'status': isToday ? 'Segera' : null,
           'type': isToday ? 'today' : 'upcoming',
+          'notes': rawNotes,
+          'updatedAt': a['updatedAt'],
         };
       }).toList();
 
@@ -334,6 +336,70 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     }
   }
 
+  Future<void> _editSchedule(Map<String, dynamic> schedule) async {
+    final result = await Navigator.push(
+      context,
+      ParallaxPageRoute(
+        page: ScheduleFormScreen(schedule: {
+          'id': schedule['id'],
+          'title': schedule['title'],
+          'date': schedule['date'],
+          'location': schedule['location'],
+          'notes': schedule['notes'],
+          'updatedAt': schedule['updatedAt'],
+        }),
+      ),
+    );
+    if (result != null) _loadAppointments();
+  }
+
+  Future<void> _deleteSchedule(Map<String, dynamic> schedule) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Jadwal'),
+        content: Text('Hapus jadwal "${schedule['title']}"? '
+            'Tindakan ini tidak dapat dibatalkan.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final id = schedule['id'] as String;
+      final updatedAt = schedule['updatedAt'] != null
+          ? DateTime.tryParse(schedule['updatedAt'].toString()) ?? DateTime.now()
+          : DateTime.now();
+      await AppointmentService.deleteAppointment(id, updatedAt);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Jadwal berhasil dihapus'),
+          backgroundColor: AppColors.statusGreen,
+        ),
+      );
+      _loadAppointments();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menghapus: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Widget _buildScheduleCard(Map<String, dynamic> schedule, bool isToday) {
     final date = schedule['date'] as DateTime;
     final hasStatus = schedule['status'] != null;
@@ -433,7 +499,6 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                   ],
                 ),
                 SizedBox(height: ResponsiveSize.spacingSmall),
-                // Time
                 Row(
                   children: [
                     const Icon(
@@ -452,7 +517,6 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                   ],
                 ),
                 const SizedBox(height: 4),
-                // Location
                 Row(
                   children: [
                     const Icon(
@@ -509,6 +573,40 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                 ],
               ],
             ),
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
+            color: AppColors.card,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            onSelected: (value) {
+              if (value == 'edit') {
+                _editSchedule(schedule);
+              } else if (value == 'delete') {
+                _deleteSchedule(schedule);
+              }
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
+                    SizedBox(width: 12),
+                    Text('Edit'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                    SizedBox(width: 12),
+                    Text('Hapus', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

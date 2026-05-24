@@ -39,7 +39,10 @@ router.post('/login', [authLimiter,
   validate,
 ], controller.login);
 
+const { uploadAvatarMiddleware } = require('../../config/multer');
+
 router.get('/me', authenticate, controller.getMe);
+router.put('/me/picture', authenticate, uploadAvatarMiddleware, controller.updatePicture);
 router.post('/refresh', authenticate, controller.refreshToken);
 
 router.post('/forgot-password', [forgotPasswordLimiter,

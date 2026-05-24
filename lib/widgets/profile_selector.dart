@@ -4,6 +4,7 @@ import '../models/family_profile.dart';
 import '../services/profile_service.dart';
 import '../screens/patient/add_profile_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
+import 'package:mediku/widgets/app_avatar.dart';
 
 class ProfileSelector extends StatelessWidget {
   const ProfileSelector({super.key});
@@ -32,14 +33,11 @@ class ProfileSelector extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
+                AppAvatar(
+                  imageUrl: activeProfile.avatarUrl,
+                  size: 28,
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  fallback: const Icon(
                     Icons.person,
                     size: 16,
                     color: AppColors.primary,
@@ -189,16 +187,13 @@ class _ProfileListTile extends StatelessWidget {
         final isActive = activeProfile?.id == profile.id;
 
         return ListTile(
-          leading: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: isActive
-                  ? AppColors.primary.withValues(alpha: 0.1)
-                  : AppColors.surface,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
+          leading: AppAvatar(
+            imageUrl: profile.avatarUrl,
+            size: 40,
+            backgroundColor: isActive
+                ? AppColors.primary.withValues(alpha: 0.1)
+                : AppColors.surface,
+            fallback: Icon(
               Icons.person,
               size: 20,
               color: isActive ? AppColors.primary : AppColors.textSecondary,

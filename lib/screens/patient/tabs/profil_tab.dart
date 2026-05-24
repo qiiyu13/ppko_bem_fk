@@ -7,6 +7,7 @@ import '../../../services/profile_service.dart';
 import '../add_profile_screen.dart';
 import '../edit_profile_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
+import 'package:mediku/widgets/app_avatar.dart';
 
 class ProfilTab extends StatelessWidget {
   const ProfilTab({super.key});
@@ -222,15 +223,13 @@ class ProfilTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Left side: Avatar
-          Container(
-            width: screenWidth * 0.16,
-            height: screenWidth * 0.16,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 3),
-            ),
-            child: Icon(
+          AppAvatar(
+            imageUrl: profile.avatarUrl,
+            size: screenWidth * 0.16,
+            backgroundColor: Colors.white.withValues(alpha: 0.2),
+            borderColor: Colors.white,
+            borderWidth: 3,
+            fallback: Icon(
               profile.gender == 'Pria' ? Icons.male : Icons.female,
               size: screenWidth * 0.07,
               color: AppColors.textOnPrimary,
@@ -375,16 +374,13 @@ class ProfilTab extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? AppColors.primary.withValues(alpha: 0.1)
-                        : AppColors.surface,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
+                AppAvatar(
+                  imageUrl: profile.avatarUrl,
+                  size: 48,
+                  backgroundColor: isActive
+                      ? AppColors.primary.withValues(alpha: 0.1)
+                      : AppColors.surface,
+                  fallback: Icon(
                     profile.gender == 'Pria' ? Icons.male : Icons.female,
                     size: 24,
                     color: isActive

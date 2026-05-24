@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:mediku/widgets/app_avatar.dart';
+import '../../config/env.dart';
 import '../../constants/app_colors.dart';
 import '../../services/api_service.dart';
 import '../../utils/responsive_size.dart';
@@ -528,6 +530,10 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
   Widget _buildProfileSection(Map<String, dynamic> data, Color riskColor, String riskLabel) {
     final name = data['name'];
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    final avatarPath = (_patientData ?? widget.patient)['avatarPath'] as String?;
+    final avatarUrl = (avatarPath != null && avatarPath.isNotEmpty)
+        ? '${Env.serverBaseUrl}$avatarPath'
+        : null;
     final nik = data['nik']?.toString() ?? '';
     final familyName = (_patientData ?? widget.patient)['familyName']?.toString() ?? 'Keluarga';
 
@@ -551,16 +557,13 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Styled Avatar with elegant branding
-              Container(
-                width: 66,
-                height: 66,
-                decoration: BoxDecoration(
-                  color: AppColors.primarySurface,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.15), width: 2),
-                ),
-                alignment: Alignment.center,
-                child: Text(
+              AppAvatar(
+                imageUrl: avatarUrl,
+                size: 66,
+                backgroundColor: AppColors.primarySurface,
+                borderColor: AppColors.primary.withValues(alpha: 0.15),
+                borderWidth: 2,
+                fallback: Text(
                   initial,
                   style: const TextStyle(
                     color: AppColors.primary,

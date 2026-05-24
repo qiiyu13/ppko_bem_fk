@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mediku/widgets/app_avatar.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/auth_service.dart';
 import '../../../utils/responsive_size.dart';
@@ -180,18 +181,13 @@ class _AdminProfilTabState extends State<AdminProfilTab> {
                       ),
                     ],
                   ),
-                  Container(
-                    width: avatarSize,
-                    height: avatarSize,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.textOnPrimary,
-                        width: 3,
-                      ),
-                    ),
-                    child: Icon(
+                  AppAvatar(
+                    imageUrl: AuthService.userAvatarUrl(_user),
+                    size: avatarSize,
+                    backgroundColor: Colors.white.withValues(alpha: 0.15),
+                    borderColor: AppColors.textOnPrimary,
+                    borderWidth: 3,
+                    fallback: Icon(
                       Icons.local_hospital,
                       size: ResponsiveSize.iconLarge,
                       color: AppColors.textOnPrimary,

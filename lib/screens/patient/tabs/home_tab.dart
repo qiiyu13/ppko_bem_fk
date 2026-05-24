@@ -19,6 +19,7 @@ import '../../../widgets/mini_sparkline.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:mediku/utils/page_transitions.dart';
+import 'package:mediku/widgets/app_avatar.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -331,30 +332,22 @@ class _HomeTabState extends State<HomeTab> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.center,
                                     children: [
-                                      Container(
-                                        width: 44,
-                                        height: 44,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primarySurface
-                                              .withValues(alpha: 0.3),
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: AppColors.primary.withValues(
-                                              alpha: 0.2,
-                                            ),
-                                            width: 2,
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: Icon(
-                                            activeProfile != null
-                                                ? _getGenderIcon(
-                                                    activeProfile.gender,
-                                                  )
-                                                : Icons.person_outline,
-                                            color: AppColors.primary,
-                                            size: 24,
-                                          ),
+                                      AppAvatar(
+                                        imageUrl: activeProfile?.avatarUrl,
+                                        size: 44,
+                                        backgroundColor: AppColors.primarySurface
+                                            .withValues(alpha: 0.3),
+                                        borderColor: AppColors.primary
+                                            .withValues(alpha: 0.2),
+                                        borderWidth: 2,
+                                        fallback: Icon(
+                                          activeProfile != null
+                                              ? _getGenderIcon(
+                                                  activeProfile.gender,
+                                                )
+                                              : Icons.person_outline,
+                                          color: AppColors.primary,
+                                          size: 24,
                                         ),
                                       ),
                                       const SizedBox(width: 12),

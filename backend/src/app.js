@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 const config = require('./config');
 const routes = require('./routes');
 const errorHandler = require('./middleware/errorHandler');
@@ -47,6 +48,9 @@ if (config.nodeEnv === 'production') {
 } else {
   app.use(morgan('dev'));
 }
+
+// Static file serving
+app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
 
 // Routes
 app.use('/api/v1', routes);

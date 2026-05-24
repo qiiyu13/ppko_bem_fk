@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../config/env.dart';
 
 class FamilyProfile {
   final String id;
@@ -9,6 +10,7 @@ class FamilyProfile {
   final String? bloodType;
   final String? address;
   final String? phone;
+  final String? avatarPath;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -21,6 +23,7 @@ class FamilyProfile {
     this.bloodType,
     this.address,
     this.phone,
+    this.avatarPath,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : createdAt = createdAt ?? DateTime.now(),
@@ -36,6 +39,7 @@ class FamilyProfile {
       'blood_type': bloodType,
       'address': address,
       'phone': phone,
+      'avatar_path': avatarPath,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -51,6 +55,7 @@ class FamilyProfile {
       bloodType: map['blood_type'] as String?,
       address: map['address'] as String?,
       phone: map['phone'] as String?,
+      avatarPath: map['avatar_path'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
@@ -66,6 +71,7 @@ class FamilyProfile {
       bloodType: map['bloodType'] as String?,
       address: map['address'] as String?,
       phone: map['phone'] as String?,
+      avatarPath: map['avatarPath'] as String?,
       createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt']) : null,
       updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : null,
     );
@@ -91,6 +97,11 @@ class FamilyProfile {
     return '${nik.substring(0, 6)} **** **** ${nik.substring(12)}';
   }
 
+  String? get avatarUrl {
+    if (avatarPath == null || avatarPath!.isEmpty) return null;
+    return '${Env.serverBaseUrl}$avatarPath';
+  }
+
   FamilyProfile copyWith({
     String? id,
     String? nik,
@@ -100,6 +111,7 @@ class FamilyProfile {
     String? bloodType,
     String? address,
     String? phone,
+    String? avatarPath,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -112,6 +124,7 @@ class FamilyProfile {
       bloodType: bloodType ?? this.bloodType,
       address: address ?? this.address,
       phone: phone ?? this.phone,
+      avatarPath: avatarPath ?? this.avatarPath,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

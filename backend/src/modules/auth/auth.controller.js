@@ -73,4 +73,17 @@ const logout = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, getMe, forgotPassword, resetPassword, refreshToken, logout };
+const updatePicture = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return error(res, 'No file uploaded', 400, 'FILE_REQUIRED');
+    }
+    const avatarPath = `/uploads/avatars/${req.file.filename}`;
+    await authService.updateAvatar(req.user.id, avatarPath);
+    return success(res, { avatarPath }, 'Picture updated');
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { register, login, getMe, forgotPassword, resetPassword, refreshToken, logout, updatePicture };

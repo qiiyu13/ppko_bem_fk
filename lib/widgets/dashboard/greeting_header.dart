@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../utils/responsive_size.dart';
+import 'package:mediku/widgets/app_avatar.dart';
 import 'notification_bell.dart';
 
 class GreetingHeader extends StatelessWidget {
@@ -8,6 +9,7 @@ class GreetingHeader extends StatelessWidget {
   final String fallbackName;
   final String? roleBadge;
   final Color? roleBadgeColor;
+  final String? imageUrl;
 
   const GreetingHeader({
     super.key,
@@ -15,6 +17,7 @@ class GreetingHeader extends StatelessWidget {
     this.fallbackName = 'Pengguna',
     this.roleBadge,
     this.roleBadgeColor,
+    this.imageUrl,
   });
 
   @override
@@ -32,15 +35,11 @@ class GreetingHeader extends StatelessWidget {
       color: AppColors.card,
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
+          AppAvatar(
+            imageUrl: imageUrl,
+            size: 44,
+            backgroundColor: AppColors.primary,
+            fallback: Text(
               initial,
               style: const TextStyle(
                 color: AppColors.textOnPrimary,

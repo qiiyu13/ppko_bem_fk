@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../constants/app_colors.dart';
 import '../../services/admin_service.dart';
 import '../../services/auth_service.dart';
@@ -21,7 +23,16 @@ class _AdminProfileEditScreenState extends State<AdminProfileEditScreen> {
   final _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
+  File? _avatarFile;
   bool _isSubmitting = false;
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked != null) {
+      setState(() => _avatarFile = File(picked.path));
+    }
+  }
 
   @override
   void initState() {
@@ -53,6 +64,9 @@ class _AdminProfileEditScreenState extends State<AdminProfileEditScreen> {
         password: _passwordController.text.isEmpty ? null : _passwordController.text,
         updatedAt: DateTime.parse(widget.user['updatedAt'] as String),
       );
+      if (_avatarFile != null) {
+        await AuthService.updatePicture(_avatarFile!);
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Profil diperbarui'),
@@ -102,6 +116,42 @@ class _AdminProfileEditScreenState extends State<AdminProfileEditScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Center(
+                  child: GestureDetector(
+                    onTap: _pickImage,
+                    child: _avatarFile != null
+                        ? ClipOval(
+                            child: Image.file(
+                              _avatarFile!,
+                              width: 90,
+                              height: 90,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Container(
+                            width: 90,
+                            height: 90,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.primary, width: 2),
+                            ),
+                            child: const Icon(Icons.local_hospital, size: 40, color: AppColors.primary),
+                          ),
+                  ),
+                ),
+                SizedBox(height: ResponsiveSize.spacingSmall),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: _pickImage,
+                    icon: const Icon(Icons.camera_alt, size: 18, color: AppColors.primary),
+                    label: Text(
+                      _avatarFile != null ? 'Ganti Foto' : 'Tambah Foto',
+                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+                SizedBox(height: ResponsiveSize.spacingLarge),
                 _field(
                   label: 'Nama',
                   hint: 'Nama lengkap',

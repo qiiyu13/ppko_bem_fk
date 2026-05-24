@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../config/env.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../widgets/app_avatar.dart';
 import '../../admin/admin_family_detail_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
@@ -138,14 +140,13 @@ class _FamilyAccountsScreenState extends State<FamilyAccountsScreen> {
         padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
         child: Row(
           children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.family_restroom, color: AppColors.primary, size: 28),
+            AppAvatar(
+              imageUrl: (family['avatarPath'] as String?)?.isNotEmpty == true
+                  ? '${Env.serverBaseUrl}${family['avatarPath']}'
+                  : null,
+              fallback: const Icon(Icons.family_restroom, color: AppColors.primary, size: 28),
+              size: 50,
+              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
             ),
             SizedBox(width: ResponsiveSize.paddingMedium),
             Expanded(

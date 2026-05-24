@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../../config/env.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/admin_service.dart';
 import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../widgets/app_avatar.dart';
 import '../screens/rw_list_screen.dart';
 import '../screens/user_form_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
@@ -190,14 +192,13 @@ class _UsersTabState extends State<UsersTab>
         children: [
           Row(
             children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.person, color: AppColors.primary, size: 28),
+              AppAvatar(
+                imageUrl: (admin['avatarPath'] as String?)?.isNotEmpty == true
+                    ? '${Env.serverBaseUrl}${admin['avatarPath']}'
+                    : null,
+                fallback: const Icon(Icons.person, color: AppColors.primary, size: 28),
+                size: 50,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
               ),
               SizedBox(width: ResponsiveSize.paddingMedium),
               Expanded(

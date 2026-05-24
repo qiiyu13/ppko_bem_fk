@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
+import '../config/env.dart';
 import 'api_service.dart';
 import 'notification_service.dart';
 import 'token_service.dart';
@@ -55,6 +58,12 @@ class AuthService {
 
   static Map<String, dynamic>? _cachedMe;
 
+  static String? userAvatarUrl(Map<String, dynamic>? user) {
+    final path = user?['avatarPath'] as String?;
+    if (path == null || path.isEmpty) return null;
+    return '${Env.serverBaseUrl}$path';
+  }
+
   static Future<Map<String, dynamic>?> getMe({bool force = false}) async {
     if (!force && _cachedMe != null) return _cachedMe;
     try {
@@ -64,6 +73,16 @@ class AuthService {
     } catch (e) {
       return _cachedMe;
     }
+  }
+
+  static Future<String> updatePicture(File file) async {
+    final formData = FormData.fromMap({
+      'avatar': await MultipartFile.fromFile(file.path),
+    });
+    final response = await ApiService.dio.put('/auth/me/picture', data: formData);
+    final avatarPath = response.data['data']['avatarPath'] as String;
+    _cachedMe?['avatarPath'] = avatarPath;
+    return avatarPath;
   }
 
   static Future<bool> isLoggedIn() async {

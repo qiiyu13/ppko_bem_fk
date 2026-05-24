@@ -5,12 +5,14 @@ const authenticate = require('../../middleware/auth');
 const validate = require('../../middleware/validate');
 const conflictDetection = require('../../middleware/conflictDetection');
 
+const { uploadAvatarMiddleware } = require('../../config/multer');
+
 router.use(authenticate);
 
 router.get('/', controller.getProfiles);
 router.get('/:id', controller.getProfile);
 
-router.post('/', [
+router.post('/', uploadAvatarMiddleware, [
   body('name').isString().notEmpty(),
   body('nik').isString().notEmpty(),
   body('gender').customSanitizer((v) => typeof v === 'string' ? v.toLowerCase() : v).isIn(['pria', 'wanita']),
@@ -18,7 +20,7 @@ router.post('/', [
   validate,
 ], controller.createProfile);
 
-router.put('/:id', [
+router.put('/:id', uploadAvatarMiddleware, [
   body('name').optional().isString().notEmpty(),
   body('nik').optional().isString().notEmpty(),
   body('gender').optional().customSanitizer((v) => typeof v === 'string' ? v.toLowerCase() : v).isIn(['pria', 'wanita']),

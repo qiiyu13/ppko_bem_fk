@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mediku/widgets/app_avatar.dart';
+import '../../config/env.dart';
 import '../../constants/app_colors.dart';
 import '../../services/api_service.dart';
 import '../../services/audit_service.dart';
@@ -166,6 +168,10 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
   }
 
   Widget _buildHeaderCard(String name, String kk, String phone, int count) {
+    final avatarPath = (_data?['avatarPath'] ?? widget.family['avatarPath']) as String?;
+    final avatarUrl = (avatarPath != null && avatarPath.isNotEmpty)
+        ? '${Env.serverBaseUrl}$avatarPath'
+        : null;
     return Container(
       padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
       decoration: BoxDecoration(
@@ -178,15 +184,11 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
         children: [
           Row(
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
+              AppAvatar(
+                imageUrl: avatarUrl,
+                size: 52,
+                backgroundColor: AppColors.primary,
+                fallback: Text(
                   name.isNotEmpty ? name[0].toUpperCase() : '?',
                   style: const TextStyle(
                     color: AppColors.textOnPrimary,
@@ -330,15 +332,14 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: riskColor.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Text(
+            AppAvatar(
+              imageUrl: (() {
+                final p = profile['avatarPath'] as String?;
+                return (p != null && p.isNotEmpty) ? '${Env.serverBaseUrl}$p' : null;
+              })(),
+              size: 40,
+              backgroundColor: riskColor.withValues(alpha: 0.15),
+              fallback: Text(
                 initial,
                 style: TextStyle(
                   color: riskColor,

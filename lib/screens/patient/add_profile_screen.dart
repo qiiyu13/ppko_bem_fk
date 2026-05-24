@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../constants/app_colors.dart';
 import '../../services/profile_service.dart';
+import '../../widgets/app_avatar.dart';
 import '../../widgets/profile_form_field.dart';
 
 class AddProfileScreen extends StatefulWidget {
@@ -20,7 +23,16 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
   String _selectedGender = 'Pria';
   String? _selectedBloodType;
   DateTime? _selectedBirthDate;
+  File? _avatarFile;
   bool _isLoading = false;
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked != null) {
+      setState(() => _avatarFile = File(picked.path));
+    }
+  }
 
   @override
   void dispose() {
@@ -76,6 +88,45 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 24),
+
+            Center(
+              child: GestureDetector(
+                onTap: _pickImage,
+                child: _avatarFile != null
+                    ? ClipOval(
+                        child: Image.file(
+                          _avatarFile!,
+                          width: 90,
+                          height: 90,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : AppAvatar(
+                        imageUrl: null,
+                        fallback: Icon(
+                          _selectedGender == 'Wanita' ? Icons.female : Icons.male,
+                          size: 40,
+                          color: AppColors.textOnPrimary,
+                        ),
+                        size: 90,
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                        borderColor: AppColors.primary,
+                        borderWidth: 2,
+                      ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: TextButton.icon(
+                onPressed: _pickImage,
+                icon: const Icon(Icons.camera_alt, size: 18, color: AppColors.primary),
+                label: Text(
+                  _avatarFile != null ? 'Ganti Foto' : 'Tambah Foto',
+                  style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                ),
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -221,6 +272,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
         bloodType: _selectedBloodType,
         address: _addressController.text.isEmpty ? null : _addressController.text,
         phone: _phoneController.text.isEmpty ? null : _phoneController.text,
+        avatar: _avatarFile,
       );
 
       if (mounted) {

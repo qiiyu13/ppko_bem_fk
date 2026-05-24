@@ -23,6 +23,7 @@ model User {
   position        String?  @db.VarChar(100)
   role            Role     @default(PATIENT)
   isActive        Boolean  @default(true) @map("is_active")
+  avatarPath      String?  @map("avatar_path")
   fcmToken        String?  @map("fcm_token")
   regionId        String?  @map("region_id")
   createdAt       DateTime @default(now()) @map("created_at")
@@ -49,8 +50,9 @@ model FamilyProfile {
   birthDate DateTime @map("birth_date")
   height    Float?
   weight    Float?
-  bloodType String?  @map("blood_type")
-  phone     String?
+  avatarPath String?  @map("avatar_path")
+  bloodType  String?  @map("blood_type")
+  phone      String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

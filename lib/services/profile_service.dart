@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 import '../exceptions/sync_conflict_exception.dart';
@@ -111,19 +112,35 @@ class ProfileService {
     String? bloodType,
     String? address,
     String? phone,
+    File? avatar,
   }) async {
-    final data = {
-      'nik': nik,
-      'name': name,
-      'gender': gender,
-      'birthDate': birthDate.toIso8601String(),
-      'bloodType': bloodType,
-      'address': address,
-      'phone': phone,
-    };
+    FormData formData;
+    if (avatar != null) {
+      formData = FormData.fromMap({
+        'nik': nik,
+        'name': name,
+        'gender': gender,
+        'birthDate': birthDate.toIso8601String(),
+        'bloodType': bloodType,
+        'address': address,
+        'phone': phone,
+        'avatar': await MultipartFile.fromFile(avatar.path),
+      });
+    } else {
+      final map = <String, dynamic>{
+        'nik': nik,
+        'name': name,
+        'gender': gender,
+        'birthDate': birthDate.toIso8601String(),
+        'bloodType': bloodType,
+        'address': address,
+        'phone': phone,
+      };
+      formData = FormData.fromMap(map);
+    }
 
     try {
-      final response = await ApiService.post('/profiles', data: data);
+      final response = await ApiService.post('/profiles', data: formData);
       final profile = FamilyProfile.fromApi(response.data['data'] as Map<String, dynamic>);
       _profiles.add(profile);
       _profilesController.add(List.unmodifiable(_profiles));
@@ -134,14 +151,12 @@ class ProfileService {
       await CacheService.saveProfile(profile.id, profile.toJson());
       return profile;
     } on DioException catch (e) {
-      // Server responded with an error (4xx/5xx) — surface it; do NOT fake a local profile.
       if (e.response != null) {
         final msg = e.response?.data is Map
             ? (e.response!.data['error']?['message'] ?? e.response!.data['message'])
             : null;
         throw Exception(msg ?? 'Gagal membuat profil (${e.response?.statusCode})');
       }
-      // Genuine network failure — queue for later sync and reflect locally.
       final tempId = const Uuid().v4();
       final profile = FamilyProfile(
         id: tempId,
@@ -153,7 +168,16 @@ class ProfileService {
         address: address,
         phone: phone,
       );
-      await CacheService.queueSync('/profiles', 'POST', data);
+      final queueData = <String, dynamic>{
+        'nik': nik,
+        'name': name,
+        'gender': gender,
+        'birthDate': birthDate.toIso8601String(),
+        'bloodType': bloodType,
+        'address': address,
+        'phone': phone,
+      };
+      await CacheService.queueSync('/profiles', 'POST', queueData);
       _profiles.add(profile);
       _profilesController.add(List.unmodifiable(_profiles));
       if (_profiles.length == 1) {
@@ -164,12 +188,20 @@ class ProfileService {
     }
   }
 
-  Future<void> updateProfile(FamilyProfile profile) async {
+  Future<void> updateProfile(FamilyProfile profile, {File? avatar}) async {
     try {
-      await ApiService.put('/profiles/${profile.id}', data: {
-        ...profile.toMap(),
-        'updatedAt': profile.updatedAt.toIso8601String(),
-      });
+      FormData formData;
+      final map = profile.toMap();
+      map['updatedAt'] = profile.updatedAt.toIso8601String();
+      if (avatar != null) {
+        formData = FormData.fromMap({
+          ...map,
+          'avatar': await MultipartFile.fromFile(avatar.path),
+        });
+      } else {
+        formData = FormData.fromMap(map);
+      }
+      await ApiService.put('/profiles/${profile.id}', data: formData);
       final index = _profiles.indexWhere((p) => p.id == profile.id);
       if (index != -1) {
         _profiles[index] = profile;
