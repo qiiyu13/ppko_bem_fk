@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../utils/asset_helper.dart';
+import '../services/auth_service.dart';
+import '../services/profile_service.dart';
 import 'welcome_screen.dart';
+import 'patient/patient_main_screen.dart';
+import 'admin/admin_main_screen.dart';
+import 'superadmin/superadmin_main_screen.dart';
 
 const _commonSvgs = [
   'doodle-01.svg',
   'document-icon.svg',
   'document_recolored_final_2.svg',
+  'doctor_modified.svg',
 ];
 
 Future<void> _precacheSvgs() async {
@@ -33,7 +39,6 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // Initialize fade animation controller
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -45,15 +50,37 @@ class _SplashScreenState extends State<SplashScreen>
     ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeOut));
 
     _precacheSvgs();
-    // Min display time so logo is visible; navigates as soon as min hits.
-    Future.delayed(const Duration(milliseconds: 1200), _navigateToWelcome);
+    Future.delayed(const Duration(milliseconds: 1200), _navigate);
   }
 
-  void _navigateToWelcome() async {
-    // Start fade out animation
-    await _fadeController.forward();
+  Future<void> _navigate() async {
+    final userData = await AuthService.getMe();
 
-    if (mounted) {
+    await _fadeController.forward();
+    if (!mounted) return;
+
+    if (userData != null) {
+      await ProfileService.instance.initialize();
+      if (!mounted) return;
+      final role = userData['role'] ?? 'PATIENT';
+      Widget destination;
+      if (role == 'ADMIN') {
+        destination = const AdminMainScreen();
+      } else if (role == 'SUPERADMIN') {
+        destination = const SuperadminMainScreen();
+      } else {
+        destination = const PatientMainScreen();
+      }
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => destination,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 500),
+        ),
+      );
+    } else {
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>
