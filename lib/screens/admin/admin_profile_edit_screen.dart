@@ -5,6 +5,7 @@ import '../../services/admin_service.dart';
 import '../../services/auth_service.dart';
 import '../../utils/avatar_picker.dart';
 import '../../utils/responsive_size.dart';
+import '../../widgets/app_avatar.dart';
 
 class AdminProfileEditScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -129,15 +130,13 @@ class _AdminProfileEditScreenState extends State<AdminProfileEditScreen> {
                               fit: BoxFit.cover,
                             ),
                           )
-                        : Container(
-                            width: 90,
-                            height: 90,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.15),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.primary, width: 2),
-                            ),
-                            child: const Icon(Icons.local_hospital, size: 40, color: AppColors.primary),
+                        : AppAvatar(
+                            imageUrl: AuthService.userAvatarUrl(widget.user),
+                            size: 90,
+                            backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                            borderColor: AppColors.primary,
+                            borderWidth: 2,
+                            fallback: const Icon(Icons.local_hospital, size: 40, color: AppColors.primary),
                           ),
                   ),
                 ),
