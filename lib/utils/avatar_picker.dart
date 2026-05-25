@@ -24,12 +24,10 @@ class AvatarPicker {
           activeControlsWidgetColor: AppColors.primary,
           lockAspectRatio: true,
           hideBottomControls: true,
-          cropStyle: CropStyle.circle,
         ),
         IOSUiSettings(
           title: 'Atur Foto',
           aspectRatioLockEnabled: true,
-          cropStyle: CropStyle.circle,
         ),
       ],
     );
