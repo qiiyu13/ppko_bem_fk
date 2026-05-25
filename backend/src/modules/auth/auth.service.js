@@ -59,7 +59,7 @@ const getMe = async (userId) => {
     where: { id: userId },
     select: {
       id: true, kkNumber: true, responsibleName: true, phone: true, role: true,
-      position: true, avatarPath: true,
+      position: true, avatarPath: true, createdAt: true, updatedAt: true,
       region: { select: { id: true, name: true } },
     },
   });

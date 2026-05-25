@@ -62,7 +62,9 @@ class _AdminProfileEditScreenState extends State<AdminProfileEditScreen> {
         position: _positionController.text.trim(),
         phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
         password: _passwordController.text.isEmpty ? null : _passwordController.text,
-        updatedAt: DateTime.parse(widget.user['updatedAt'] as String),
+        updatedAt: widget.user['updatedAt'] != null
+            ? DateTime.parse(widget.user['updatedAt'] as String)
+            : DateTime.now(),
       );
       if (_avatarFile != null) {
         await AuthService.updatePicture(_avatarFile!);
