@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../constants/app_colors.dart';
 import '../../models/family_profile.dart';
 import '../../services/profile_service.dart';
+import '../../utils/avatar_picker.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/profile_form_field.dart';
 
@@ -32,10 +32,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   static const List<String> _bloodTypes = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
-    if (picked != null) {
-      setState(() => _avatarFile = File(picked.path));
+    final cropped = await AvatarPicker.pickAndCrop();
+    if (cropped != null) {
+      setState(() => _avatarFile = cropped);
     }
   }
 

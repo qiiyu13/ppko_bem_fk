@@ -11,7 +11,7 @@ const getUsers = async (role) => {
     orderBy: { createdAt: 'desc' },
     select: {
       id: true, kkNumber: true, username: true, responsibleName: true, position: true, phone: true, role: true, isActive: true,
-      regionId: true, createdAt: true, updatedAt: true,
+      avatarPath: true, regionId: true, createdAt: true, updatedAt: true,
       region: { select: { id: true, name: true, type: true } },
     },
   });

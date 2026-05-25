@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../constants/app_colors.dart';
 import '../../services/profile_service.dart';
+import '../../utils/avatar_picker.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/profile_form_field.dart';
 
@@ -27,10 +27,9 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
   bool _isLoading = false;
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
-    if (picked != null) {
-      setState(() => _avatarFile = File(picked.path));
+    final cropped = await AvatarPicker.pickAndCrop();
+    if (cropped != null) {
+      setState(() => _avatarFile = cropped);
     }
   }
 
