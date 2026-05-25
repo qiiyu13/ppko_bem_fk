@@ -22,14 +22,6 @@ class AppAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
 
-    final decoration = BoxDecoration(
-      color: backgroundColor,
-      shape: BoxShape.circle,
-      border: borderWidth > 0 && borderColor != null
-          ? Border.all(color: borderColor!, width: borderWidth)
-          : null,
-    );
-
     Widget child;
     if (hasImage) {
       child = Image.network(
@@ -43,13 +35,20 @@ class AppAvatar extends StatelessWidget {
       child = Center(child: fallback);
     }
 
-    return ClipOval(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: decoration,
-        child: child,
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        shape: BoxShape.circle,
       ),
+      foregroundDecoration: borderWidth > 0 && borderColor != null
+          ? BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: borderColor!, width: borderWidth),
+            )
+          : null,
+      child: ClipOval(child: child),
     );
   }
 }

@@ -42,12 +42,14 @@ class _DashboardTabState extends State<DashboardTab> {
     super.initState();
     _fetchPatients();
     _loadUser();
+    AuthService.avatarRevision.addListener(_loadUser);
     NotificationService.instance.fetchFromApi();
   }
 
   @override
   void dispose() {
     _searchDebounce?.cancel();
+    AuthService.avatarRevision.removeListener(_loadUser);
     super.dispose();
   }
 

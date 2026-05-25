@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../config/env.dart';
 import 'api_service.dart';
 import 'notification_service.dart';
@@ -7,6 +8,8 @@ import 'token_service.dart';
 import 'websocket_service.dart';
 
 class AuthService {
+  static final ValueNotifier<int> avatarRevision = ValueNotifier<int>(0);
+
   static Future<Map<String, dynamic>> register({
     required String kkNumber,
     required String responsibleName,
@@ -86,6 +89,7 @@ class AuthService {
       throw Exception('Gagal upload foto: respons server tidak valid');
     }
     _cachedMe?['avatarPath'] = avatarPath;
+    avatarRevision.value++;
     return avatarPath;
   }
 
