@@ -83,14 +83,13 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           'time': notesTime.isNotEmpty ? notesTime : fallbackTime,
           'location': a['location'] ?? 'Lokasi belum ditentukan',
           'mapsUrl': mapsUrl,
-          'status': ScheduleStatus.isPast(date, notesTime, now)
-              ? 'Selesai'
-              : (isToday ? 'Segera' : null),
+          'status': isToday ? 'Segera' : null,
           'type': isToday ? 'today' : 'upcoming',
+          'isPast': ScheduleStatus.isPast(date, notesTime, now),
           'notes': rawNotes,
           'updatedAt': a['updatedAt'],
         };
-      }).toList();
+      }).where((s) => s['isPast'] != true).toList();
 
       if (!mounted) return;
       setState(() {
@@ -481,31 +480,23 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                       ),
                     ),
                     if (hasStatus)
-                      Builder(
-                        builder: (context) {
-                          final isDone = schedule['status'] == 'Selesai';
-                          final badgeColor = isDone
-                              ? AppColors.textSecondary
-                              : AppColors.success;
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: badgeColor.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              schedule['status'],
-                              style: TextStyle(
-                                color: badgeColor,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          );
-                        },
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          schedule['status'],
+                          style: TextStyle(
+                            color: AppColors.success,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                   ],
                 ),
