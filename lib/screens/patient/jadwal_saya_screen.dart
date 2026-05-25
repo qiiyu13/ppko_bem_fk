@@ -8,6 +8,7 @@ import '../../services/profile_service.dart';
 import '../../services/websocket_service.dart';
 import '../../utils/date_utils.dart';
 import '../../utils/responsive_size.dart';
+import '../../utils/schedule_status.dart';
 
 class JadwalSayaScreen extends StatefulWidget {
   final VoidCallback onBack;
@@ -88,7 +89,9 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
           'time': notesTime.isNotEmpty ? notesTime : fallbackTime,
           'location': a['location'] ?? 'Lokasi belum ditentukan',
           'mapsUrl': mapsUrl,
-          'status': isToday ? 'Segera' : null,
+          'status': ScheduleStatus.isPast(date, notesTime, now)
+              ? 'Selesai'
+              : (isToday ? 'Segera' : null),
           'type': isToday ? 'today' : 'upcoming',
         };
       }).toList();
@@ -395,23 +398,31 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
                       ),
                     ),
                     if (hasStatus)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          schedule['status'],
-                          style: TextStyle(
-                            color: AppColors.success,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                      Builder(
+                        builder: (context) {
+                          final isDone = schedule['status'] == 'Selesai';
+                          final badgeColor = isDone
+                              ? AppColors.textSecondary
+                              : AppColors.success;
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: badgeColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              schedule['status'],
+                              style: TextStyle(
+                                color: badgeColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                   ],
                 ),
