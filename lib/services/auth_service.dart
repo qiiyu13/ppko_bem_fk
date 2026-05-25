@@ -80,7 +80,11 @@ class AuthService {
       'avatar': await MultipartFile.fromFile(file.path),
     });
     final response = await ApiService.dio.put('/auth/me/picture', data: formData);
-    final avatarPath = response.data['data']['avatarPath'] as String;
+    final data = response.data?['data'] as Map<String, dynamic>?;
+    final avatarPath = data?['avatarPath'] as String?;
+    if (avatarPath == null) {
+      throw Exception('Gagal upload foto: respons server tidak valid');
+    }
     _cachedMe?['avatarPath'] = avatarPath;
     return avatarPath;
   }
