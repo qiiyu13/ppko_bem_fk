@@ -201,17 +201,18 @@ class ProfileService {
       } else {
         formData = FormData.fromMap(map);
       }
-      await ApiService.put('/profiles/${profile.id}', data: formData);
-      final index = _profiles.indexWhere((p) => p.id == profile.id);
+      final response = await ApiService.put('/profiles/${profile.id}', data: formData);
+      final saved = FamilyProfile.fromApi(response.data['data'] as Map<String, dynamic>);
+      final index = _profiles.indexWhere((p) => p.id == saved.id);
       if (index != -1) {
-        _profiles[index] = profile;
+        _profiles[index] = saved;
         _profilesController.add(List.unmodifiable(_profiles));
       }
-      if (_activeProfile?.id == profile.id) {
-        _activeProfile = profile;
+      if (_activeProfile?.id == saved.id) {
+        _activeProfile = saved;
         _activeProfileController.add(_activeProfile);
       }
-      await CacheService.saveProfile(profile.id, profile.toJson());
+      await CacheService.saveProfile(saved.id, saved.toJson());
     } on SyncConflictException {
       rethrow;
     } catch (_) {
