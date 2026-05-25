@@ -3,6 +3,7 @@ import '../../../constants/app_colors.dart';
 import '../../../models/tanaman_article.dart';
 import '../../../services/article_service.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../widgets/article_image.dart';
 import '../article_editor_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
@@ -485,29 +486,11 @@ class _PublishTabState extends State<PublishTab> {
                     width: 56,
                     height: 56,
                     color: AppColors.background,
-                    child: article.imagePath.isNotEmpty
-                        ? Image.asset(
-                            article.imagePath,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: AppColors.primary.withValues(alpha: 0.1),
-                                child: Icon(
-                                  Icons.image,
-                                  color: AppColors.primary.withValues(alpha: 0.5),
-                                  size: 24,
-                                ),
-                              );
-                            },
-                          )
-                        : Container(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            child: Icon(
-                              Icons.image_not_supported,
-                              color: AppColors.primary.withValues(alpha: 0.5),
-                              size: 24,
-                            ),
-                          ),
+                    child: ArticleImage(
+                      imagePath: article.imagePath,
+                      width: 56,
+                      height: 56,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),

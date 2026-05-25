@@ -5,9 +5,12 @@ const authenticate = require('../../middleware/auth');
 const authorize = require('../../middleware/roleGuard');
 const validate = require('../../middleware/validate');
 const conflictDetection = require('../../middleware/conflictDetection');
+const { uploadArticleImageMiddleware } = require('../../config/multer');
 
 // Admin routes (must be before /:id to avoid matching "admin" as an id)
 router.get('/admin/all', authenticate, authorize('ADMIN', 'SUPERADMIN'), controller.getAllArticles);
+
+router.post('/admin/image', authenticate, authorize('ADMIN', 'SUPERADMIN'), uploadArticleImageMiddleware, controller.uploadImage);
 
 // Public routes
 router.get('/', controller.getPublishedArticles);

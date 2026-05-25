@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../constants/app_colors.dart';
 import '../../models/tanaman_article.dart';
 import '../../services/article_service.dart';
+import '../../widgets/article_image.dart';
 
 class ArticleEditorScreen extends StatefulWidget {
   final TanamanArticle? article;
@@ -233,14 +234,13 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
         .where((t) => t.isNotEmpty)
         .toList();
 
-    // Get image path
     String imagePath = _existingImagePath ?? '';
-    if (_selectedImage != null) {
-      // In real app, save to storage and get path
-      imagePath = _selectedImage!.path;
-    }
 
     try {
+      if (_selectedImage != null) {
+        imagePath = await ArticleService.uploadImage(_selectedImage!);
+      }
+
       final TanamanArticle article;
       if (widget.article != null) {
         article = await ArticleService.updateArticle(
@@ -424,12 +424,10 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
             : _existingImagePath != null
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(14),
-                child: Image.asset(
-                  _existingImagePath!,
+                child: ArticleImage(
+                  imagePath: _existingImagePath!,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _buildImagePlaceholder();
-                  },
+                  width: double.infinity,
                 ),
               )
             : _buildImagePlaceholder(),

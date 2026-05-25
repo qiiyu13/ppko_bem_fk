@@ -66,6 +66,17 @@ const deleteArticle = async (req, res, next) => {
   }
 };
 
+const uploadImage = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return error(res, 'No file uploaded', 400, 'FILE_REQUIRED');
+    }
+    return success(res, { imagePath: `/uploads/articles/${req.file.filename}` }, 'Image uploaded');
+  } catch (err) {
+    next(err);
+  }
+};
+
 const publishArticle = async (req, res, next) => {
   try {
     const article = await articlesService.publishArticle(req.params.id);
@@ -78,5 +89,5 @@ const publishArticle = async (req, res, next) => {
 
 module.exports = {
   getPublishedArticles, getPublishedArticle,
-  getAllArticles, createArticle, updateArticle, deleteArticle, publishArticle,
+  getAllArticles, createArticle, updateArticle, deleteArticle, publishArticle, uploadImage,
 };

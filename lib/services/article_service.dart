@@ -1,8 +1,22 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'api_service.dart';
 import 'cache_service.dart';
 import '../models/tanaman_article.dart';
 
 class ArticleService {
+  static Future<String> uploadImage(File file) async {
+    final formData = FormData.fromMap({
+      'image': await MultipartFile.fromFile(file.path),
+    });
+    final response = await ApiService.dio.post('/articles/admin/image', data: formData);
+    final imagePath = response.data?['data']?['imagePath'] as String?;
+    if (imagePath == null) {
+      throw Exception('Gagal upload gambar: respons server tidak valid');
+    }
+    return imagePath;
+  }
+
   static Future<List<TanamanArticle>> getPublishedArticles() async {
     try {
       final response = await ApiService.get('/articles');

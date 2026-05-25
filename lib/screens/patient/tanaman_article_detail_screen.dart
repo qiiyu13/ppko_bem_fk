@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../models/tanaman_article.dart';
-import '../../utils/asset_helper.dart';
+import '../../widgets/article_image.dart';
 
 class TanamanArticleDetailScreen extends StatelessWidget {
   final TanamanArticle article;
@@ -24,21 +24,11 @@ class TanamanArticleDetailScreen extends StatelessWidget {
             flexibleSpace: FlexibleSpaceBar(
               background: Hero(
                 tag: 'article_image_${article.id}',
-                child: Image.asset(
-                  AssetHelper.getArticleImagePath(article.imagePath),
+                child: ArticleImage(
+                  imagePath: article.imagePath,
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: double.infinity,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Image.asset(
-                      AssetHelper.getImagePath(
-                        article.imagePath.replaceFirst('assets/images/', ''),
-                      ),
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                    );
-                  },
                 ),
               ),
             ),

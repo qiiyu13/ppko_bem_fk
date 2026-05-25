@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/tanaman_article.dart';
 import '../../../services/article_service.dart';
-import '../../../utils/asset_helper.dart';
+import '../../../widgets/article_image.dart';
 import '../tanaman_article_detail_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
@@ -152,21 +152,10 @@ class _ArticleCard extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: article.imagePath.isNotEmpty
-                    ? Image.asset(
-                        AssetHelper.getArticleImagePath(article.imagePath),
+                    ? ArticleImage(
+                        imagePath: article.imagePath,
                         width: 80,
                         height: 80,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Image.asset(
-                            AssetHelper.getImagePath(
-                              article.imagePath.replaceFirst('assets/images/', ''),
-                            ),
-                            width: 80,
-                            height: 80,
-                            fit: BoxFit.cover,
-                          );
-                        },
                       )
                     : Container(
                         width: 80,

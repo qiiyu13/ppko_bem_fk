@@ -1,18 +1,11 @@
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
-const uploadsDir = path.resolve(__dirname, '../../uploads/avatars');
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const ext = path.extname(file.originalname);
-    cb(null, `avatar-${uniqueSuffix}${ext}`);
-  },
-});
+const avatarsDir = path.resolve(__dirname, '../../uploads/avatars');
+const articlesDir = path.resolve(__dirname, '../../uploads/articles');
+fs.mkdirSync(avatarsDir, { recursive: true });
+fs.mkdirSync(articlesDir, { recursive: true });
 
 const fileFilter = (req, file, cb) => {
   const allowed = /\.(jpg|jpeg|png|webp)$/i;
@@ -24,28 +17,30 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const uploadAvatar = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 },
-}).single('avatar');
+const makeStorage = (dir, prefix) => multer.diskStorage({
+  destination: (req, file, cb) => cb(null, dir),
+  filename: (req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `${prefix}-${uniqueSuffix}${path.extname(file.originalname)}`);
+  },
+});
 
-const uploadAvatarMiddleware = (req, res, next) => {
-  uploadAvatar(req, res, (err) => {
-    if (err) {
-      if (err instanceof multer.MulterError) {
+const makeUploadMiddleware = (storage, field) => {
+  const upload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } }).single(field);
+  return (req, res, next) => {
+    upload(req, res, (err) => {
+      if (err) {
         return res.status(400).json({
           success: false,
           error: { code: 'FILE_ERROR', message: err.message },
         });
       }
-      return res.status(400).json({
-        success: false,
-        error: { code: 'FILE_ERROR', message: err.message },
-      });
-    }
-    next();
-  });
+      next();
+    });
+  };
 };
 
-module.exports = { uploadAvatarMiddleware };
+const uploadAvatarMiddleware = makeUploadMiddleware(makeStorage(avatarsDir, 'avatar'), 'avatar');
+const uploadArticleImageMiddleware = makeUploadMiddleware(makeStorage(articlesDir, 'article'), 'image');
+
+module.exports = { uploadAvatarMiddleware, uploadArticleImageMiddleware };
