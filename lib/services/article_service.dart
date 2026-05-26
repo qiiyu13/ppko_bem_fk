@@ -74,7 +74,11 @@ class ArticleService {
 
     try {
       final response = await ApiService.post('/articles/admin', data: requestData);
-      return TanamanArticle.fromApi(response.data['data'] as Map<String, dynamic>);
+      final article = TanamanArticle.fromApi(response.data['data'] as Map<String, dynamic>);
+      // Server may omit content in response — preserve what we sent
+      return article.content.isEmpty && content.isNotEmpty
+          ? article.copyWith(content: content)
+          : article;
     } catch (e) {
       await CacheService.queueSync('/articles/admin', 'POST', requestData);
       return TanamanArticle(
@@ -113,7 +117,11 @@ class ArticleService {
 
     try {
       final response = await ApiService.put('/articles/admin/$id', data: requestData);
-      return TanamanArticle.fromApi(response.data['data'] as Map<String, dynamic>);
+      final article = TanamanArticle.fromApi(response.data['data'] as Map<String, dynamic>);
+      // Server may omit content in response — preserve what we sent
+      return content != null && article.content.isEmpty && content.isNotEmpty
+          ? article.copyWith(content: content)
+          : article;
     } catch (e) {
       await CacheService.queueSync('/articles/admin/$id', 'PUT', requestData);
       return TanamanArticle(

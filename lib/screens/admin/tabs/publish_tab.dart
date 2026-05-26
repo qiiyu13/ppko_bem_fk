@@ -94,35 +94,14 @@ class _PublishTabState extends State<PublishTab> {
 
     if (!mounted) return;
     if (result != null && result is TanamanArticle) {
-      try {
-        final updated = await ArticleService.updateArticle(
-          result.id,
-          title: result.title,
-          content: result.content,
-          imagePath: result.imagePath.isNotEmpty ? result.imagePath : null,
-          tags: result.tags,
-          isDraft: result.isDraft,
-          isPublished: result.isPublished,
-          updatedAt: result.updatedAt,
-        );
-        if (!mounted) return;
-        setState(() {
-          final index = _articles.indexWhere((a) => a.id == updated.id);
-          if (index != -1) {
-            _articles[index] = updated;
-          }
-        });
-        _showSnackBar('Artikel berhasil diperbarui');
-      } catch (e) {
-        if (!mounted) return;
-        setState(() {
-          final index = _articles.indexWhere((a) => a.id == result.id);
-          if (index != -1) {
-            _articles[index] = result;
-          }
-        });
-        _showSnackBar('Artikel diperbarui secara lokal');
-      }
+      // Editor's _saveArticle already persisted to server — just sync local list
+      setState(() {
+        final index = _articles.indexWhere((a) => a.id == result.id);
+        if (index != -1) {
+          _articles[index] = result;
+        }
+      });
+      _showSnackBar('Artikel berhasil diperbarui');
     }
   }
 
@@ -147,6 +126,7 @@ class _PublishTabState extends State<PublishTab> {
                   isPublished: false,
                   updatedAt: article.updatedAt,
                 );
+                if (!mounted) return;
                 setState(() {
                   final index = _articles.indexWhere((a) => a.id == article.id);
                   if (index != -1) {
@@ -155,6 +135,7 @@ class _PublishTabState extends State<PublishTab> {
                 });
                 _showSnackBar('Artikel diubah ke draft');
               } catch (e) {
+                if (!mounted) return;
                 _showSnackBar('Gagal mengubah status artikel');
               }
             },
@@ -168,6 +149,7 @@ class _PublishTabState extends State<PublishTab> {
   void _publishArticle(TanamanArticle article) async {
     try {
       await ArticleService.publishArticle(article.id, article.updatedAt);
+      if (!mounted) return;
       final updated = article.copyWith(isPublished: true, isDraft: false);
       setState(() {
         final index = _articles.indexWhere((a) => a.id == article.id);
@@ -197,6 +179,7 @@ class _PublishTabState extends State<PublishTab> {
               Navigator.pop(context);
               try {
                 await ArticleService.deleteArticle(article.id, article.updatedAt);
+                if (!mounted) return;
                 setState(() {
                   _articles.removeWhere((a) => a.id == article.id);
                 });

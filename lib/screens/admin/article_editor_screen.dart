@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -49,7 +50,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
       try {
         final doc = Document.fromJson(
           widget.article!.content.startsWith('[')
-              ? widget.article!.content as List<dynamic>
+              ? List<dynamic>.from(jsonDecode(widget.article!.content) as List)
               : [
                   {"insert": "${widget.article!.content}\n"},
                 ],
