@@ -49,8 +49,12 @@ if (config.nodeEnv === 'production') {
   app.use(morgan('dev'));
 }
 
-// Static file serving
-app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
+// Static file serving. Upload filenames are unique per upload, so content is
+// immutable per URL — cache aggressively to avoid revalidation round-trips.
+app.use('/uploads', express.static(path.resolve(__dirname, '../uploads'), {
+  maxAge: '1y',
+  immutable: true,
+}));
 
 // Routes
 app.use('/api/v1', routes);
