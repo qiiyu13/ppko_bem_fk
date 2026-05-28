@@ -11,6 +11,7 @@ class GreetingHeader extends StatelessWidget {
   final Color? roleBadgeColor;
   final String? imageUrl;
   final String? fallbackAsset;
+  final bool bareFallbackAsset;
 
   const GreetingHeader({
     super.key,
@@ -20,6 +21,7 @@ class GreetingHeader extends StatelessWidget {
     this.roleBadgeColor,
     this.imageUrl,
     this.fallbackAsset,
+    this.bareFallbackAsset = false,
   });
 
   @override
@@ -37,20 +39,30 @@ class GreetingHeader extends StatelessWidget {
       color: AppColors.card,
       child: Row(
         children: [
-          AppAvatar(
-            imageUrl: imageUrl,
-            fallbackAsset: fallbackAsset,
-            size: 44,
-            backgroundColor: AppColors.primary,
-            fallback: Text(
-              initial,
-              style: const TextStyle(
-                color: AppColors.textOnPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+          if (bareFallbackAsset &&
+              (imageUrl == null || imageUrl!.isEmpty) &&
+              fallbackAsset != null)
+            Image.asset(
+              fallbackAsset!,
+              width: 44,
+              height: 44,
+              fit: BoxFit.contain,
+            )
+          else
+            AppAvatar(
+              imageUrl: imageUrl,
+              fallbackAsset: fallbackAsset,
+              size: 44,
+              backgroundColor: AppColors.primary,
+              fallback: Text(
+                initial,
+                style: const TextStyle(
+                  color: AppColors.textOnPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
           SizedBox(width: ResponsiveSize.paddingSmall),
           Expanded(
             child: Row(

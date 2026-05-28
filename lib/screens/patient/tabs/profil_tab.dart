@@ -498,7 +498,7 @@ class ProfilTab extends StatelessWidget {
                 dataModuleShape: QrDataModuleShape.square,
                 color: Colors.black,
               ),
-              embeddedImage: const AssetImage('assets/icon/app_icon.png'),
+              embeddedImage: const AssetImage('assets/icon/logo_only.png'),
               embeddedImageStyle: const QrEmbeddedImageStyle(
                 size: Size(44, 44),
               ),
