@@ -183,6 +183,9 @@ class _AdminProfilTabState extends State<AdminProfilTab> {
                   ),
                   AppAvatar(
                     imageUrl: AuthService.userAvatarUrl(_user),
+                    fallbackAsset: role == 'SUPERADMIN'
+                        ? 'assets/icon/app_icon.png'
+                        : null,
                     size: avatarSize,
                     backgroundColor: Colors.white.withValues(alpha: 0.15),
                     borderColor: AppColors.textOnPrimary,

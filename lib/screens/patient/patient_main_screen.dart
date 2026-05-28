@@ -109,6 +109,7 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
               version: QrVersions.auto,
               size: 220,
               backgroundColor: Colors.white,
+              errorCorrectionLevel: QrErrorCorrectLevel.H,
               eyeStyle: const QrEyeStyle(
                 eyeShape: QrEyeShape.square,
                 color: Colors.black,
@@ -116,6 +117,10 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
               dataModuleStyle: const QrDataModuleStyle(
                 dataModuleShape: QrDataModuleShape.square,
                 color: Colors.black,
+              ),
+              embeddedImage: const AssetImage('assets/icon/app_icon.png'),
+              embeddedImageStyle: const QrEmbeddedImageStyle(
+                size: Size(44, 44),
               ),
             ),
             const SizedBox(height: 16),

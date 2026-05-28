@@ -152,6 +152,7 @@ class _BerandaTabState extends State<BerandaTab> {
                   roleBadge: 'SUPERADMIN',
                   roleBadgeColor: purpleAccent,
                   imageUrl: _userAvatarUrl,
+                  fallbackAsset: 'assets/icon/app_icon.png',
                 ),
                 Padding(
                   padding: EdgeInsets.all(ResponsiveSize.paddingMedium),

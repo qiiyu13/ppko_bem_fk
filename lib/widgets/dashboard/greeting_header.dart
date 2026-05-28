@@ -10,6 +10,7 @@ class GreetingHeader extends StatelessWidget {
   final String? roleBadge;
   final Color? roleBadgeColor;
   final String? imageUrl;
+  final String? fallbackAsset;
 
   const GreetingHeader({
     super.key,
@@ -18,6 +19,7 @@ class GreetingHeader extends StatelessWidget {
     this.roleBadge,
     this.roleBadgeColor,
     this.imageUrl,
+    this.fallbackAsset,
   });
 
   @override
@@ -37,6 +39,7 @@ class GreetingHeader extends StatelessWidget {
         children: [
           AppAvatar(
             imageUrl: imageUrl,
+            fallbackAsset: fallbackAsset,
             size: 44,
             backgroundColor: AppColors.primary,
             fallback: Text(

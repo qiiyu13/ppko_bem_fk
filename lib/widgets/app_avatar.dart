@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppAvatar extends StatelessWidget {
   final String? imageUrl;
+  final String? fallbackAsset;
   final Widget fallback;
   final double size;
   final Color? borderColor;
@@ -11,6 +12,7 @@ class AppAvatar extends StatelessWidget {
   const AppAvatar({
     super.key,
     this.imageUrl,
+    this.fallbackAsset,
     required this.fallback,
     required this.size,
     this.borderColor,
@@ -30,6 +32,13 @@ class AppAvatar extends StatelessWidget {
         height: size,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) => Center(child: fallback),
+      );
+    } else if (fallbackAsset != null) {
+      child = Image.asset(
+        fallbackAsset!,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
       );
     } else {
       child = Center(child: fallback);
