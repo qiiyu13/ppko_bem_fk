@@ -112,19 +112,26 @@ class _HomeTabState extends State<HomeTab> {
 
       if (!mounted) return;
       setState(() {
-        _metrics = metricsData
+        final parsed = metricsData
             .map(
               (json) => _parseMetric(json as Map<String, dynamic>, age, gender),
             )
-            .toList()
+            .toList();
+        const allTypes = [
+          MetricType.bloodPressure,
+          MetricType.bloodSugar,
+          MetricType.cholesterol,
+          MetricType.uricAcid,
+        ];
+        final presentTypes = parsed.map((m) => m.type).toSet();
+        for (final type in allTypes) {
+          if (!presentTypes.contains(type)) {
+            parsed.add(_buildPlaceholderMetric(type, age, gender));
+          }
+        }
+        _metrics = parsed
           ..sort((a, b) {
-            const order = [
-              MetricType.bloodPressure,
-              MetricType.bloodSugar,
-              MetricType.cholesterol,
-              MetricType.uricAcid,
-            ];
-            return order.indexOf(a.type).compareTo(order.indexOf(b.type));
+            return allTypes.indexOf(a.type).compareTo(allTypes.indexOf(b.type));
           });
         if (appointmentsData.isNotEmpty) {
           _nextAppointment = Map<String, dynamic>.from(
@@ -239,6 +246,67 @@ class _HomeTabState extends State<HomeTab> {
       return raw.map((v) => (v as num).toDouble()).toList();
     }
     return [];
+  }
+
+  HealthMetric _buildPlaceholderMetric(
+    MetricType type,
+    int age,
+    String gender,
+  ) {
+    switch (type) {
+      case MetricType.bloodPressure:
+        return HealthMetric(
+          type: type,
+          name: 'Blood Pressure',
+          nameId: 'Tekanan Darah',
+          unit: 'mmHg',
+          displayValue: '--',
+          lastUpdated: DateTime.now(),
+          status: HealthMetricData.getBloodPressureStatus(0, 0, age),
+          icon: PhosphorIcons.heart(PhosphorIconsStyle.fill),
+          primaryColor: const Color(0xFFE53935),
+          recentValues: [0.0, 0.0],
+        );
+      case MetricType.bloodSugar:
+        return HealthMetric(
+          type: type,
+          name: 'Blood Sugar',
+          nameId: 'Gula Darah',
+          unit: 'mg/dL',
+          displayValue: '--',
+          lastUpdated: DateTime.now(),
+          status: HealthMetricData.getBloodSugarStatus(0, age),
+          icon: PhosphorIcons.testTube(PhosphorIconsStyle.fill),
+          primaryColor: const Color(0xFF43A047),
+          recentValues: [0.0, 0.0],
+        );
+      case MetricType.cholesterol:
+        return HealthMetric(
+          type: type,
+          name: 'Cholesterol',
+          nameId: 'Kolesterol',
+          unit: 'mg/dL',
+          displayValue: '--',
+          lastUpdated: DateTime.now(),
+          status: HealthMetricData.getCholesterolStatus(0, age),
+          icon: PhosphorIcons.drop(PhosphorIconsStyle.fill),
+          primaryColor: const Color(0xFFFB8C00),
+          recentValues: [0.0, 0.0],
+        );
+      case MetricType.uricAcid:
+        return HealthMetric(
+          type: type,
+          name: 'Uric Acid',
+          nameId: 'Asam Urat',
+          unit: 'mg/dL',
+          displayValue: '--',
+          lastUpdated: DateTime.now(),
+          status: HealthMetricData.getUricAcidStatus(0, age, gender),
+          icon: PhosphorIcons.flask(PhosphorIconsStyle.fill),
+          primaryColor: const Color(0xFF5E35B1),
+          recentValues: [0.0, 0.0],
+        );
+    }
   }
 
   String _getGreeting() {
@@ -572,33 +640,7 @@ class _HomeTabState extends State<HomeTab> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (_metrics.isEmpty)
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    vertical: 32,
-                                  ),
-                                  child: Center(
-                                    child: Column(
-                                      children: [
-                                        Icon(
-                                          Icons.bar_chart,
-                                          size: 48,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                        SizedBox(height: 12),
-                                        Text(
-                                          'Belum ada data',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              else
-                                GridView.count(
+                              GridView.count(
                                   crossAxisCount: 2,
                                   shrinkWrap: true,
                                   physics:

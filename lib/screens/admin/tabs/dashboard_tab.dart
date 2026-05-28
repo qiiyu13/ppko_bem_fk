@@ -13,6 +13,8 @@ import '../../../widgets/dashboard/stat_cell.dart';
 import '../admin_family_detail_screen.dart';
 import '../qr_scanner_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
+import 'package:mediku/config/env.dart';
+import 'package:mediku/widgets/app_avatar.dart';
 
 class DashboardTab extends StatefulWidget {
   const DashboardTab({super.key});
@@ -560,6 +562,10 @@ class _DashboardTabState extends State<DashboardTab> {
       if (kkTail.isNotEmpty) 'KK …$kkTail',
       if (lastScreened.isNotEmpty) lastScreened,
     ].join(' · ');
+    final avatarPath = patient['avatarPath'] as String?;
+    final avatarUrl = (avatarPath != null && avatarPath.isNotEmpty)
+        ? '${Env.serverBaseUrl}$avatarPath'
+        : null;
 
     return InkWell(
       onTap: () {
@@ -574,15 +580,11 @@ class _DashboardTabState extends State<DashboardTab> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: Row(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: riskColor.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Text(
+            AppAvatar(
+              imageUrl: avatarUrl,
+              size: 36,
+              backgroundColor: riskColor.withValues(alpha: 0.15),
+              fallback: Text(
                 initial,
                 style: TextStyle(
                   color: riskColor,

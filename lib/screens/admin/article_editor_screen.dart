@@ -247,7 +247,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
         article = await ArticleService.updateArticle(
           widget.article!.id,
           title: _titleController.text.trim(),
-          content: _quillController.document.toPlainText(),
+          content: jsonEncode(_quillController.document.toDelta().toJson()),
           imagePath: imagePath.isNotEmpty ? imagePath : null,
           tags: tags,
           isDraft: !publish,
@@ -257,7 +257,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
       } else {
         article = await ArticleService.createArticle(
           title: _titleController.text.trim(),
-          content: _quillController.document.toPlainText(),
+          content: jsonEncode(_quillController.document.toDelta().toJson()),
           imagePath: imagePath.isNotEmpty ? imagePath : null,
           tags: tags,
           isDraft: !publish,
@@ -281,7 +281,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
         final article = TanamanArticle(
           id: widget.article?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
           title: _titleController.text.trim(),
-          content: _quillController.document.toPlainText(),
+          content: jsonEncode(_quillController.document.toDelta().toJson()),
           imagePath: imagePath,
           publishDate: _publishDate,
           createdAt: widget.article?.createdAt ?? now,
@@ -593,14 +593,19 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
           ),
           child: Column(
             children: [
-              // Toolbar - Essential Only (Single Row)
-              QuillSimpleToolbar(
-                controller: _quillController,
-                config: const QuillSimpleToolbarConfig(
-                  toolbarSize: 40,
-                  axis: Axis.horizontal,
-                  // Text formatting
-                  showBoldButton: true,
+              // Toolbar - single horizontally-scrollable row for mobile
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                child: Container(
+                  color: AppColors.background,
+                  child: QuillSimpleToolbar(
+                    controller: _quillController,
+                    config: const QuillSimpleToolbarConfig(
+                      toolbarSize: 44,
+                      multiRowsDisplay: false,
+                      axis: Axis.horizontal,
+                      // Text formatting
+                      showBoldButton: true,
                   showItalicButton: true,
                   showUnderLineButton: true,
                   // Lists
@@ -632,13 +637,15 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
                   showSearchButton: false,
                   showSubscript: false,
                   showSuperscript: false,
+                    ),
+                  ),
                 ),
               ),
               const Divider(height: 1),
               // Editor
               Container(
-                height: 300,
-                padding: const EdgeInsets.all(12),
+                height: 320,
+                padding: const EdgeInsets.all(14),
                 child: QuillEditor(
                   controller: _quillController,
                   focusNode: _editorFocusNode,

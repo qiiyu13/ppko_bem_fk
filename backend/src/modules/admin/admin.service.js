@@ -91,6 +91,7 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
         kkNumber: true,
         responsibleName: true,
         phone: true,
+        avatarPath: true,
         createdAt: true,
         familyProfiles: {
           select: {
@@ -118,6 +119,7 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
       name: user.responsibleName,
       nik: user.kkNumber,
       phone: user.phone,
+      avatarPath: user.avatarPath || null,
       createdAt: user.createdAt,
       latestIrd: latest || null,
     };
@@ -146,6 +148,7 @@ const getPatientDetail = async (id) => {
           weight: true,
           bloodType: true,
           phone: true,
+          avatarPath: true,
           metrics: {
             orderBy: { recordedAt: 'desc' },
             take: 50,

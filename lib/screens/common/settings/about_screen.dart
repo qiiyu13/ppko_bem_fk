@@ -79,7 +79,7 @@ class AboutScreen extends StatelessWidget {
             width: double.infinity,
             height: 240 + topPadding,
             child: Image.asset(
-              'assets/images/team_picture.jpg',
+              'assets/images/Team-picture.jpg',
               fit: BoxFit.cover,
               alignment: Alignment.topCenter,
             ),
@@ -95,8 +95,8 @@ class AboutScreen extends StatelessWidget {
             height: 240 + topPadding,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
                 stops: const [0.4, 1.0],
                 colors: [
                   Colors.transparent,
@@ -107,27 +107,13 @@ class AboutScreen extends StatelessWidget {
           ),
         ),
         Positioned(
-          top: topPadding + 8,
-          left: 4,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.25),
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-        ),
-        const Positioned(
-          bottom: 20,
+          top: topPadding + 20,
           left: 20,
           right: 20,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
-            children: [
+            children: const [
               Text(
                 'MEDIKU',
                 style: TextStyle(
@@ -136,6 +122,7 @@ class AboutScreen extends StatelessWidget {
                   color: Colors.white,
                   letterSpacing: 1.5,
                 ),
+                textAlign: TextAlign.center,
               ),
               SizedBox(height: 4),
               Text(
@@ -145,6 +132,7 @@ class AboutScreen extends StatelessWidget {
                   color: Colors.white,
                   fontWeight: FontWeight.w500,
                 ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),

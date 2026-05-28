@@ -1,15 +1,57 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import '../../constants/app_colors.dart';
 import '../../models/tanaman_article.dart';
 import '../../widgets/article_image.dart';
 
-class TanamanArticleDetailScreen extends StatelessWidget {
+class TanamanArticleDetailScreen extends StatefulWidget {
   final TanamanArticle article;
 
   const TanamanArticleDetailScreen({super.key, required this.article});
 
   @override
+  State<TanamanArticleDetailScreen> createState() =>
+      _TanamanArticleDetailScreenState();
+}
+
+class _TanamanArticleDetailScreenState
+    extends State<TanamanArticleDetailScreen> {
+  late final QuillController _contentController;
+
+  @override
+  void initState() {
+    super.initState();
+    _contentController = QuillController(
+      document: _parseContent(),
+      selection: const TextSelection.collapsed(offset: 0),
+      readOnly: true,
+    );
+  }
+
+  @override
+  void dispose() {
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  // Content is stored as Quill Delta JSON. Legacy/seed articles hold plain
+  // text, so fall back to a single insert when it isn't a Delta array.
+  Document _parseContent() {
+    final raw = widget.article.content.trim();
+    if (raw.startsWith('[')) {
+      try {
+        return Document.fromJson(
+          List<dynamic>.from(jsonDecode(raw) as List),
+        );
+      } catch (_) {}
+    }
+    return Document()..insert(0, raw.isEmpty ? '' : raw);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final article = widget.article;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
@@ -77,13 +119,14 @@ class TanamanArticleDetailScreen extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
-                  // Content
-                  Text(
-                    article.content,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: AppColors.textPrimary,
-                      height: 1.7,
+                  // Content (rich text)
+                  QuillEditor.basic(
+                    controller: _contentController,
+                    config: const QuillEditorConfig(
+                      scrollable: false,
+                      showCursor: false,
+                      enableInteractiveSelection: false,
+                      padding: EdgeInsets.zero,
                     ),
                   ),
 
