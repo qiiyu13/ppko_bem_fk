@@ -4,6 +4,20 @@ const { createAndSend, createAndSendToAllPatients } = require('../notifications/
 const prisma = require('../../utils/prisma');
 const { parsePagination } = require('../../utils/pagination');
 
+const getAppointmentById = async (id, userId) => {
+  const appointment = await prisma.appointment.findFirst({
+    where: {
+      id,
+      OR: [
+        { userId },
+        { type: 'JADWAL' },
+      ],
+    },
+  });
+  if (!appointment) throw Object.assign(new Error('Appointment not found'), { statusCode: 404 });
+  return appointment;
+};
+
 const getAppointments = async (userId, profileId, query = {}) => {
   const personalWhere = { userId };
   if (profileId) personalWhere.profileId = profileId;
@@ -125,4 +139,4 @@ const deleteAppointment = async (id, userId) => {
   return { message: 'Appointment deleted successfully' };
 };
 
-module.exports = { getAppointments, createAppointment, updateAppointment, deleteAppointment };
+module.exports = { getAppointmentById, getAppointments, createAppointment, updateAppointment, deleteAppointment };

@@ -15,6 +15,8 @@ router.get('/', controller.getNotifications);
 
 router.post('/mark-all-read', controller.markAllRead);
 
+router.delete('/', controller.deleteAll);
+
 router.post('/:id/read', controller.markRead);
 
 module.exports = router;

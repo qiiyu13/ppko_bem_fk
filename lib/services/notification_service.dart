@@ -191,6 +191,15 @@ class NotificationService {
     } catch (_) {}
   }
 
+  Future<void> deleteAll() async {
+    notifications.value = [];
+    unreadCount.value = 0;
+    _saveLocalCache();
+    try {
+      await ApiService.delete('/notifications');
+    } catch (_) {}
+  }
+
   Future<void> markRead(String id) async {
     final idx = notifications.value.indexWhere((n) => n.id == id);
     if (idx == -1) return;

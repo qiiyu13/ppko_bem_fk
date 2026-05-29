@@ -3,6 +3,13 @@ import 'package:intl/intl.dart';
 import '../../constants/app_colors.dart';
 import '../../models/notification_model.dart';
 import '../../services/notification_service.dart';
+import '../../services/appointment_service.dart';
+import '../../services/auth_service.dart';
+import '../../services/profile_service.dart';
+import '../../utils/page_transitions.dart';
+import '../superadmin/screens/appointment_detail_screen.dart';
+import '../admin/admin_patient_detail_screen.dart';
+import 'laporan_saya_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -12,6 +19,8 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -21,6 +30,100 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Future<void> _markAllRead() async {
     await NotificationService.instance.markAllRead();
     if (mounted) setState(() {});
+  }
+
+  Future<void> _deleteAll() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Semua Notifikasi'),
+        content: const Text('Semua notifikasi akan dihapus permanen. Lanjutkan?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Hapus Semua'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await NotificationService.instance.deleteAll();
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _handleNotificationTap(NotificationModel notif) async {
+    await NotificationService.instance.markRead(notif.id);
+    if (!mounted) return;
+
+    if (notif.type == NotificationType.general) {
+      setState(() {});
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      if (notif.type == NotificationType.appointment) {
+        final appointmentId = notif.data?['appointmentId'] as String?;
+        if (appointmentId == null) {
+          _showError('Data notifikasi tidak valid');
+          return;
+        }
+        try {
+          final appointment = await AppointmentService.getAppointmentById(appointmentId);
+          if (!mounted) return;
+          Navigator.push(
+            context,
+            ParallaxPageRoute(page: AppointmentDetailScreen(appointment: appointment)),
+          );
+        } catch (_) {
+          _showError('Jadwal tidak ditemukan atau telah dihapus');
+        }
+      } else if (notif.type == NotificationType.screeningResult) {
+        final me = await AuthService.getMe();
+        final role = (me?['role'] ?? '').toString();
+
+        if (role == 'PATIENT') {
+          final profile = ProfileService.instance.activeProfile;
+          final gender = profile?.gender ?? 'male';
+          if (!mounted) return;
+          Navigator.push(
+            context,
+            ParallaxPageRoute(page: LaporanSayaScreen(gender: gender)),
+          );
+        } else {
+          final profileId = notif.data?['profileId'] as String?;
+          if (profileId == null) {
+            _showError('Data notifikasi tidak valid');
+            return;
+          }
+          if (!mounted) return;
+          Navigator.push(
+            context,
+            ParallaxPageRoute(
+              page: AdminPatientDetailScreen(
+                patient: {'profileId': profileId},
+              ),
+            ),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: AppColors.statusRed),
+    );
   }
 
   @override
@@ -45,55 +148,111 @@ class _NotificationScreenState extends State<NotificationScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
-          ValueListenableBuilder<int>(
-            valueListenable: NotificationService.instance.unreadCount,
-            builder: (context, count, _) {
-              if (count == 0) return const SizedBox.shrink();
-              return TextButton(
-                onPressed: _markAllRead,
-                child: const Text(
-                  'Tandai dibaca',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+          ValueListenableBuilder<List<NotificationModel>>(
+            valueListenable: NotificationService.instance.notifications,
+            builder: (context, list, _) {
+              if (list.isEmpty) return const SizedBox.shrink();
+              return PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: AppColors.primary),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                onSelected: (value) {
+                  if (value == 'mark_all') _markAllRead();
+                  if (value == 'delete_all') _deleteAll();
+                },
+                itemBuilder: (_) => [
+                  if (list.any((n) => !n.isRead))
+                    const PopupMenuItem(
+                      value: 'mark_all',
+                      child: Row(
+                        children: [
+                          Icon(Icons.done_all, color: AppColors.primary, size: 20),
+                          SizedBox(width: 12),
+                          Text('Tandai semua dibaca'),
+                        ],
+                      ),
+                    ),
+                  const PopupMenuItem(
+                    value: 'delete_all',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                        SizedBox(width: 12),
+                        Text('Hapus semua', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               );
             },
           ),
         ],
       ),
-      body: ValueListenableBuilder<List<NotificationModel>>(
-        valueListenable: NotificationService.instance.notifications,
-        builder: (context, list, _) {
-          if (list.isEmpty) {
-            return _buildEmpty();
-          }
-          return RefreshIndicator(
-            color: AppColors.primary,
-            onRefresh: NotificationService.instance.fetchFromApi,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: list.length,
-              separatorBuilder: (context, index) => const Divider(
-                height: 1,
-                indent: 16,
-                endIndent: 16,
-                color: AppColors.divider,
-              ),
-              itemBuilder: (context, index) {
-                return _NotifTile(
-                  notif: list[index],
-                  onTap: () async {
-                    await NotificationService.instance.markRead(list[index].id);
-                    if (mounted) setState(() {});
+      body: Stack(
+        children: [
+          ValueListenableBuilder<List<NotificationModel>>(
+            valueListenable: NotificationService.instance.notifications,
+            builder: (context, list, _) {
+              if (list.isEmpty) {
+                return _buildEmpty();
+              }
+              return RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: NotificationService.instance.fetchFromApi,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: list.length,
+                  separatorBuilder: (context, index) => const Divider(
+                    height: 1,
+                    indent: 16,
+                    endIndent: 16,
+                    color: AppColors.divider,
+                  ),
+                  itemBuilder: (context, index) {
+                    return _NotifTile(
+                      notif: list[index],
+                      onTap: () => _handleNotificationTap(list[index]),
+                    );
                   },
-                );
-              },
+                ),
+              );
+            },
+          ),
+          if (_isLoading)
+            Container(
+              color: Colors.black.withValues(alpha: 0.3),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                          strokeWidth: 3,
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'Memuat...',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          );
-        },
+        ],
       ),
     );
   }

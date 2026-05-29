@@ -42,6 +42,13 @@ const markAllRead = async (userId) => {
   return { updated: true };
 };
 
+const deleteAll = async (userId) => {
+  await prisma.notification.deleteMany({
+    where: { userId },
+  });
+  return { deleted: true };
+};
+
 const markRead = async (id, userId) => {
   const notif = await prisma.notification.findFirst({ where: { id, userId } });
   if (!notif) throw Object.assign(new Error('Notification not found'), { statusCode: 404 });
@@ -85,4 +92,4 @@ const createAndSendToAllPatients = async ({ title, body, type, data = {} }) => {
   return users.map((u) => u.id);
 };
 
-module.exports = { registerToken, getNotifications, markAllRead, markRead, createAndSend, createAndSendToAllPatients };
+module.exports = { registerToken, getNotifications, markAllRead, markRead, deleteAll, createAndSend, createAndSendToAllPatients };

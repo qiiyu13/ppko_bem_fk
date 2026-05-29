@@ -31,6 +31,15 @@ const markAllRead = async (req, res, next) => {
   }
 };
 
+const deleteAll = async (req, res, next) => {
+  try {
+    const result = await service.deleteAll(req.user.id);
+    return success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
 const markRead = async (req, res, next) => {
   try {
     const result = await service.markRead(req.params.id, req.user.id);
@@ -41,4 +50,4 @@ const markRead = async (req, res, next) => {
   }
 };
 
-module.exports = { registerToken, getNotifications, markAllRead, markRead };
+module.exports = { registerToken, getNotifications, markAllRead, markRead, deleteAll };

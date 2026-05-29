@@ -14,6 +14,16 @@ const getAppointments = async (req, res, next) => {
   }
 };
 
+const getAppointmentById = async (req, res, next) => {
+  try {
+    const appointment = await appointmentsService.getAppointmentById(req.params.id, req.user.id);
+    return success(res, appointment);
+  } catch (err) {
+    if (err.message === 'Appointment not found') return error(res, err.message, 404, 'NOT_FOUND');
+    next(err);
+  }
+};
+
 const createAppointment = async (req, res, next) => {
   try {
     const appointment = await appointmentsService.createAppointment(req.body, req.user.id);
@@ -43,4 +53,4 @@ const deleteAppointment = async (req, res, next) => {
   }
 };
 
-module.exports = { getAppointments, createAppointment, updateAppointment, deleteAppointment };
+module.exports = { getAppointments, getAppointmentById, createAppointment, updateAppointment, deleteAppointment };

@@ -9,6 +9,8 @@ router.use(authenticate);
 
 router.get('/', controller.getAppointments);
 
+router.get('/:id', controller.getAppointmentById);
+
 router.post('/', [
   body('title').isString().notEmpty(),
   body('date').isISO8601(),
