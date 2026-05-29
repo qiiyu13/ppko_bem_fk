@@ -6,6 +6,7 @@ import '../../../services/admin_service.dart';
 import '../../../services/region_service.dart';
 import '../../../services/screening_service.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../utils/page_transitions.dart';
 import '../screens/screening_report_screen.dart';
 
 class MedicalTab extends StatefulWidget {
@@ -87,42 +88,6 @@ class _MedicalTabState extends State<MedicalTab> {
     }
   }
 
-  String _exportCsv() {
-    final buf = StringBuffer();
-    buf.writeln('Desa,Total,High,Attention,Normal');
-    for (final v in _villageBreakdown) {
-      final name = (v['name']?.toString() ?? '').replaceAll(',', ' ');
-      final total = (v['profileCount'] as num?)?.toInt() ?? 0;
-      final high = (v['high'] as num?)?.toInt() ?? 0;
-      final attn = (v['attention'] as num?)?.toInt() ?? 0;
-      final norm = (v['normal'] as num?)?.toInt() ?? 0;
-      buf.writeln('$name,$total,$high,$attn,$norm');
-    }
-    return buf.toString();
-  }
-
-  void _showExportDialog() {
-    final csv = _exportCsv();
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Export CSV'),
-        content: SingleChildScrollView(
-          child: SelectableText(
-            csv.isEmpty ? 'Belum ada data' : csv,
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Tutup'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     ResponsiveSize.init(context);
@@ -132,6 +97,7 @@ class _MedicalTabState extends State<MedicalTab> {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
+        scrolledUnderElevation: 0,
         title: Text(
           'Laporan',
           style: TextStyle(
@@ -147,15 +113,8 @@ class _MedicalTabState extends State<MedicalTab> {
             icon: const Icon(Icons.assignment_outlined, color: AppColors.primary),
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute<void>(
-                builder: (_) => const ScreeningReportScreen(),
-              ),
+              ParallaxPageRoute(page: const ScreeningReportScreen()),
             ),
-          ),
-          IconButton(
-            tooltip: 'Export CSV',
-            icon: const Icon(Icons.download_outlined, color: AppColors.primary),
-            onPressed: _villageBreakdown.isEmpty ? null : _showExportDialog,
           ),
         ],
       ),
