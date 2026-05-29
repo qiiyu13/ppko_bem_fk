@@ -92,21 +92,14 @@ const deleteUser = async (id) => {
   const user = await prisma.user.findUnique({
     where: { id },
     include: {
-      conversations: { select: { id: true } },
       familyProfiles: { select: { id: true } },
     },
   });
   if (!user) throw Object.assign(new Error('User not found'), { code: 'P2025' });
 
-  const conversationIds = user.conversations.map((c) => c.id);
   const profileIds = user.familyProfiles.map((p) => p.id);
 
   await prisma.$transaction(async (tx) => {
-    if (conversationIds.length) {
-      await tx.chatMessage.deleteMany({ where: { conversationId: { in: conversationIds } } });
-    }
-    await tx.chatConversation.deleteMany({ where: { userId: id } });
-
     if (profileIds.length) {
       await tx.medicalScreening.deleteMany({ where: { profileId: { in: profileIds } } });
       await tx.healthMetric.deleteMany({ where: { profileId: { in: profileIds } } });

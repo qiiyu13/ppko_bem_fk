@@ -18,11 +18,6 @@ class WebSocketService {
   Stream<Map<String, dynamic>> get dataUpdateStream =>
       _dataUpdateController.stream;
 
-  final _chatMessageController =
-      StreamController<Map<String, dynamic>>.broadcast();
-  Stream<Map<String, dynamic>> get chatMessageStream =>
-      _chatMessageController.stream;
-
   final _connectionStatusController = StreamController<bool>.broadcast();
   Stream<bool> get connectionStatusStream => _connectionStatusController.stream;
 
@@ -81,8 +76,6 @@ class WebSocketService {
           ApiService.cacheInterceptor.invalidate('/$type');
         }
         _dataUpdateController.add(payload);
-      } else if (event == 'chat:message:new' && payload != null) {
-        _chatMessageController.add(payload);
       }
     } catch (e) {
       // Ignore malformed messages
@@ -104,17 +97,6 @@ class WebSocketService {
     }
   }
 
-  void sendChatMessage(String conversationId, String content) {
-    if (_isConnected && _channel != null) {
-      _channel!.sink.add(
-        jsonEncode({
-          'event': 'chat:message',
-          'data': {'conversationId': conversationId, 'content': content},
-        }),
-      );
-    }
-  }
-
   void disconnect() {
     _reconnectTimer?.cancel();
     _heartbeatTimer?.cancel();
@@ -126,7 +108,6 @@ class WebSocketService {
   void dispose() {
     disconnect();
     _dataUpdateController.close();
-    _chatMessageController.close();
     _connectionStatusController.close();
   }
 }

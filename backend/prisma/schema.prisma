@@ -34,7 +34,6 @@ model User {
   screenings      MedicalScreening[] @relation("Screener")
   createdArticles Article[]          @relation("Author")
   appointments    Appointment[]
-  conversations   ChatConversation[]
   notifications   Notification[]
 
   @@index([regionId])
@@ -172,35 +171,6 @@ model Region {
   @@index([parentId])
   @@index([name])
   @@map("regions")
-}
-
-model ChatConversation {
-  id             String   @id @default(uuid())
-  userId         String   @map("user_id")
-  startedAt      DateTime @default(now()) @map("started_at")
-  lastActivityAt DateTime @updatedAt @map("last_activity_at")
-
-  user     User          @relation(fields: [userId], references: [id])
-  messages ChatMessage[]
-
-  @@index([userId])
-  @@index([lastActivityAt])
-  @@map("chat_conversations")
-}
-
-model ChatMessage {
-  id             String   @id @default(uuid())
-  conversationId String   @map("conversation_id")
-  content        String
-  role           String
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  conversation ChatConversation @relation(fields: [conversationId], references: [id])
-
-  @@index([conversationId])
-  @@index([createdAt])
-  @@map("chat_messages")
 }
 
 model TokenBlacklist {

@@ -7,8 +7,6 @@ async function main() {
   console.log('🌱 Starting seed...\n');
 
   // Clean existing data (respect FK order)
-  await prisma.chatMessage.deleteMany();
-  await prisma.chatConversation.deleteMany();
   await prisma.healthMetric.deleteMany();
   await prisma.medicalScreening.deleteMany();
   await prisma.appointment.deleteMany();

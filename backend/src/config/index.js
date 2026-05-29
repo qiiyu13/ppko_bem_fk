@@ -23,9 +23,4 @@ if (config.nodeEnv === 'production') {
   }
 }
 
-// Warn about optional but important missing config
-if (!process.env.OPENAI_API_KEY) {
-  console.warn('WARNING: OPENAI_API_KEY is not set. AI chat assistant will be disabled.');
-}
-
 module.exports = config;

@@ -68,17 +68,7 @@ function initWebSocketServer(server) {
           return;
         }
 
-        const { handleChatMessage } = require('./chat.handler');
         switch (message.event) {
-          case events.CHAT_MESSAGE:
-            if (userId) {
-              if (!checkWsRateLimit(userId)) {
-                ws.send(JSON.stringify({ event: events.ERROR, data: { message: 'Rate limit exceeded. Please wait before sending more messages.' } }));
-                return;
-              }
-              handleChatMessage(ws, message.data, userId);
-            }
-            break;
           default:
             break;
         }

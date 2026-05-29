@@ -10,7 +10,6 @@ import 'tabs/home_tab.dart';
 import 'tabs/profil_tab.dart';
 import 'tabs/settings_tab.dart';
 import 'tabs/tanaman_toga_tab.dart';
-import 'asisten_landing_screen.dart';
 import 'jadwal_saya_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
@@ -29,7 +28,6 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
     '',
     'Jadwal',
     'Tanaman Toga',
-    'Asisten',
     'Profil',
   ];
 
@@ -42,8 +40,6 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
       case 2:
         return const TanamanTogaTab();
       case 3:
-        return const AsistenLandingScreen();
-      case 4:
         return const ProfilTab();
       default:
         return const SizedBox.shrink();
@@ -65,11 +61,6 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
       icon: Icons.eco_outlined,
       activeIcon: Icons.eco,
       label: 'Tanaman',
-    ),
-    NavBarItem(
-      icon: Icons.chat_outlined,
-      activeIcon: Icons.chat,
-      label: 'Asisten',
     ),
     NavBarItem(
       icon: Icons.person_outline,
@@ -185,7 +176,7 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              actions: _currentIndex == 4
+              actions: _currentIndex == 3
                   ? [
                       IconButton(
                         icon: const Icon(
