@@ -35,7 +35,7 @@ const createAppointment = async (req, res, next) => {
 
 const updateAppointment = async (req, res, next) => {
   try {
-    const appointment = await appointmentsService.updateAppointment(req.params.id, req.body, req.user.id);
+    const appointment = await appointmentsService.updateAppointment(req.params.id, req.body, req.user.id, req.user.role);
     return success(res, appointment, 'Appointment updated successfully');
   } catch (err) {
     if (err.message === 'Appointment not found') return error(res, err.message, 404, 'NOT_FOUND');
@@ -45,7 +45,7 @@ const updateAppointment = async (req, res, next) => {
 
 const deleteAppointment = async (req, res, next) => {
   try {
-    const result = await appointmentsService.deleteAppointment(req.params.id, req.user.id);
+    const result = await appointmentsService.deleteAppointment(req.params.id, req.user.id, req.user.role);
     return success(res, result);
   } catch (err) {
     if (err.message === 'Appointment not found') return error(res, err.message, 404, 'NOT_FOUND');

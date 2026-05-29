@@ -95,9 +95,12 @@ const createAppointment = async (data, userId) => {
   return result;
 };
 
-const updateAppointment = async (id, data, userId) => {
+const updateAppointment = async (id, data, userId, role) => {
+  const isAdmin = role === 'ADMIN' || role === 'SUPERADMIN';
   const appointment = await prisma.appointment.findFirst({
-    where: { id, userId },
+    where: isAdmin
+      ? { id, OR: [{ userId }, { type: 'JADWAL' }] }
+      : { id, userId },
   });
   if (!appointment) throw Object.assign(new Error('Appointment not found'), { statusCode: 404 });
 
@@ -122,9 +125,12 @@ const updateAppointment = async (id, data, userId) => {
   return result;
 };
 
-const deleteAppointment = async (id, userId) => {
+const deleteAppointment = async (id, userId, role) => {
+  const isAdmin = role === 'ADMIN' || role === 'SUPERADMIN';
   const appointment = await prisma.appointment.findFirst({
-    where: { id, userId },
+    where: isAdmin
+      ? { id, OR: [{ userId }, { type: 'JADWAL' }] }
+      : { id, userId },
   });
   if (!appointment) throw Object.assign(new Error('Appointment not found'), { statusCode: 404 });
 
