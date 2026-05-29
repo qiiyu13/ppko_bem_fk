@@ -67,6 +67,13 @@ class _UserFormScreenState extends State<UserFormScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedVillageId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Wilayah monitoring wajib dipilih'),
+        backgroundColor: AppColors.statusRed,
+      ));
+      return;
+    }
     setState(() => _isSubmitting = true);
     final isEdit = widget.admin != null;
     try {
@@ -318,6 +325,13 @@ class _UserFormScreenState extends State<UserFormScreen> {
   }
 
   Widget _villageDropdown() {
+    final selectedVillage = _selectedVillageId != null
+        ? _villages.firstWhere(
+            (v) => v['id'] == _selectedVillageId,
+            orElse: () => {'name': ''},
+          )['name'] as String
+        : null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -335,38 +349,179 @@ class _UserFormScreenState extends State<UserFormScreen> {
                   child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
                 ),
               )
-            : DropdownButtonFormField<String>(
-                initialValue: _selectedVillageId,
-                decoration: InputDecoration(
-                  hintText: 'Pilih desa/kelurahan',
-                  hintStyle: const TextStyle(color: AppColors.surface),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.surface),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.surface),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primary),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(
+            : InkWell(
+                onTap: () => _showSearchablePicker(
+                  title: 'Pilih Desa / Kelurahan',
+                  options: _villages.map((v) => v['name'] as String).toList(),
+                  onSelected: (selectedName) {
+                    final village = _villages.firstWhere(
+                      (v) => v['name'] == selectedName,
+                    );
+                    setState(() {
+                      _selectedVillageId = village['id'] as String;
+                    });
+                  },
+                ),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(
                     horizontal: ResponsiveSize.paddingMedium,
                     vertical: ResponsiveSize.paddingMedium,
                   ),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: _selectedVillageId == null ? AppColors.statusRed.withValues(alpha: 0.5) : AppColors.surface,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          selectedVillage ?? 'Pilih desa/kelurahan',
+                          style: TextStyle(
+                            color: selectedVillage != null ? AppColors.textPrimary : AppColors.surface,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
+                    ],
+                  ),
                 ),
-                items: _villages.map((v) => DropdownMenuItem(
-                  value: v['id'] as String,
-                  child: Text(v['name'] as String),
-                )).toList(),
-                onChanged: (val) => setState(() => _selectedVillageId = val),
-                validator: (v) => v == null ? 'Wilayah monitoring wajib dipilih' : null,
-                dropdownColor: AppColors.card,
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
               ),
+        if (_selectedVillageId == null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 12),
+            child: Text(
+              'Wilayah monitoring wajib dipilih',
+              style: TextStyle(
+                color: AppColors.statusRed,
+                fontSize: ResponsiveSize.fontSmall,
+              ),
+            ),
+          ),
       ],
     );
+  }
+
+  void _showSearchablePicker({
+    required String title,
+    required List<String> options,
+    required ValueChanged<String> onSelected,
+  }) {
+    final searchController = TextEditingController();
+    final filteredOptions = List<String>.from(options);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(top: 12, bottom: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (query) {
+                      setModalState(() {
+                        filteredOptions.clear();
+                        filteredOptions.addAll(
+                          options.where((opt) =>
+                              opt.toLowerCase().contains(query.toLowerCase())),
+                        );
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Cari...',
+                      hintStyle: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                      ),
+                      prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Flexible(
+                  child: filteredOptions.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.all(32),
+                          child: Text(
+                            'Tidak ada hasil',
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: filteredOptions.length,
+                          itemBuilder: (ctx, i) {
+                            return InkWell(
+                              onTap: () {
+                                onSelected(filteredOptions[i]);
+                                Navigator.pop(ctx);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 14,
+                                ),
+                                child: Text(
+                                  filteredOptions[i],
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                SizedBox(height: MediaQuery.of(ctx).padding.bottom + 12),
+              ],
+            );
+          },
+        );
+      },
+    ).then((_) => searchController.dispose());
   }
 }
