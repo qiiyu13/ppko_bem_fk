@@ -171,40 +171,31 @@ class _DashboardTabState extends State<DashboardTab> {
       ),
       child: Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'admin_report_fab',
-            onPressed: () {
-              Navigator.push(
-                context,
-                ParallaxPageRoute(page: const ScreeningReportScreen()),
-              );
-            },
-            backgroundColor: AppColors.card,
-            foregroundColor: AppColors.primary,
-            tooltip: 'Laporan Skrining',
-            child: const Icon(Icons.assignment_outlined),
-          ),
-          const SizedBox(height: 12),
-          FloatingActionButton(
-            heroTag: 'admin_dashboard_fab',
-            onPressed: () {
-              Navigator.push(
-                context,
-                ParallaxPageRoute(page: const QrScannerScreen()),
-              );
-            },
-            backgroundColor: AppColors.primary,
-            child: const Icon(Icons.qr_code_scanner, color: Colors.white),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'admin_dashboard_fab',
+        onPressed: () {
+          Navigator.push(
+            context,
+            ParallaxPageRoute(page: const QrScannerScreen()),
+          );
+        },
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.qr_code_scanner, color: Colors.white),
       ),
       body: CustomScrollView(
         slivers: [
             SliverToBoxAdapter(
-              child: GreetingHeader(name: _userName, fallbackName: 'Pengguna', imageUrl: _userAvatarUrl),
+              child: GreetingHeader(
+                name: _userName,
+                fallbackName: 'Pengguna',
+                imageUrl: _userAvatarUrl,
+                onReportPressed: () {
+                  Navigator.push(
+                    context,
+                    ParallaxPageRoute(page: const ScreeningReportScreen()),
+                  );
+                },
+              ),
             ),
 
             SliverToBoxAdapter(

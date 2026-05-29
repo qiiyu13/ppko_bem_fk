@@ -12,6 +12,7 @@ class GreetingHeader extends StatelessWidget {
   final String? imageUrl;
   final String? fallbackAsset;
   final bool bareFallbackAsset;
+  final VoidCallback? onReportPressed;
 
   const GreetingHeader({
     super.key,
@@ -22,6 +23,7 @@ class GreetingHeader extends StatelessWidget {
     this.imageUrl,
     this.fallbackAsset,
     this.bareFallbackAsset = false,
+    this.onReportPressed,
   });
 
   @override
@@ -105,6 +107,12 @@ class GreetingHeader extends StatelessWidget {
               ],
             ),
           ),
+          if (onReportPressed != null)
+            IconButton(
+              onPressed: onReportPressed,
+              icon: const Icon(Icons.assignment_outlined, color: AppColors.primary),
+              tooltip: 'Laporan Skrining',
+            ),
           const NotificationBell(),
         ],
       ),
