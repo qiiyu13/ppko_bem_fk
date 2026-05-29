@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constants/app_colors.dart';
@@ -393,12 +394,28 @@ class _ScheduleScreenState extends State<ScheduleScreen>
       _loadAppointments();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal menghapus: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      final statusCode = e is DioException ? e.response?.statusCode : null;
+      if (statusCode == 409) {
+        _loadAppointments();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Data telah diubah oleh pengguna lain. Silakan coba lagi.'),
+            backgroundColor: AppColors.statusAmber,
+            action: SnackBarAction(
+              label: 'Refresh',
+              textColor: AppColors.textPrimary,
+              onPressed: _loadAppointments,
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menghapus: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

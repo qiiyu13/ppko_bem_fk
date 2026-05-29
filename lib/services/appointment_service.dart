@@ -19,6 +19,11 @@ class AppointmentService {
     }
   }
 
+  static Future<Map<String, dynamic>> getAppointmentById(String id) async {
+    final response = await ApiService.get('/appointments/$id');
+    return response.data['data'] as Map<String, dynamic>;
+  }
+
   static Future<Map<String, dynamic>> createAppointment({
     required String title,
     required DateTime date,
@@ -84,6 +89,7 @@ class AppointmentService {
       await CacheService.queueSync('/appointments/$id', 'DELETE', {
         'updatedAt': updatedAt.toIso8601String(),
       });
+      rethrow;
     }
   }
 }
