@@ -1,3 +1,4 @@
+const { Prisma } = require('@prisma/client');
 const prisma = require('../../utils/prisma');
 
 const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId }) => {
@@ -24,26 +25,26 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
     ];
   }
 
-  // 1. Get all screenings matching the userFilter, sorted by date desc to find the latest for each profile
-  const allScreenings = await prisma.medicalScreening.findMany({
-    where: {
-      profile: {
-        user: userFilter
-      }
-    },
-    orderBy: {
-      screeningAt: 'desc'
-    },
-    select: {
-      profileId: true,
-      irdCategory: true
-    }
+  // 1. Resolve profiles belonging to users matching the filter (bounded by profile
+  //    count, not screening count). Region/search logic stays in Prisma.
+  const matchingProfiles = await prisma.familyProfile.findMany({
+    where: { user: userFilter },
+    select: { id: true },
   });
+  const matchingProfileIds = matchingProfiles.map((p) => p.id);
 
-  // 2. Identify the latest screening category per profile
+  // 2. Latest screening category per profile via DISTINCT ON, served by the
+  //    (profile_id, screening_at DESC) index — one indexed row per profile
+  //    instead of scanning every screening row into memory.
   const latestScreeningsMap = new Map();
-  for (const s of allScreenings) {
-    if (!latestScreeningsMap.has(s.profileId)) {
+  if (matchingProfileIds.length > 0) {
+    const latest = await prisma.$queryRaw`
+      SELECT DISTINCT ON (profile_id) profile_id AS "profileId", ird_category AS "irdCategory"
+      FROM medical_screenings
+      WHERE profile_id IN (${Prisma.join(matchingProfileIds)})
+      ORDER BY profile_id, screening_at DESC
+    `;
+    for (const s of latest) {
       latestScreeningsMap.set(s.profileId, s.irdCategory);
     }
   }

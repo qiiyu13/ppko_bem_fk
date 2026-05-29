@@ -172,7 +172,9 @@ const getStats = async () => {
 };
 
 // Report listing for admins/superadmins: filter by screener + date range.
-// Returns the full filtered set (unpaginated) so the client can export it.
+// Returns the filtered set (unpaginated) so the client can export it, but
+// hard-capped to protect the server from unbounded result sets / OOM.
+const REPORT_MAX_ROWS = 5000;
 const getScreeningReport = async ({ screenedBy, from, to }) => {
   const where = {};
   if (screenedBy) where.screenedBy = screenedBy;
@@ -184,6 +186,7 @@ const getScreeningReport = async ({ screenedBy, from, to }) => {
   return prisma.medicalScreening.findMany({
     where,
     orderBy: { screeningAt: 'desc' },
+    take: REPORT_MAX_ROWS,
     include: {
       profile: { select: { name: true, nik: true, gender: true } },
       screener: { select: { id: true, responsibleName: true } },

@@ -110,6 +110,7 @@ model MedicalScreening {
   @@index([screenedBy])
   @@index([irdCategory])
   @@index([screeningAt])
+  @@index([profileId, screeningAt(sort: Desc)])
   @@map("medical_screenings")
 }
 
