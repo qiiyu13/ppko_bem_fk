@@ -329,38 +329,6 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
                 height: 20,
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
-            )
-          else
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'save_draft') {
-                  _saveArticle(publish: false);
-                } else if (value == 'publish') {
-                  _saveArticle(publish: true);
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'save_draft',
-                  child: Row(
-                    children: [
-                      Icon(Icons.save, color: Colors.orange),
-                      SizedBox(width: 8),
-                      Text('Simpan sebagai Draft'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'publish',
-                  child: Row(
-                    children: [
-                      Icon(Icons.publish, color: Colors.green),
-                      SizedBox(width: 8),
-                      Text('Publikasikan'),
-                    ],
-                  ),
-                ),
-              ],
             ),
         ],
       ),
