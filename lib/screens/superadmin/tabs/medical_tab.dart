@@ -6,6 +6,7 @@ import '../../../services/admin_service.dart';
 import '../../../services/region_service.dart';
 import '../../../services/screening_service.dart';
 import '../../../utils/responsive_size.dart';
+import '../screens/screening_report_screen.dart';
 
 class MedicalTab extends StatefulWidget {
   const MedicalTab({super.key});
@@ -141,6 +142,16 @@ class _MedicalTabState extends State<MedicalTab> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            tooltip: 'Laporan Skrining',
+            icon: const Icon(Icons.assignment_outlined, color: AppColors.primary),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const ScreeningReportScreen(),
+              ),
+            ),
+          ),
           IconButton(
             tooltip: 'Export CSV',
             icon: const Icon(Icons.download_outlined, color: AppColors.primary),

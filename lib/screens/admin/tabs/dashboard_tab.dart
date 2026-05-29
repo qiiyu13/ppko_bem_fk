@@ -12,6 +12,7 @@ import '../../../widgets/dashboard/greeting_header.dart';
 import '../../../widgets/dashboard/stat_cell.dart';
 import '../admin_family_detail_screen.dart';
 import '../qr_scanner_screen.dart';
+import '../../superadmin/screens/screening_report_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 import 'package:mediku/config/env.dart';
 import 'package:mediku/widgets/app_avatar.dart';
@@ -170,16 +171,35 @@ class _DashboardTabState extends State<DashboardTab> {
       ),
       child: Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'admin_dashboard_fab',
-        onPressed: () {
-          Navigator.push(
-            context,
-            ParallaxPageRoute(page: const QrScannerScreen()),
-          );
-        },
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.qr_code_scanner, color: Colors.white),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'admin_report_fab',
+            onPressed: () {
+              Navigator.push(
+                context,
+                ParallaxPageRoute(page: const ScreeningReportScreen()),
+              );
+            },
+            backgroundColor: AppColors.card,
+            foregroundColor: AppColors.primary,
+            tooltip: 'Laporan Skrining',
+            child: const Icon(Icons.assignment_outlined),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton(
+            heroTag: 'admin_dashboard_fab',
+            onPressed: () {
+              Navigator.push(
+                context,
+                ParallaxPageRoute(page: const QrScannerScreen()),
+              );
+            },
+            backgroundColor: AppColors.primary,
+            child: const Icon(Icons.qr_code_scanner, color: Colors.white),
+          ),
+        ],
       ),
       body: CustomScrollView(
         slivers: [

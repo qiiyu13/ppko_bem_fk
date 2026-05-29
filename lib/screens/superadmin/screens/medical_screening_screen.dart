@@ -200,9 +200,13 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
   String? _validateDouble(String? v, String label) {
     final t = v?.trim() ?? '';
     if (t.isEmpty) return '$label wajib diisi';
-    if (double.tryParse(t) == null) return 'Harus berupa angka';
+    if (_parseDecimal(t) == null) return 'Harus berupa angka';
     return null;
   }
+
+  /// Parse a decimal accepting either comma or dot as separator (id_ID locale).
+  double? _parseDecimal(String? s) =>
+      double.tryParse((s ?? '').trim().replaceAll(',', '.'));
 
   Future<void> _submitScreening() async {
     if (_selectedProfile == null || _isSubmitting) return;
@@ -223,11 +227,11 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
       'profileId': profileId,
       'systolic': int.parse(_systolicController.text.trim()),
       'diastolic': int.parse(_diastolicController.text.trim()),
-      'bloodSugar': int.parse(_bloodSugarController.text.trim()),
-      'cholesterol': int.parse(_cholesterolController.text.trim()),
-      'uricAcid': int.parse(_uricAcidController.text.trim()),
-      'height': int.parse(_heightController.text.trim()),
-      'weight': double.parse(_weightController.text.trim()),
+      'bloodSugar': _parseDecimal(_bloodSugarController.text),
+      'cholesterol': _parseDecimal(_cholesterolController.text),
+      'uricAcid': _parseDecimal(_uricAcidController.text),
+      'height': _parseDecimal(_heightController.text),
+      'weight': _parseDecimal(_weightController.text),
       'notes': _notesController.text,
       'screeningAt': DateTime.now().toIso8601String(),
     };
@@ -858,7 +862,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                     ),
                     SizedBox(width: ResponsiveSize.paddingSmall),
                     Expanded(
-                      child: _buildIntField(
+                      child: _buildDoubleField(
                         label: 'Tinggi Badan',
                         hint: 'mis. 165',
                         suffix: 'cm',
@@ -871,7 +875,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                 ),
                 SizedBox(height: ResponsiveSize.spacingMedium),
                 _buildFormSection('Hasil Laboratorium'),
-                _buildIntField(
+                _buildDoubleField(
                   label: 'Gula Darah',
                   hint: 'mis. 110',
                   suffix: 'mg/dL',
@@ -880,7 +884,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                   nextFocus: _uricAcidFocus,
                 ),
                 SizedBox(height: ResponsiveSize.spacingMedium),
-                _buildIntField(
+                _buildDoubleField(
                   label: 'Asam Urat',
                   hint: 'mis. 6',
                   suffix: 'mg/dL',
@@ -889,7 +893,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                   nextFocus: _cholesterolFocus,
                 ),
                 SizedBox(height: ResponsiveSize.spacingMedium),
-                _buildIntField(
+                _buildDoubleField(
                   label: 'Kolesterol',
                   hint: 'mis. 180',
                   suffix: 'mg/dL',
@@ -1018,7 +1022,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
       nextFocus: nextFocus,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+        FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
       ],
       validator: (v) => _validateDouble(v, label),
     );

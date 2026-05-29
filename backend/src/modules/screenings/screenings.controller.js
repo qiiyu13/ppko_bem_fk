@@ -31,4 +31,18 @@ const getStats = async (req, res, next) => {
   }
 };
 
-module.exports = { createScreening, getScreenings, getStats };
+const getScreeningReport = async (req, res, next) => {
+  try {
+    const { from, to } = req.query;
+    // ADMIN can only see their own screenings; SUPERADMIN may filter by one admin or see all.
+    const screenedBy = req.user.role === 'SUPERADMIN'
+      ? (req.query.screenedBy || undefined)
+      : req.user.id;
+    const data = await screeningsService.getScreeningReport({ screenedBy, from, to });
+    return success(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { createScreening, getScreenings, getStats, getScreeningReport };

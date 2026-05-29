@@ -11,6 +11,8 @@ let profileId;
 
 const testKK = '3275' + String(Date.now()).padStart(12, '0').slice(-12);
 const adminKK = '3276' + String(Date.now() + 1).padStart(12, '0').slice(-12);
+// Admins authenticate by username (KK login is patients-only), so log in with this.
+const adminUsername = 'testadmin' + String(Date.now()).slice(-9);
 
 describe('Screening → Health Metrics Cascade', () => {
   beforeAll(async () => {
@@ -19,6 +21,7 @@ describe('Screening → Health Metrics Cascade', () => {
     const admin = await prisma.user.create({
       data: {
         kkNumber: adminKK,
+        username: adminUsername,
         responsibleName: 'Test Admin',
         password: hashedPassword,
         role: 'ADMIN',
@@ -28,7 +31,7 @@ describe('Screening → Health Metrics Cascade', () => {
 
     const loginAdmin = await request(app)
       .post('/api/v1/auth/login')
-      .send({ kkNumber: adminKK, password: 'test123' });
+      .send({ identifier: adminUsername, password: 'test123' });
     adminToken = loginAdmin.body.data.token;
 
     await request(app)
@@ -62,6 +65,7 @@ describe('Screening → Health Metrics Cascade', () => {
     }
     if (testUserIds.length > 0) {
       await prisma.medicalScreening.deleteMany({ where: { screenedBy: { in: testUserIds } } });
+      await prisma.notification.deleteMany({ where: { userId: { in: testUserIds } } });
       await prisma.familyProfile.deleteMany({ where: { userId: { in: testUserIds } } });
     }
     await prisma.user.deleteMany({
@@ -183,8 +187,34 @@ describe('Screening → Health Metrics Cascade', () => {
         await prisma.healthMetric.deleteMany({ where: { profileId: { in: partialProfileIds } } });
         await prisma.medicalScreening.deleteMany({ where: { profileId: { in: partialProfileIds } } });
       }
+      await prisma.notification.deleteMany({ where: { userId: partialUser.id } });
       await prisma.familyProfile.deleteMany({ where: { userId: partialUser.id } });
     }
     await prisma.user.deleteMany({ where: { kkNumber: partialKK } });
+  });
+
+  it('report endpoint returns only the admin\'s own screenings', async () => {
+    const res = await request(app)
+      .get('/api/v1/screenings/report')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.data.length).toBeGreaterThan(0);
+
+    const admin = await prisma.user.findUnique({ where: { kkNumber: adminKK } });
+    for (const row of res.body.data) {
+      expect(row.screenedBy).toBe(admin.id);
+      expect(row.profile).toBeDefined();
+    }
+  });
+
+  it('report endpoint is forbidden for patients', async () => {
+    const res = await request(app)
+      .get('/api/v1/screenings/report')
+      .set('Authorization', `Bearer ${patientToken}`);
+
+    expect(res.status).toBe(403);
   });
 });

@@ -171,4 +171,24 @@ const getStats = async () => {
   };
 };
 
-module.exports = { createScreening, getScreenings, getStats };
+// Report listing for admins/superadmins: filter by screener + date range.
+// Returns the full filtered set (unpaginated) so the client can export it.
+const getScreeningReport = async ({ screenedBy, from, to }) => {
+  const where = {};
+  if (screenedBy) where.screenedBy = screenedBy;
+  if (from || to) {
+    where.screeningAt = {};
+    if (from) where.screeningAt.gte = new Date(from);
+    if (to) where.screeningAt.lte = new Date(to);
+  }
+  return prisma.medicalScreening.findMany({
+    where,
+    orderBy: { screeningAt: 'desc' },
+    include: {
+      profile: { select: { name: true, nik: true, gender: true } },
+      screener: { select: { id: true, responsibleName: true } },
+    },
+  });
+};
+
+module.exports = { createScreening, getScreenings, getStats, getScreeningReport };

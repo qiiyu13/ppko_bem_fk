@@ -24,6 +24,29 @@ class ScreeningService {
     }
   }
 
+  /// Report listing for admins/superadmins, filtered by screener + date range.
+  /// [screenedBy] is only honoured for superadmins (the backend forces admins
+  /// to their own id). [from]/[to] are inclusive day bounds.
+  static Future<List<Map<String, dynamic>>> getScreeningReport({
+    String? screenedBy,
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    final queryParams = <String, dynamic>{};
+    if (screenedBy != null) queryParams['screenedBy'] = screenedBy;
+    if (from != null) queryParams['from'] = from.toIso8601String();
+    if (to != null) queryParams['to'] = to.toIso8601String();
+
+    try {
+      final response = await ApiService.get('/screenings/report',
+          queryParameters: queryParams);
+      final List<dynamic> data = response.data['data'] ?? [];
+      return data.cast<Map<String, dynamic>>();
+    } catch (e) {
+      return [];
+    }
+  }
+
   static Future<Map<String, dynamic>> createScreening({
     required String profileId,
     required int systolic,

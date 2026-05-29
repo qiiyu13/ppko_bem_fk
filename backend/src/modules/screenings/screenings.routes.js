@@ -7,6 +7,7 @@ const validate = require('../../middleware/validate');
 
 router.get('/', authenticate, controller.getScreenings);
 router.get('/stats', authenticate, authorize('ADMIN', 'SUPERADMIN'), controller.getStats);
+router.get('/report', authenticate, authorize('ADMIN', 'SUPERADMIN'), controller.getScreeningReport);
 
 router.post('/', authenticate, authorize('ADMIN', 'SUPERADMIN'), [
   body('profileId').isString().notEmpty(),
