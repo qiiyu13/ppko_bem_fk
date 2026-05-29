@@ -307,9 +307,19 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Laporan Skrining'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.background,
+        title: Text(
+          'Laporan Skrining',
+          style: TextStyle(
+            color: AppColors.primary,
+            fontSize: ResponsiveSize.fontXLarge,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.primary),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -343,25 +353,62 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
           ),
           if (_isSuperadmin) ...[
             SizedBox(height: ResponsiveSize.spacingSmall),
-            DropdownButtonFormField<String?>(
-              initialValue: _selectedAdminId,
-              decoration: const InputDecoration(
-                labelText: 'Petugas',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-              items: [
-                const DropdownMenuItem<String?>(
-                    value: null, child: Text('Semua Petugas')),
-                ..._admins.map((a) => DropdownMenuItem<String?>(
-                      value: a['id']?.toString(),
-                      child: Text(a['responsibleName']?.toString() ?? '-'),
-                    )),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Petugas',
+                  style: TextStyle(
+                    fontSize: ResponsiveSize.fontSmall,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                SizedBox(height: ResponsiveSize.spacingSmall),
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.divider, width: 1),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String?>(
+                      value: _selectedAdminId,
+                      isExpanded: true,
+                      icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
+                      style: TextStyle(
+                        fontSize: ResponsiveSize.fontMedium,
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      hint: Text(
+                        'Pilih Petugas',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: ResponsiveSize.fontMedium,
+                        ),
+                      ),
+                      dropdownColor: AppColors.card,
+                      borderRadius: BorderRadius.circular(12),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('Semua Petugas', style: TextStyle(fontWeight: FontWeight.w600)),
+                        ),
+                        ..._admins.map((a) => DropdownMenuItem<String?>(
+                          value: a['id']?.toString(),
+                          child: Text(a['responsibleName']?.toString() ?? '-'),
+                        )),
+                      ],
+                      onChanged: (v) {
+                        setState(() => _selectedAdminId = v);
+                        _fetch();
+                      },
+                    ),
+                  ),
+                ),
               ],
-              onChanged: (v) {
-                setState(() => _selectedAdminId = v);
-                _fetch();
-              },
             ),
           ],
         ],
