@@ -27,7 +27,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   int? _selectedRwNumber;
   int? _selectedRtNumber;
 
-  static final List<int> _numbers = List.generate(100, (i) => i + 1);
+  static final List<int> _numbers = List.generate(20, (i) => i + 1);
 
   @override
   void initState() {
@@ -243,23 +243,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ],
                           ),
                         )
-                      : DropdownButtonFormField<String>(
-                          value: _selectedVillageId,
-                          decoration: _buildInputDecoration(
-                            hint: 'Pilih desa/kelurahan',
-                            icon: Icons.location_city_outlined,
+                      : _buildPickerField(
+                          icon: Icons.location_city_outlined,
+                          hint: 'Pilih desa/kelurahan',
+                          selectedLabel: _selectedVillageId != null
+                              ? _villages.firstWhere(
+                                  (v) => v['id'] == _selectedVillageId,
+                                  orElse: () => {'name': ''},
+                                )['name'] as String
+                              : null,
+                          onTap: () => _showSearchablePicker(
+                            title: 'Pilih Desa / Kelurahan',
+                            options: _villages.map((v) => v['name'] as String).toList(),
+                            onSelected: (selectedName) {
+                              final village = _villages.firstWhere(
+                                (v) => v['name'] == selectedName,
+                              );
+                              setState(() {
+                                _selectedVillageId = village['id'] as String;
+                                _selectedRwNumber = null;
+                                _selectedRtNumber = null;
+                              });
+                            },
                           ),
-                          items: _villages.map((v) => DropdownMenuItem(
-                            value: v['id'] as String,
-                            child: Text(v['name'] as String),
-                          )).toList(),
-                          onChanged: (val) => setState(() {
-                            _selectedVillageId = val;
-                            _selectedRwNumber = null;
-                            _selectedRtNumber = null;
-                          }),
-                          dropdownColor: AppColors.card,
-                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
                         ),
 
               if (_selectedVillageId != null) ...[
@@ -267,25 +273,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // RW Selection
                 _buildInputLabel('RW (opsional)'),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<int>(
-                  value: _selectedRwNumber,
-                  decoration: _buildInputDecoration(
-                    hint: 'Pilih RW Anda',
-                    icon: Icons.account_tree_outlined,
+                _buildPickerField(
+                  icon: Icons.account_tree_outlined,
+                  hint: 'Pilih RW Anda',
+                  selectedLabel: _selectedRwNumber != null
+                      ? 'RW ${_selectedRwNumber.toString().padLeft(2, '0')}'
+                      : null,
+                  onTap: () => _showSearchablePicker(
+                    title: 'Pilih RW',
+                    options: _numbers.map((n) => 'RW ${n.toString().padLeft(2, '0')}').toList(),
+                    onSelected: (selected) {
+                      final match = RegExp(r'RW (\d+)').firstMatch(selected);
+                      if (match != null) {
+                        setState(() {
+                          _selectedRwNumber = int.parse(match.group(1)!);
+                          _selectedRtNumber = null;
+                        });
+                      }
+                    },
                   ),
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('— Tidak dipilih')),
-                    ..._numbers.map((n) => DropdownMenuItem(
-                          value: n,
-                          child: Text('RW ${n.toString().padLeft(2, '0')}'),
-                        )),
-                  ],
-                  onChanged: (val) => setState(() {
-                    _selectedRwNumber = val;
-                    _selectedRtNumber = null;
-                  }),
-                  dropdownColor: AppColors.card,
-                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
                 ),
               ],
 
@@ -293,22 +299,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 20),
                 _buildInputLabel('RT'),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<int>(
-                  value: _selectedRtNumber,
-                  decoration: _buildInputDecoration(
-                    hint: 'Pilih RT Anda',
-                    icon: Icons.location_on_outlined,
+                _buildPickerField(
+                  icon: Icons.location_on_outlined,
+                  hint: 'Pilih RT Anda',
+                  selectedLabel: _selectedRtNumber != null
+                      ? 'RT ${_selectedRtNumber.toString().padLeft(2, '0')}'
+                      : null,
+                  onTap: () => _showSearchablePicker(
+                    title: 'Pilih RT',
+                    options: _numbers.map((n) => 'RT ${n.toString().padLeft(2, '0')}').toList(),
+                    onSelected: (selected) {
+                      final match = RegExp(r'RT (\d+)').firstMatch(selected);
+                      if (match != null) {
+                        setState(() {
+                          _selectedRtNumber = int.parse(match.group(1)!);
+                        });
+                      }
+                    },
                   ),
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('— Tidak dipilih')),
-                    ..._numbers.map((n) => DropdownMenuItem(
-                          value: n,
-                          child: Text('RT ${n.toString().padLeft(2, '0')}'),
-                        )),
-                  ],
-                  onChanged: (val) => setState(() => _selectedRtNumber = val),
-                  dropdownColor: AppColors.card,
-                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
                 ),
               ],
               const SizedBox(height: 20),
@@ -377,6 +385,160 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildPickerField({
+    required IconData icon,
+    required String hint,
+    required String? selectedLabel,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.primary, size: 22),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                selectedLabel ?? hint,
+                style: TextStyle(
+                  color: selectedLabel != null ? AppColors.textPrimary : AppColors.textSecondary,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSearchablePicker({
+    required String title,
+    required List<String> options,
+    required ValueChanged<String> onSelected,
+  }) {
+    final searchController = TextEditingController();
+    final filteredOptions = List<String>.from(options);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(top: 12, bottom: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (query) {
+                      setModalState(() {
+                        filteredOptions.clear();
+                        filteredOptions.addAll(
+                          options.where((opt) =>
+                              opt.toLowerCase().contains(query.toLowerCase())),
+                        );
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Cari...',
+                      hintStyle: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                      ),
+                      prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Flexible(
+                  child: filteredOptions.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.all(32),
+                          child: Text(
+                            'Tidak ada hasil',
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: filteredOptions.length,
+                          itemBuilder: (ctx, i) {
+                            return InkWell(
+                              onTap: () {
+                                onSelected(filteredOptions[i]);
+                                Navigator.pop(ctx);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 14,
+                                ),
+                                child: Text(
+                                  filteredOptions[i],
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                SizedBox(height: MediaQuery.of(ctx).padding.bottom + 12),
+              ],
+            );
+          },
+        );
+      },
+    ).then((_) => searchController.dispose());
   }
 
   Widget _buildInputLabel(String label) {
