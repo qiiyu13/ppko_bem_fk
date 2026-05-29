@@ -1,11 +1,14 @@
 const usersService = require('./users.service');
-const { success, error } = require('../../utils/response');
+const { success, error, paginated } = require('../../utils/response');
 
 const getUsers = async (req, res, next) => {
   try {
     const { role } = req.query;
-    const users = await usersService.getUsers(role);
-    return success(res, users);
+    const result = await usersService.getUsers(role, req.query);
+    if (result && result.data !== undefined) {
+      return paginated(res, result.data, result.total, result.page, result.limit);
+    }
+    return success(res, result);
   } catch (err) {
     next(err);
   }

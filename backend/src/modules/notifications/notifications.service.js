@@ -50,9 +50,12 @@ const deleteAll = async (userId) => {
 };
 
 const markRead = async (id, userId) => {
-  const notif = await prisma.notification.findFirst({ where: { id, userId } });
-  if (!notif) throw Object.assign(new Error('Notification not found'), { statusCode: 404 });
-  await prisma.notification.update({ where: { id }, data: { isRead: true } });
+  // Single scoped write — ownership enforced via the userId filter.
+  const { count } = await prisma.notification.updateMany({
+    where: { id, userId },
+    data: { isRead: true },
+  });
+  if (count === 0) throw Object.assign(new Error('Notification not found'), { statusCode: 404 });
   return { updated: true };
 };
 

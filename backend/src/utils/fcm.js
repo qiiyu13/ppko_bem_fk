@@ -42,6 +42,20 @@ async function sendToUser(userId, payload) {
   }
 }
 
+const FCM_MULTICAST_LIMIT = 500; // FCM hard cap per multicast request
+
+function buildMulticastMessage(tokens, { title, body, data = {} }) {
+  return {
+    tokens,
+    notification: { title, body },
+    data: Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k, String(v)])
+    ),
+    android: { priority: 'high' },
+    apns: { payload: { aps: { sound: 'default' } } },
+  };
+}
+
 async function sendToUsers(userIds, payload) {
   if (!admin.apps.length || !userIds.length) return;
 
@@ -49,16 +63,26 @@ async function sendToUsers(userIds, payload) {
     where: { id: { in: userIds }, fcmToken: { not: null } },
     select: { id: true, fcmToken: true },
   });
+  if (!users.length) return;
 
-  await Promise.all(
-    users.map(async (u) => {
-      try {
-        await admin.messaging().send(buildMessage(u.fcmToken, payload));
-      } catch (err) {
-        await clearInvalidToken(err, u.id);
-      }
-    })
-  );
+  // Batch into multicast requests (≤500 tokens each) instead of one HTTP
+  // round-trip per token. Clear tokens that FCM reports as unregistered.
+  for (let i = 0; i < users.length; i += FCM_MULTICAST_LIMIT) {
+    const batch = users.slice(i, i + FCM_MULTICAST_LIMIT);
+    const tokens = batch.map((u) => u.fcmToken);
+    try {
+      const res = await admin.messaging().sendEachForMulticast(
+        buildMulticastMessage(tokens, payload)
+      );
+      await Promise.all(
+        res.responses.map((r, idx) =>
+          r.success ? null : clearInvalidToken(r.error, batch[idx].id)
+        )
+      );
+    } catch (err) {
+      console.error('FCM multicast send failed:', err.message);
+    }
+  }
 }
 
 module.exports = { sendToUser, sendToUsers };
