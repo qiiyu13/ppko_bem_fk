@@ -16,6 +16,7 @@ class HealthMetric {
   final IconData icon;
   final Color primaryColor;
   final List<double> recentValues;
+  final String? svgIcon;
 
   const HealthMetric({
     required this.type,
@@ -28,6 +29,7 @@ class HealthMetric {
     required this.icon,
     required this.primaryColor,
     this.recentValues = const [],
+    this.svgIcon,
   });
 }
 

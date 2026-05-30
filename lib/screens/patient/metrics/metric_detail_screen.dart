@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/health_metric.dart';
 import '../../../widgets/metric_chart.dart';
@@ -155,11 +156,21 @@ class _MetricDetailScreenState extends State<MetricDetailScreen> {
                             ),
                           ],
                         ),
-                        child: Icon(
-                          widget.metric.icon,
-                          color: widget.metric.primaryColor,
-                          size: 28,
-                        ),
+                        child: widget.metric.svgIcon != null
+                            ? SvgPicture.asset(
+                                widget.metric.svgIcon!,
+                                width: 20,
+                                height: 20,
+                                colorFilter: ColorFilter.mode(
+                                  widget.metric.primaryColor,
+                                  BlendMode.srcIn,
+                                ),
+                              )
+                            : Icon(
+                                widget.metric.icon,
+                                color: widget.metric.primaryColor,
+                                size: 28,
+                              ),
                       ),
                     ],
                   ),

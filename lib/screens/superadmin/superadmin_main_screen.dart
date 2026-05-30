@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../components/animated_line_navbar.dart';
 import '../../constants/app_colors.dart';
+import '../../utils/asset_helper.dart';
 import '../../widgets/sync_status_banner.dart';
 import 'tabs/settings_tab.dart';
 import 'tabs/beranda_tab.dart';
@@ -26,26 +27,30 @@ class _SuperadminMainScreenState extends State<SuperadminMainScreen> {
     const SuperadminSettingsTab(),
   ];
 
-  final List<NavBarItem> _navItems = const [
+  final List<NavBarItem> _navItems = [
     NavBarItem(
       icon: Icons.home_outlined,
       activeIcon: Icons.home,
       label: 'Beranda',
+      svgIcon: AssetHelper.getIconPath('icons8-home.svg'),
     ),
     NavBarItem(
       icon: Icons.insert_chart_outlined,
       activeIcon: Icons.insert_chart,
       label: 'Laporan',
+      svgIcon: AssetHelper.getIconPath('icons8-combo-chart.svg'),
     ),
     NavBarItem(
       icon: Icons.people_outline,
       activeIcon: Icons.people,
       label: 'Users',
+      svgIcon: AssetHelper.getIconPath('icons8-people.svg'),
     ),
     NavBarItem(
       icon: Icons.settings_outlined,
       activeIcon: Icons.settings,
       label: 'Setelan',
+      svgIcon: AssetHelper.getIconPath('icons8-settings.svg'),
     ),
   ];
 

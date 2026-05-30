@@ -11,6 +11,7 @@ import 'tabs/profil_tab.dart';
 import 'tabs/settings_tab.dart';
 import 'tabs/tanaman_toga_tab.dart';
 import 'jadwal_saya_screen.dart';
+import '../../utils/asset_helper.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
 class PatientMainScreen extends StatefulWidget {
@@ -27,7 +28,7 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
   final List<String> _tabTitles = const [
     '',
     'Jadwal',
-    'Tanaman Toga',
+    'Berita',
     'Profil',
   ];
 
@@ -46,26 +47,30 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
     }
   }
 
-  final List<NavBarItem> _navItems = const [
+  final List<NavBarItem> _navItems = [
     NavBarItem(
       icon: Icons.home_outlined,
       activeIcon: Icons.home,
       label: 'Beranda',
+      svgIcon: AssetHelper.getIconPath('icons8-home.svg'),
     ),
     NavBarItem(
       icon: Icons.event_note_outlined,
       activeIcon: Icons.event_note,
       label: 'Jadwal',
+      svgIcon: AssetHelper.getIconPath('icons8-schedule.svg'),
     ),
     NavBarItem(
       icon: Icons.eco_outlined,
       activeIcon: Icons.eco,
-      label: 'Tanaman',
+      label: 'Berita',
+      svgIcon: AssetHelper.getIconPath('icons8-magazine.svg'),
     ),
     NavBarItem(
       icon: Icons.person_outline,
       activeIcon: Icons.person,
       label: 'Profil',
+      svgIcon: AssetHelper.getIconPath('icons8-person.svg'),
     ),
   ];
 

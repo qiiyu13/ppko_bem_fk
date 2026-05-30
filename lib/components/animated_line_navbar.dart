@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../constants/app_colors.dart';
 
 class NavBarItem {
   final IconData icon;
   final IconData activeIcon;
   final String label;
+  final String? svgIcon;
 
   const NavBarItem({
     required this.icon,
     required this.activeIcon,
     required this.label,
+    this.svgIcon,
   });
 }
 
@@ -79,20 +82,37 @@ class AnimatedLineNavBar extends StatelessWidget {
                                         opacity: animation,
                                         child: child,
                                       ),
-                                  child: Icon(
-                                    currentIndex == index
-                                        ? items[index].activeIcon
-                                        : items[index].icon,
-                                    key: ValueKey<int>(
-                                      currentIndex == index
-                                          ? index + 100
-                                          : index,
-                                    ),
-                                    color: currentIndex == index
-                                        ? selectedColor
-                                        : unselectedColor,
-                                    size: 24,
-                                  ),
+                                  child: items[index].svgIcon != null
+                                      ? SvgPicture.asset(
+                                          items[index].svgIcon!,
+                                          key: ValueKey<int>(
+                                            currentIndex == index
+                                                ? index + 100
+                                                : index,
+                                          ),
+                                          width: 24,
+                                          height: 24,
+                                          colorFilter: ColorFilter.mode(
+                                            currentIndex == index
+                                                ? selectedColor
+                                                : unselectedColor,
+                                            BlendMode.srcIn,
+                                          ),
+                                        )
+                                      : Icon(
+                                          currentIndex == index
+                                              ? items[index].activeIcon
+                                              : items[index].icon,
+                                          key: ValueKey<int>(
+                                            currentIndex == index
+                                                ? index + 100
+                                                : index,
+                                          ),
+                                          color: currentIndex == index
+                                              ? selectedColor
+                                              : unselectedColor,
+                                          size: 24,
+                                        ),
                                 ),
                                 const SizedBox(height: 4),
                                 AnimatedDefaultTextStyle(

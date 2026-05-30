@@ -63,6 +63,17 @@ class _TanamanTogaTabState extends State<TanamanTogaTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Text(
+                'Berita',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
             if (_error != null)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

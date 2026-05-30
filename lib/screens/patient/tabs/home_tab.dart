@@ -173,6 +173,7 @@ class _HomeTabState extends State<HomeTab> {
           icon: PhosphorIcons.heart(PhosphorIconsStyle.fill),
           primaryColor: const Color(0xFFE53935),
           recentValues: _parseRecentValues(json['recentValues']),
+          svgIcon: AssetHelper.getIconPath('icons8-sphygmomanometer.svg'),
         );
       case MetricType.cholesterol:
         final value = (json['value'] as num?)?.toDouble() ?? 0;
@@ -201,6 +202,7 @@ class _HomeTabState extends State<HomeTab> {
           icon: PhosphorIcons.testTube(PhosphorIconsStyle.fill),
           primaryColor: const Color(0xFF43A047),
           recentValues: _parseRecentValues(json['recentValues']),
+          svgIcon: AssetHelper.getIconPath('icons8-sugar-cubes.svg'),
         );
       case MetricType.uricAcid:
         final value = (json['value'] as num?)?.toDouble() ?? 0;
@@ -266,6 +268,7 @@ class _HomeTabState extends State<HomeTab> {
           icon: PhosphorIcons.heart(PhosphorIconsStyle.fill),
           primaryColor: const Color(0xFFE53935),
           recentValues: [0.0, 0.0],
+          svgIcon: AssetHelper.getIconPath('icons8-sphygmomanometer.svg'),
         );
       case MetricType.bloodSugar:
         return HealthMetric(
@@ -279,6 +282,7 @@ class _HomeTabState extends State<HomeTab> {
           icon: PhosphorIcons.testTube(PhosphorIconsStyle.fill),
           primaryColor: const Color(0xFF43A047),
           recentValues: [0.0, 0.0],
+          svgIcon: AssetHelper.getIconPath('icons8-sugar-cubes.svg'),
         );
       case MetricType.cholesterol:
         return HealthMetric(
@@ -748,10 +752,14 @@ class _HomeTabState extends State<HomeTab> {
         child: Row(
           children: [
             SvgPicture.asset(
-              AssetHelper.getSvgPath('document-icon.svg'),
+              AssetHelper.getIconPath('icons8-combo-chart.svg'),
               height: iconSize * 2.2,
               width: iconSize * 2.2,
               fit: BoxFit.contain,
+              colorFilter: const ColorFilter.mode(
+                AppColors.primary,
+                BlendMode.srcIn,
+              ),
             ),
             SizedBox(width: math.max(ResponsiveSize.paddingMedium, 12)),
             Expanded(
@@ -989,11 +997,21 @@ class _MetricCardContent extends StatelessWidget {
           child: SizedBox(
             width: chipSize,
             height: chipSize,
-            child: Icon(
-              metric.icon,
-              color: metric.primaryColor,
-              size: iconSize,
-            ),
+            child: metric.svgIcon != null
+                ? SvgPicture.asset(
+                    metric.svgIcon!,
+                    width: iconSize * 0.7,
+                    height: iconSize * 0.7,
+                    colorFilter: ColorFilter.mode(
+                      metric.primaryColor,
+                      BlendMode.srcIn,
+                    ),
+                  )
+                : Icon(
+                    metric.icon,
+                    color: metric.primaryColor,
+                    size: iconSize,
+                  ),
           ),
         ),
       ],
