@@ -4,6 +4,7 @@ import '../../../models/tanaman_article.dart';
 import '../../../services/article_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../widgets/article_image.dart';
+import '../../../widgets/dashboard/notification_bell.dart';
 import '../article_editor_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
@@ -277,35 +278,57 @@ class _PublishTabState extends State<PublishTab> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Artikel',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+              Expanded(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Artikel',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.4),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.article,
+                            color: AppColors.primary,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$_publishedCount',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.article,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '$_publishedCount',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ],
-              ),
+              const NotificationBell(),
             ],
           ),
           SizedBox(height: ResponsiveSize.spacingMedium),
@@ -648,20 +671,6 @@ class _PublishTabState extends State<PublishTab> {
             style: const TextStyle(
               fontSize: 14,
               color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: _createNewArticle,
-            icon: const Icon(Icons.add),
-            label: const Text('Buat Artikel Baru'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
             ),
           ),
         ],
