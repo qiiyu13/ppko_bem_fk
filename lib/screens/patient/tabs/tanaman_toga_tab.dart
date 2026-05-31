@@ -63,17 +63,6 @@ class _TanamanTogaTabState extends State<TanamanTogaTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 12),
-              child: Text(
-                'Berita',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
             if (_error != null)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -102,7 +91,7 @@ class _TanamanTogaTabState extends State<TanamanTogaTab> {
                           SizedBox(height: 100),
                           Center(
                             child: Text(
-                              'Belum ada artikel',
+                              'Berita segera datang',
                               style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 16,
