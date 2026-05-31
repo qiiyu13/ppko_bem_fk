@@ -36,4 +36,21 @@ class RegionService {
     final List<dynamic> data = response.data['data'] ?? [];
     return data.cast<Map<String, dynamic>>();
   }
+
+  /// Paginated variant. The backend always paginates this endpoint (default
+  /// limit 20), so callers that render the full list must page through it or
+  /// they silently see only the first page.
+  static Future<({List<Map<String, dynamic>> data, int totalPages})>
+      getUsersByRegionPage(String regionId, {int page = 1, int limit = 20}) async {
+    final response = await ApiService.get(
+      '/regions/$regionId/users',
+      queryParameters: {'page': page, 'limit': limit},
+    );
+    final List<dynamic> data = response.data['data'] ?? [];
+    final meta = response.data['meta'] as Map<String, dynamic>?;
+    return (
+      data: data.cast<Map<String, dynamic>>(),
+      totalPages: (meta?['totalPages'] as int?) ?? 1,
+    );
+  }
 }

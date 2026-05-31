@@ -12,6 +12,11 @@ const notFound = require('./middleware/notFound');
 
 const app = express();
 
+// Behind nginx/Cloudflare: trust the first proxy hop so req.ip resolves to the
+// real client (X-Forwarded-For), not the upstream socket. Without this every
+// request shares one rate-limit bucket — the whole app locks out after 200 req.
+app.set('trust proxy', 1);
+
 // Security
 app.use(helmet());
 app.use(compression());
@@ -31,12 +36,6 @@ app.use(cors({
   origin: config.corsOrigin,
   credentials: true,
 }));
-app.use(rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 200,
-  standardHeaders: true,
-  legacyHeaders: false,
-}));
 
 // Body parsing
 app.use(express.json({ limit: '1mb' }));
@@ -51,13 +50,23 @@ if (config.nodeEnv === 'production') {
 
 // Static file serving. Upload filenames are unique per upload, so content is
 // immutable per URL — cache aggressively to avoid revalidation round-trips.
+// Mounted BEFORE the rate limiter: image-heavy screens (avatar lists) must not
+// burn the API request budget.
 app.use('/uploads', express.static(path.resolve(__dirname, '../uploads'), {
   maxAge: '1y',
   immutable: true,
 }));
 
+// Rate limit scoped to the API only — not static assets or WebSocket upgrades.
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Routes
-app.use('/api/v1', routes);
+app.use('/api/v1', apiLimiter, routes);
 
 // Error handling
 app.use(notFound);

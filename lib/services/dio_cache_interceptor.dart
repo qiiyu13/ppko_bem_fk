@@ -47,18 +47,33 @@ class DioCacheInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    // Only cache GET requests
+    // A successful mutation invalidates every cached read for that resource
+    // immediately — don't wait for the WebSocket round-trip, so the next GET
+    // after a create/update/delete never serves stale data. Invalidate by the
+    // root segment ('/profiles/123' -> '/profiles') to also clear list caches.
     if (response.requestOptions.method.toUpperCase() != 'GET') {
+      final segments = response.requestOptions.path.split('/')
+        ..removeWhere((s) => s.isEmpty);
+      if (segments.isNotEmpty) invalidate('/${segments.first}');
       return handler.next(response);
     }
 
     final path = response.requestOptions.path;
     Duration? ttl;
 
+    // TTLs are a fallback ceiling; the WebSocket data:update event invalidates
+    // these prefixes the moment the underlying data changes, so the cache stays
+    // correct in real time and the TTL only bounds staleness when offline.
     if (path.startsWith('/articles')) {
       ttl = const Duration(minutes: 5);
     } else if (path.startsWith('/regions')) {
       ttl = const Duration(minutes: 30);
+    } else if (path.startsWith('/profiles')) {
+      ttl = const Duration(minutes: 10);
+    } else if (path.startsWith('/appointments')) {
+      ttl = const Duration(minutes: 5);
+    } else if (path.startsWith('/metrics')) {
+      ttl = const Duration(minutes: 5);
     }
 
     if (ttl != null) {

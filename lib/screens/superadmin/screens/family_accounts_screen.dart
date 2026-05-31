@@ -24,26 +24,71 @@ class FamilyAccountsScreen extends StatefulWidget {
 }
 
 class _FamilyAccountsScreenState extends State<FamilyAccountsScreen> {
+  final ScrollController _scrollController = ScrollController();
   List<Map<String, dynamic>> _families = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  int _currentPage = 1;
+  int _totalPages = 1;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadFamilies();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // Prefetch the next page before hitting the very bottom for seamless scroll.
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 300 &&
+        !_isLoadingMore &&
+        _currentPage < _totalPages) {
+      _loadMore();
+    }
   }
 
   Future<void> _loadFamilies() async {
     try {
-      final data = await RegionService.getUsersByRegion(widget.rtId);
+      final result =
+          await RegionService.getUsersByRegionPage(widget.rtId, page: 1);
+      if (!mounted) return;
       setState(() {
-        _families = data;
+        _families = result.data;
+        _currentPage = 1;
+        _totalPages = result.totalPages;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _loadMore() async {
+    setState(() => _isLoadingMore = true);
+    try {
+      final next = _currentPage + 1;
+      final result =
+          await RegionService.getUsersByRegionPage(widget.rtId, page: next);
+      if (!mounted) return;
+      setState(() {
+        _families.addAll(result.data);
+        _currentPage = next;
+        _totalPages = result.totalPages;
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingMore = false);
     }
   }
 
@@ -92,9 +137,20 @@ class _FamilyAccountsScreenState extends State<FamilyAccountsScreen> {
                         ],
                       )
                     : ListView.builder(
+                        controller: _scrollController,
                         padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                        itemCount: _families.length,
+                        itemCount: _families.length + (_isLoadingMore ? 1 : 0),
                         itemBuilder: (context, index) {
+                          if (index >= _families.length) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            );
+                          }
                           final family = _families[index];
                           return _buildFamilyCard(family);
                         },

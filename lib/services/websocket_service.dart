@@ -22,7 +22,6 @@ class WebSocketService {
   Stream<bool> get connectionStatusStream => _connectionStatusController.stream;
 
   Timer? _reconnectTimer;
-  Timer? _heartbeatTimer;
   int _reconnectAttempts = 0;
   static const int _maxReconnectAttempts = 10;
   static const Duration _baseReconnectDelay = Duration(seconds: 2);
@@ -85,7 +84,6 @@ class WebSocketService {
   void _handleDisconnect() {
     _isConnected = false;
     _connectionStatusController.add(false);
-    _heartbeatTimer?.cancel();
     _channel?.sink.close();
 
     if (_reconnectAttempts < _maxReconnectAttempts) {
@@ -99,7 +97,6 @@ class WebSocketService {
 
   void disconnect() {
     _reconnectTimer?.cancel();
-    _heartbeatTimer?.cancel();
     _channel?.sink.close();
     _isConnected = false;
     _connectionStatusController.add(false);
