@@ -18,7 +18,9 @@ import 'package:mediku/config/env.dart';
 import 'package:mediku/widgets/app_avatar.dart';
 
 class DashboardTab extends StatefulWidget {
-  const DashboardTab({super.key});
+  final void Function(int)? onSwitchTab;
+
+  const DashboardTab({super.key, this.onSwitchTab});
 
   @override
   State<DashboardTab> createState() => _DashboardTabState();
@@ -195,6 +197,7 @@ class _DashboardTabState extends State<DashboardTab> {
                     ParallaxPageRoute(page: const ScreeningReportScreen()),
                   );
                 },
+                onProfilePressed: () => widget.onSwitchTab?.call(3),
               ),
             ),
 

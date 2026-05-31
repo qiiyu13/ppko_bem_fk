@@ -49,7 +49,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   Widget _buildTab(int i) {
     switch (i) {
       case 0:
-        return const DashboardTab();
+        return DashboardTab(onSwitchTab: _onTabChanged);
       case 1:
         return const ScheduleScreen();
       case 2:
