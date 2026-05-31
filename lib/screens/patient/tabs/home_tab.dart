@@ -8,13 +8,12 @@ import '../../../utils/responsive_size.dart';
 import '../../../widgets/error_state_widget.dart';
 import '../../../screens/patient/laporan_saya_screen.dart';
 import '../../../screens/patient/metrics/metric_detail_screen.dart';
-import '../../../screens/patient/notification_screen.dart';
 import '../../../models/health_metric.dart';
 import '../../../models/family_profile.dart';
 import '../../../services/profile_service.dart';
-import '../../../services/notification_service.dart';
 import '../../../services/api_service.dart';
 import '../../../services/websocket_service.dart';
+import '../../../widgets/dashboard/notification_bell.dart';
 import '../../../widgets/mini_sparkline.dart';
 import 'dart:async';
 import 'dart:math' as math;
@@ -389,170 +388,88 @@ class _HomeTabState extends State<HomeTab> {
                     child: Row(
                       children: [
                         Expanded(
-                          child: StreamBuilder<List<FamilyProfile>>(
-                            stream: ProfileService.instance.profilesStream,
-                            initialData: ProfileService.instance.profiles,
-                            builder: (context, profilesSnapshot) {
-                              final profiles = profilesSnapshot.data ?? [];
-                              return StreamBuilder<FamilyProfile?>(
-                                stream:
-                                    ProfileService.instance.activeProfileStream,
-                                initialData:
-                                    ProfileService.instance.activeProfile,
-                                builder: (context, activeSnapshot) {
-                                  final activeProfile = activeSnapshot.data;
+                          child: StreamBuilder<FamilyProfile?>(
+                            stream: ProfileService.instance.activeProfileStream,
+                            initialData: ProfileService.instance.activeProfile,
+                            builder: (context, activeSnapshot) {
+                              final activeProfile = activeSnapshot.data;
+                              final multiProfile =
+                                  ProfileService.instance.profiles.length > 1;
 
-                                  return Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      GestureDetector(
-                                        onTap: () =>
-                                            widget.onSwitchTab?.call(3),
-                                        child: AppAvatar(
-                                        imageUrl: activeProfile?.avatarUrl,
-                                        size: 44,
-                                        backgroundColor: AppColors.primarySurface
-                                            .withValues(alpha: 0.3),
-                                        borderColor: AppColors.primary
-                                            .withValues(alpha: 0.2),
-                                        borderWidth: 2,
-                                        fallback: Icon(
-                                          activeProfile != null
-                                              ? _getGenderIcon(
-                                                  activeProfile.gender,
-                                                )
-                                              : Icons.person_outline,
-                                          color: AppColors.primary,
-                                          size: 24,
-                                        ),
-                                        ),
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () => widget.onSwitchTab?.call(3),
+                                    child: AppAvatar(
+                                      imageUrl: activeProfile?.avatarUrl,
+                                      size: 44,
+                                      backgroundColor: AppColors.primarySurface
+                                          .withValues(alpha: 0.3),
+                                      borderColor: AppColors.primary
+                                          .withValues(alpha: 0.2),
+                                      borderWidth: 2,
+                                      fallback: Icon(
+                                        activeProfile != null
+                                            ? _getGenderIcon(activeProfile.gender)
+                                            : Icons.person_outline,
+                                        color: AppColors.primary,
+                                        size: 24,
                                       ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: GestureDetector(
-                                          onTap: () =>
-                                              widget.onSwitchTab?.call(3),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () => widget.onSwitchTab?.call(3),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _getGreeting(),
+                                            textAlign: TextAlign.left,
+                                            style: TextStyle(
+                                              fontSize: math.min(
+                                                ResponsiveSize.fontMedium,
+                                                16,
+                                              ),
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                _getGreeting(),
-                                                textAlign: TextAlign.left,
-                                                style: TextStyle(
-                                                  fontSize: math.min(
-                                                    ResponsiveSize.fontMedium,
-                                                    16,
-                                                  ),
-                                                  color: AppColors.textSecondary,
+                                                activeProfile?.name ?? 'Pengguna',
+                                                style: const TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: AppColors.textPrimary,
                                                 ),
                                               ),
-                                              const SizedBox(height: 4),
-                                              Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    activeProfile?.name ??
-                                                        'Pengguna',
-                                                    style: const TextStyle(
-                                                      fontSize: 20,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color:
-                                                          AppColors.textPrimary,
-                                                    ),
-                                                  ),
-                                                  if (activeProfile != null &&
-                                                      profiles.length > 1) ...[
-                                                    const SizedBox(width: 4),
-                                                    const Icon(
-                                                      Icons.keyboard_arrow_down,
-                                                      color: AppColors.primary,
-                                                      size: 24,
-                                                    ),
-                                                  ],
-                                                ],
-                                              ),
+                                              if (activeProfile != null &&
+                                                  multiProfile) ...[
+                                                const SizedBox(width: 4),
+                                                const Icon(
+                                                  Icons.keyboard_arrow_down,
+                                                  color: AppColors.primary,
+                                                  size: 24,
+                                                ),
+                                              ],
                                             ],
                                           ),
-                                        ),
+                                        ],
                                       ),
-                                    ],
-                                  );
-                                },
+                                    ),
+                                  ),
+                                ],
                               );
                             },
                           ),
                         ),
-                        ValueListenableBuilder<int>(
-                          valueListenable:
-                              NotificationService.instance.unreadCount,
-                          builder: (context, count, _) {
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  ParallaxPageRoute(
-                                    page:
-                                        const NotificationScreen(),
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: AppColors.card,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color:
-                                          Colors.black.withValues(alpha: 0.05),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Center(
-                                  child: Stack(
-                                    clipBehavior: Clip.none,
-                                    children: [
-                                      const Icon(
-                                        Icons.notifications_outlined,
-                                        color: AppColors.primary,
-                                        size: 24,
-                                      ),
-                                      if (count > 0)
-                                        Positioned(
-                                          top: -4,
-                                          right: -4,
-                                          child: Container(
-                                            width: 16,
-                                            height: 16,
-                                            decoration: const BoxDecoration(
-                                              color: AppColors.statusRed,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: Center(
-                                              child: Text(
-                                                count > 9 ? '9+' : '$count',
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 9,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                        const NotificationBell(),
                       ],
                     ),
                   ),

@@ -91,38 +91,41 @@ const getLatest = async (profileId, userId) => {
 
   const metricTypes = ['blood_pressure', 'cholesterol', 'blood_sugar', 'uric_acid'];
 
-  const results = await Promise.all(
-    metricTypes.map(async (type) => {
-      const recent = await prisma.healthMetric.findMany({
-        where: { profileId, type },
-        orderBy: { recordedAt: 'desc' },
-        take: 7,
-        select: {
-          type: true,
-          value: true,
-          secondaryValue: true,
-          unit: true,
-          notes: true,
-          recordedAt: true,
-        },
-      });
-      if (recent.length === 0) return null;
+  // Single round-trip: ordered by type then date desc so rows per type are
+  // contiguous — we group in JS and cap at 7 per type for sparklines.
+  const rows = await prisma.healthMetric.findMany({
+    where: { profileId, type: { in: metricTypes } },
+    orderBy: [{ type: 'asc' }, { recordedAt: 'desc' }],
+    select: {
+      type: true,
+      value: true,
+      secondaryValue: true,
+      unit: true,
+      notes: true,
+      recordedAt: true,
+    },
+  });
 
-      const latest = recent[0];
+  const grouped = new Map(metricTypes.map((t) => [t, []]));
+  for (const row of rows) {
+    const bucket = grouped.get(row.type);
+    if (bucket && bucket.length < 7) bucket.push(row);
+  }
 
-      return {
-        type: latest.type,
-        value: latest.value,
-        secondaryValue: latest.secondaryValue,
-        unit: latest.unit,
-        notes: latest.notes,
-        lastUpdated: latest.recordedAt,
-        recentValues: recent.map((r) => r.value).reverse(),
-      };
-    }),
-  );
-
-  return results.filter(Boolean);
+  return metricTypes.map((type) => {
+    const recent = grouped.get(type);
+    if (!recent || recent.length === 0) return null;
+    const latest = recent[0];
+    return {
+      type: latest.type,
+      value: latest.value,
+      secondaryValue: latest.secondaryValue,
+      unit: latest.unit,
+      notes: latest.notes,
+      lastUpdated: latest.recordedAt,
+      recentValues: recent.map((r) => r.value).reverse(),
+    };
+  }).filter(Boolean);
 };
 
 module.exports = { getMetrics, createMetric, getHistory, getLatest };

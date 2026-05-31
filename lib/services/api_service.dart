@@ -47,7 +47,7 @@ class ApiService {
                   if (newToken != null) {
                     final opts = error.requestOptions;
                     opts.headers['Authorization'] = 'Bearer $newToken';
-                    final retryResponse = await Dio().fetch(opts);
+                    final retryResponse = await dio.fetch(opts);
                     handler.resolve(retryResponse);
                     return;
                   }
@@ -67,7 +67,7 @@ class ApiService {
                     _refreshCompleter!.complete(true);
                     final opts = error.requestOptions;
                     opts.headers['Authorization'] = 'Bearer $newToken';
-                    final retryResponse = await Dio().fetch(opts);
+                    final retryResponse = await dio.fetch(opts);
                     handler.resolve(retryResponse);
                     return;
                   }

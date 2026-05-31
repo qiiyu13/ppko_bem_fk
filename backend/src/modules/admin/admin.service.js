@@ -29,7 +29,7 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
   //    count, not screening count). Region/search logic stays in Prisma.
   const matchingProfiles = await prisma.familyProfile.findMany({
     where: { user: userFilter },
-    select: { id: true },
+    select: { id: true, userId: true },
   });
   const matchingProfileIds = matchingProfiles.map((p) => p.id);
 
@@ -70,13 +70,11 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
       }
     }
 
-    // Query userIds corresponding to matched profiles
-    const profiles = await prisma.familyProfile.findMany({
-      where: { id: { in: matchedProfileIds } },
-      select: { userId: true }
-    });
-
-    const matchedUserIds = Array.from(new Set(profiles.map(p => p.userId)));
+    const matchedUserIds = Array.from(new Set(
+      matchingProfiles
+        .filter((p) => matchedProfileIds.includes(p.id))
+        .map((p) => p.userId),
+    ));
     where = { ...userFilter, id: { in: matchedUserIds } };
   }
 
@@ -153,6 +151,15 @@ const getPatientDetail = async (id) => {
           metrics: {
             orderBy: { recordedAt: 'desc' },
             take: 50,
+            select: {
+              id: true,
+              type: true,
+              value: true,
+              secondaryValue: true,
+              unit: true,
+              notes: true,
+              recordedAt: true,
+            },
           },
           screenings: {
             orderBy: { screeningAt: 'desc' },

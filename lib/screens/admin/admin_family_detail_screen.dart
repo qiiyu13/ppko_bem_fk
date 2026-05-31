@@ -3,7 +3,6 @@ import 'package:mediku/widgets/app_avatar.dart';
 import '../../config/env.dart';
 import '../../constants/app_colors.dart';
 import '../../services/api_service.dart';
-import '../../services/audit_service.dart';
 import '../../utils/patient_utils.dart';
 import '../../utils/responsive_size.dart';
 import 'admin_patient_detail_screen.dart';
@@ -306,13 +305,7 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
             ),
           );
           if (proceed != true) return;
-          await AuditService.logAdminAction(
-            action: 'PATIENT_VIEW',
-            targetType: 'PROFILE',
-            targetId: (profile['id'] as String?) ?? '',
-            metadata: {'familyId': widget.family['id']},
-          );
-        }
+}
         if (!mounted) return;
         Navigator.push(
           context,

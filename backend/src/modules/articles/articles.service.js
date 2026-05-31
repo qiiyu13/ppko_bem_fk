@@ -9,7 +9,6 @@ const getPublishedArticles = async (query = {}) => {
   const select = {
     id: true,
     title: true,
-    content: true,
     imagePath: true,
     tags: true,
     publishDate: true,
@@ -53,7 +52,6 @@ const getAllArticles = async (query = {}) => {
   const select = {
     id: true,
     title: true,
-    content: true,
     imagePath: true,
     tags: true,
     isPublished: true,

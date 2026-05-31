@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -28,6 +29,10 @@ class NotificationService {
   final ValueNotifier<bool> enabled = ValueNotifier(true);
 
   final _localNotif = FlutterLocalNotificationsPlugin();
+
+  StreamSubscription<String>? _tokenRefreshSub;
+  StreamSubscription<RemoteMessage>? _messageSub;
+  StreamSubscription<RemoteMessage>? _messageOpenedSub;
 
   Future<void> initialize() async {
     await _loadLocalCache();
@@ -79,14 +84,17 @@ class NotificationService {
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null) await registerFcmToken(token);
 
-      FirebaseMessaging.instance.onTokenRefresh.listen(registerFcmToken);
+      _tokenRefreshSub?.cancel();
+      _tokenRefreshSub = FirebaseMessaging.instance.onTokenRefresh.listen(registerFcmToken);
     }
 
     // Foreground messages → show local notification + add to feed
-    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+    _messageSub?.cancel();
+    _messageSub = FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
 
     // Tapped from background state
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleTappedMessage);
+    _messageOpenedSub?.cancel();
+    _messageOpenedSub = FirebaseMessaging.onMessageOpenedApp.listen(_handleTappedMessage);
   }
 
   Future<void> _initLocalNotifications() async {

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class AppAvatar extends StatelessWidget {
@@ -26,12 +27,13 @@ class AppAvatar extends StatelessWidget {
 
     Widget child;
     if (hasImage) {
-      child = Image.network(
-        imageUrl!,
+      child = CachedNetworkImage(
+        imageUrl: imageUrl!,
         width: size,
         height: size,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Center(child: fallback),
+        placeholder: (context, url) => Center(child: fallback),
+        errorWidget: (context, url, error) => Center(child: fallback),
       );
     } else if (fallbackAsset != null) {
       child = Image.asset(

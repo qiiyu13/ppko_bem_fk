@@ -30,15 +30,6 @@ class CacheService {
           )
         ''');
         await db.execute('''
-          CREATE TABLE metrics (
-            id TEXT PRIMARY KEY,
-            profile_id TEXT NOT NULL,
-            data TEXT NOT NULL,
-            synced INTEGER DEFAULT 1,
-            updated_at TEXT NOT NULL
-          )
-        ''');
-        await db.execute('''
           CREATE TABLE pending_sync (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             endpoint TEXT NOT NULL,
@@ -202,7 +193,6 @@ class CacheService {
 
   static Future<void> clearAll() async {
     await _db?.delete('profiles');
-    await _db?.delete('metrics');
     await _db?.delete('articles');
     await _db?.delete('appointments');
     await _db?.delete('pending_sync');

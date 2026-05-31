@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../config/env.dart';
 import '../constants/app_colors.dart';
@@ -44,12 +45,13 @@ class ArticleImage extends StatelessWidget {
       final url = imagePath.startsWith('http')
           ? imagePath
           : '${Env.serverBaseUrl}$imagePath';
-      return Image.network(
-        url,
+      return CachedNetworkImage(
+        imageUrl: url,
         width: width,
         height: height,
         fit: fit,
-        errorBuilder: (context, error, stackTrace) => _placeholder(),
+        placeholder: (context, url) => _placeholder(),
+        errorWidget: (context, url, error) => _placeholder(),
       );
     }
 
