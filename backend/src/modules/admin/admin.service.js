@@ -25,57 +25,63 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
     ];
   }
 
-  // 1. Resolve profiles belonging to users matching the filter (bounded by profile
-  //    count, not screening count). Region/search logic stays in Prisma.
-  const matchingProfiles = await prisma.familyProfile.findMany({
-    where: { user: userFilter },
-    select: { id: true, userId: true },
-  });
-  const matchingProfileIds = matchingProfiles.map((p) => p.id);
+  // The risk-stat header is only consumed on the first page (the client keeps it
+  // while paginating), and the per-profile screening scan is only needed when an
+  // irdCategory filter is active. Skip the whole block on subsequent pages with
+  // no filter — avoids re-scanning every profile + screening on each page turn.
+  const isFirstPage = parseInt(page) === 1;
+  const needsScreeningData = isFirstPage || !!irdCategory;
 
-  // 2. Latest screening category per profile via DISTINCT ON, served by the
-  //    (profile_id, screening_at DESC) index — one indexed row per profile
-  //    instead of scanning every screening row into memory.
-  const latestScreeningsMap = new Map();
-  if (matchingProfileIds.length > 0) {
-    const latest = await prisma.$queryRaw`
-      SELECT DISTINCT ON (profile_id) profile_id AS "profileId", ird_category AS "irdCategory"
-      FROM medical_screenings
-      WHERE profile_id IN (${Prisma.join(matchingProfileIds)})
-      ORDER BY profile_id, screening_at DESC
-    `;
-    for (const s of latest) {
-      latestScreeningsMap.set(s.profileId, s.irdCategory);
-    }
-  }
-
-  // 3. Compute risk stats
   let totalHighRisk = 0;
   let totalAttention = 0;
   let totalNormal = 0;
-
-  for (const cat of latestScreeningsMap.values()) {
-    if (cat === 'high') totalHighRisk++;
-    else if (cat === 'attention') totalAttention++;
-    else if (cat === 'normal') totalNormal++;
-  }
-
-  // 4. Handle filtering by irdCategory
   let where = userFilter;
-  if (irdCategory) {
-    const matchedProfileIds = [];
-    for (const [profileId, cat] of latestScreeningsMap.entries()) {
-      if (cat === irdCategory) {
-        matchedProfileIds.push(profileId);
+
+  if (needsScreeningData) {
+    // 1. Resolve profiles belonging to users matching the filter (bounded by
+    //    profile count, not screening count). Region/search logic stays in Prisma.
+    const matchingProfiles = await prisma.familyProfile.findMany({
+      where: { user: userFilter },
+      select: { id: true, userId: true },
+    });
+    const matchingProfileIds = matchingProfiles.map((p) => p.id);
+
+    // 2. Latest screening category per profile via DISTINCT ON, served by the
+    //    (profile_id, screening_at DESC) index — one indexed row per profile
+    //    instead of scanning every screening row into memory.
+    const latestScreeningsMap = new Map();
+    if (matchingProfileIds.length > 0) {
+      const latest = await prisma.$queryRaw`
+        SELECT DISTINCT ON (profile_id) profile_id AS "profileId", ird_category AS "irdCategory"
+        FROM medical_screenings
+        WHERE profile_id IN (${Prisma.join(matchingProfileIds)})
+        ORDER BY profile_id, screening_at DESC
+      `;
+      for (const s of latest) {
+        latestScreeningsMap.set(s.profileId, s.irdCategory);
       }
     }
 
-    const matchedUserIds = Array.from(new Set(
-      matchingProfiles
-        .filter((p) => matchedProfileIds.includes(p.id))
-        .map((p) => p.userId),
-    ));
-    where = { ...userFilter, id: { in: matchedUserIds } };
+    // 3. Compute risk stats
+    for (const cat of latestScreeningsMap.values()) {
+      if (cat === 'high') totalHighRisk++;
+      else if (cat === 'attention') totalAttention++;
+      else if (cat === 'normal') totalNormal++;
+    }
+
+    // 4. Handle filtering by irdCategory — single pass with a Set of matched
+    //    profile ids (O(n) instead of O(n²) array.includes per profile).
+    if (irdCategory) {
+      const matchedProfileIds = new Set();
+      for (const [profileId, cat] of latestScreeningsMap.entries()) {
+        if (cat === irdCategory) matchedProfileIds.add(profileId);
+      }
+      const matchedUserIds = new Set();
+      for (const p of matchingProfiles) {
+        if (matchedProfileIds.has(p.id)) matchedUserIds.add(p.userId);
+      }
+      where = { ...userFilter, id: { in: Array.from(matchedUserIds) } };
+    }
   }
 
   // 5. Paginated fetch
