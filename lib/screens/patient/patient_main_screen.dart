@@ -35,7 +35,7 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
   Widget _buildTab(int i) {
     switch (i) {
       case 0:
-        return const HomeTab();
+        return HomeTab(onSwitchTab: _onTabChanged);
       case 1:
         return JadwalSayaScreen(onBack: () {}, isEmbedded: true);
       case 2:

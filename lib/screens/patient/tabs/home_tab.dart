@@ -22,7 +22,9 @@ import 'package:mediku/utils/page_transitions.dart';
 import 'package:mediku/widgets/app_avatar.dart';
 
 class HomeTab extends StatefulWidget {
-  const HomeTab({super.key});
+  final void Function(int)? onSwitchTab;
+
+  const HomeTab({super.key, this.onSwitchTab});
 
   @override
   State<HomeTab> createState() => _HomeTabState();
@@ -404,7 +406,10 @@ class _HomeTabState extends State<HomeTab> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.center,
                                     children: [
-                                      AppAvatar(
+                                      GestureDetector(
+                                        onTap: () =>
+                                            widget.onSwitchTab?.call(3),
+                                        child: AppAvatar(
                                         imageUrl: activeProfile?.avatarUrl,
                                         size: 44,
                                         backgroundColor: AppColors.primarySurface
@@ -421,36 +426,30 @@ class _HomeTabState extends State<HomeTab> {
                                           color: AppColors.primary,
                                           size: 24,
                                         ),
+                                        ),
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              _getGreeting(),
-                                              textAlign: TextAlign.left,
-                                              style: TextStyle(
-                                                fontSize: math.min(
-                                                  ResponsiveSize.fontMedium,
-                                                  16,
+                                        child: GestureDetector(
+                                          onTap: () =>
+                                              widget.onSwitchTab?.call(3),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                _getGreeting(),
+                                                textAlign: TextAlign.left,
+                                                style: TextStyle(
+                                                  fontSize: math.min(
+                                                    ResponsiveSize.fontMedium,
+                                                    16,
+                                                  ),
+                                                  color: AppColors.textSecondary,
                                                 ),
-                                                color: AppColors.textSecondary,
                                               ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            GestureDetector(
-                                              onTap:
-                                                  activeProfile != null &&
-                                                      profiles.length > 1
-                                                  ? () => _showProfileDropdown(
-                                                      context,
-                                                      activeProfile,
-                                                      profiles,
-                                                    )
-                                                  : null,
-                                              child: Row(
+                                              const SizedBox(height: 4),
+                                              Row(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
                                                   Text(
@@ -475,8 +474,8 @@ class _HomeTabState extends State<HomeTab> {
                                                   ],
                                                 ],
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -653,13 +652,7 @@ class _HomeTabState extends State<HomeTab> {
                                   mainAxisSpacing: 16,
                                   childAspectRatio: 1.0,
                                   padding: EdgeInsets.zero,
-                                  children: _metrics.map((metric) {
-                                    return _buildMetricCard(
-                                      context: context,
-                                      metric: metric,
-                                      screenWidth: screenWidth,
-                                    );
-                                  }).toList(),
+                                  children: _metrics.map(_buildMetricCard).toList(),
                                 ),
 
                               const SizedBox(height: 10),
@@ -698,21 +691,8 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  Widget _buildMetricCard({
-    required BuildContext context,
-    required HealthMetric metric,
-    required double screenWidth,
-  }) {
-    final iconSize = screenWidth < 360
-        ? 18.0
-        : (screenWidth < 400 ? 20.0 : 22.0);
-    final chipSize = iconSize + 12.0;
-
-    return _MetricCardWrapper(
-      metric: metric,
-      iconSize: iconSize,
-      chipSize: chipSize,
-    );
+  Widget _buildMetricCard(HealthMetric metric) {
+    return _MetricCardWrapper(metric: metric);
   }
 
   Widget _buildActionButton({
@@ -800,71 +780,6 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  void _showProfileDropdown(
-    BuildContext context,
-    FamilyProfile activeProfile,
-    List<FamilyProfile> profiles,
-  ) {
-    final RenderBox button = context.findRenderObject() as RenderBox;
-    final RenderBox overlay =
-        Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
-    final RelativeRect position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        button.localToGlobal(
-          Offset(0, button.size.height + 8),
-          ancestor: overlay,
-        ),
-        button.localToGlobal(
-          Offset(button.size.width, button.size.height + 8),
-          ancestor: overlay,
-        ),
-      ),
-      Offset.zero & overlay.size,
-    );
-
-    showMenu<String>(
-      context: context,
-      position: position,
-      elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: AppColors.card,
-      items: profiles.map((profile) {
-        final isSelected = profile.id == activeProfile.id;
-        return PopupMenuItem<String>(
-          value: profile.id,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppColors.primary.withValues(alpha: 0.1)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                if (isSelected)
-                  const Icon(Icons.check, color: AppColors.primary, size: 20),
-                if (isSelected) const SizedBox(width: 8),
-                Text(
-                  profile.name,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
-    ).then((selectedId) {
-      if (selectedId != null) {
-        ProfileService.instance.setActiveProfile(selectedId);
-      }
-    });
-  }
-
   IconData _getGenderIcon(String gender) {
     return gender == 'Pria' ? Icons.male : Icons.female;
   }
@@ -872,13 +787,9 @@ class _HomeTabState extends State<HomeTab> {
 
 class _MetricCardWrapper extends StatelessWidget {
   final HealthMetric metric;
-  final double iconSize;
-  final double chipSize;
 
   const _MetricCardWrapper({
     required this.metric,
-    required this.iconSize,
-    required this.chipSize,
   });
 
   @override
@@ -902,11 +813,7 @@ class _MetricCardWrapper extends StatelessWidget {
       ),
       openShape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       closedBuilder: (context, openContainer) {
-        return _MetricCardContent(
-          metric: metric,
-          iconSize: iconSize,
-          chipSize: chipSize,
-        );
+        return _MetricCardContent(metric: metric);
       },
       openBuilder: (context, closeContainer) {
         return MetricDetailScreen(metric: metric);
@@ -917,13 +824,9 @@ class _MetricCardWrapper extends StatelessWidget {
 
 class _MetricCardContent extends StatelessWidget {
   final HealthMetric metric;
-  final double iconSize;
-  final double chipSize;
 
   const _MetricCardContent({
     required this.metric,
-    required this.iconSize,
-    required this.chipSize,
   });
 
   @override
@@ -989,29 +892,6 @@ class _MetricCardContent extends StatelessWidget {
                 ],
               ),
             ],
-          ),
-        ),
-        Positioned(
-          top: 0,
-          right: 0,
-          child: SizedBox(
-            width: chipSize,
-            height: chipSize,
-            child: metric.svgIcon != null
-                ? SvgPicture.asset(
-                    metric.svgIcon!,
-                    width: iconSize * 0.7,
-                    height: iconSize * 0.7,
-                    colorFilter: ColorFilter.mode(
-                      metric.primaryColor,
-                      BlendMode.srcIn,
-                    ),
-                  )
-                : Icon(
-                    metric.icon,
-                    color: metric.primaryColor,
-                    size: iconSize,
-                  ),
           ),
         ),
       ],
