@@ -175,6 +175,7 @@ class _HomeTabState extends State<HomeTab> {
           primaryColor: const Color(0xFFE53935),
           recentValues: _parseRecentValues(json['recentValues']),
           svgIcon: AssetHelper.getIconPath('icons8-sphygmomanometer.svg'),
+          svgBackground: AssetHelper.getSvgPath('blood_pressure.svg'),
         );
       case MetricType.cholesterol:
         final value = (json['value'] as num?)?.toDouble() ?? 0;
@@ -189,6 +190,7 @@ class _HomeTabState extends State<HomeTab> {
           icon: PhosphorIcons.drop(PhosphorIconsStyle.fill),
           primaryColor: const Color(0xFFFB8C00),
           recentValues: _parseRecentValues(json['recentValues']),
+          svgBackground: AssetHelper.getSvgPath('cholestrol.svg'),
         );
       case MetricType.bloodSugar:
         final value = (json['value'] as num?)?.toDouble() ?? 0;
@@ -204,6 +206,7 @@ class _HomeTabState extends State<HomeTab> {
           primaryColor: const Color(0xFF43A047),
           recentValues: _parseRecentValues(json['recentValues']),
           svgIcon: AssetHelper.getIconPath('icons8-sugar-cubes.svg'),
+          svgBackground: AssetHelper.getSvgPath('blood_sugar.svg'),
         );
       case MetricType.uricAcid:
         final value = (json['value'] as num?)?.toDouble() ?? 0;
@@ -218,6 +221,7 @@ class _HomeTabState extends State<HomeTab> {
           icon: PhosphorIcons.flask(PhosphorIconsStyle.fill),
           primaryColor: const Color(0xFF5E35B1),
           recentValues: _parseRecentValues(json['recentValues']),
+          svgBackground: AssetHelper.getSvgPath('uric_acid.svg'),
         );
     }
   }
@@ -270,6 +274,7 @@ class _HomeTabState extends State<HomeTab> {
           primaryColor: const Color(0xFFE53935),
           recentValues: [0.0, 0.0],
           svgIcon: AssetHelper.getIconPath('icons8-sphygmomanometer.svg'),
+          svgBackground: AssetHelper.getSvgPath('blood_pressure.svg'),
         );
       case MetricType.bloodSugar:
         return HealthMetric(
@@ -284,6 +289,7 @@ class _HomeTabState extends State<HomeTab> {
           primaryColor: const Color(0xFF43A047),
           recentValues: [0.0, 0.0],
           svgIcon: AssetHelper.getIconPath('icons8-sugar-cubes.svg'),
+          svgBackground: AssetHelper.getSvgPath('blood_sugar.svg'),
         );
       case MetricType.cholesterol:
         return HealthMetric(
@@ -297,6 +303,7 @@ class _HomeTabState extends State<HomeTab> {
           icon: PhosphorIcons.drop(PhosphorIconsStyle.fill),
           primaryColor: const Color(0xFFFB8C00),
           recentValues: [0.0, 0.0],
+          svgBackground: AssetHelper.getSvgPath('cholestrol.svg'),
         );
       case MetricType.uricAcid:
         return HealthMetric(
@@ -310,6 +317,7 @@ class _HomeTabState extends State<HomeTab> {
           icon: PhosphorIcons.flask(PhosphorIconsStyle.fill),
           primaryColor: const Color(0xFF5E35B1),
           recentValues: [0.0, 0.0],
+          svgBackground: AssetHelper.getSvgPath('uric_acid.svg'),
         );
     }
   }
@@ -752,9 +760,59 @@ class _MetricCardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cardColor = Color.lerp(Colors.white, metric.primaryColor, 0.15)!;
+
+    // Per-metric background illustration treatment.
+    final ({BoxFit fit, Alignment align, double opacity, double scale}) bg =
+        switch (metric.type) {
+      MetricType.bloodPressure =>
+        (fit: BoxFit.contain, align: Alignment.center, opacity: 0.65, scale: 1.0),
+      MetricType.bloodSugar =>
+        (fit: BoxFit.fitWidth, align: Alignment.center, opacity: 0.7, scale: 1.0),
+      MetricType.cholesterol =>
+        (fit: BoxFit.fitWidth, align: Alignment.center, opacity: 0.7, scale: 1.0),
+      MetricType.uricAcid =>
+        (fit: BoxFit.contain, align: Alignment.center, opacity: 0.7, scale: 1.35),
+    };
+
     return Stack(
       clipBehavior: Clip.hardEdge,
       children: [
+        // Illustration behind everything (clipped to the card by OpenContainer)
+        if (metric.svgBackground != null) ...[
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: Opacity(
+                opacity: bg.opacity,
+                child: Transform.scale(
+                  scale: bg.scale,
+                  child: SvgPicture.asset(
+                    metric.svgBackground!,
+                    fit: bg.fit,
+                    alignment: bg.align,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Identity-color wash: strong over name/value (top-left),
+          // fading out fast so the enlarged art stays visible elsewhere.
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    cardColor.withValues(alpha: 0.9),
+                    cardColor.withValues(alpha: 0.15),
+                  ],
+                  stops: const [0.0, 0.55],
+                ),
+              ),
+            ),
+          ),
+        ],
         if (metric.recentValues.length >= 2)
           Positioned(
             bottom: 0,
