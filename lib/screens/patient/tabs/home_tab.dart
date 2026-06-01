@@ -766,13 +766,13 @@ class _MetricCardContent extends StatelessWidget {
     final ({BoxFit fit, Alignment align, double opacity, double scale}) bg =
         switch (metric.type) {
       MetricType.bloodPressure =>
-        (fit: BoxFit.contain, align: Alignment.center, opacity: 0.65, scale: 1.0),
+        (fit: BoxFit.contain, align: Alignment.center, opacity: 0.65, scale: 0.65),
       MetricType.bloodSugar =>
         (fit: BoxFit.fitWidth, align: Alignment.center, opacity: 0.7, scale: 1.0),
       MetricType.cholesterol =>
         (fit: BoxFit.fitWidth, align: Alignment.center, opacity: 0.7, scale: 1.0),
       MetricType.uricAcid =>
-        (fit: BoxFit.contain, align: Alignment.center, opacity: 0.7, scale: 1.35),
+        (fit: BoxFit.contain, align: Alignment.center, opacity: 0.7, scale: 1.0),
     };
 
     return Stack(
