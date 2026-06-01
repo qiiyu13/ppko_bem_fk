@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
@@ -77,7 +79,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   Future<void> _navigateByRole(String role) async {
-    await ProfileService.instance.initialize();
+    // Don't block the login button on /profiles; the home screen renders
+    // cached-first and refreshes itself once this completes.
+    unawaited(ProfileService.instance.initialize());
     if (!mounted) return;
     Widget destination;
     if (role == 'ADMIN') {

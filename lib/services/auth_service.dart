@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -33,6 +34,10 @@ class AuthService {
     await TokenService.setToken(data['token']);
     await TokenService.setKKNumber(kkNumber);
     await TokenService.setResponsibleName(responsibleName);
+    // Registration always creates a patient account.
+    await TokenService.setRole(data['user']?['role'] ?? 'PATIENT');
+    // Don't seed _cachedMe from the register response — it lacks the full
+    // /auth/me fields (avatarPath, region, ...). Let getMe() fetch them.
 
     WebSocketService.instance.connect();
 
@@ -49,10 +54,16 @@ class AuthService {
     });
 
     final data = response.data['data'];
-    final user = data['user'];
+    final user = data['user'] as Map<String, dynamic>;
     await TokenService.setToken(data['token']);
     await TokenService.setKKNumber(identifier);
     await TokenService.setResponsibleName(user['responsibleName']);
+    await TokenService.setRole(user['role'] ?? 'PATIENT');
+
+    // NOTE: do NOT seed _cachedMe with this login `user` — it is a thin object
+    // ({id,kkNumber,username,responsibleName,role}) missing avatarPath/phone/
+    // region/etc. that /auth/me returns. Seeding it makes the account render
+    // blank until app restart. Let the first getMe() fetch the full record.
 
     WebSocketService.instance.connect();
 
@@ -72,6 +83,11 @@ class AuthService {
     try {
       final response = await ApiService.get('/auth/me');
       _cachedMe = response.data['data'] as Map<String, dynamic>?;
+      final role = _cachedMe?['role'];
+      if (role is String) {
+        // Keep cached role fresh so the next relaunch routes without a network call.
+        await TokenService.setRole(role);
+      }
       return _cachedMe;
     } catch (e) {
       return _cachedMe;
@@ -101,15 +117,28 @@ class AuthService {
   }
 
   static Future<void> logout() async {
-    try {
-      await ApiService.post('/auth/logout');
-    } catch (_) {
-      // Ignore errors - still clear local data
+    // Server logout is best-effort and must NOT block the UI. Capture the token
+    // and fire the request unawaited so the user leaves instantly even if the
+    // network is slow or offline.
+    final token = await TokenService.getToken();
+    if (token != null) {
+      unawaited(_fireServerLogout(token));
     }
     WebSocketService.instance.disconnect();
     _cachedMe = null;
     await NotificationService.clearCache();
     await TokenService.clearAll();
+  }
+
+  static Future<void> _fireServerLogout(String token) async {
+    try {
+      await ApiService.dio.post(
+        '/auth/logout',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+    } catch (_) {
+      // Token is cleared locally regardless; ignore network failures.
+    }
   }
 
   static Future<bool> forgotPassword({

@@ -1,12 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../main.dart' show navigatorKey;
 import '../utils/asset_helper.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
+import '../services/token_service.dart';
 import 'welcome_screen.dart';
 import 'patient/patient_main_screen.dart';
 import 'admin/admin_main_screen.dart';
 import 'superadmin/superadmin_main_screen.dart';
+
+// Minimum time the brand splash stays visible. Auth resolution runs CONCURRENTLY
+// with this window, so a warm relaunch is gated only by branding, not network.
+const _minSplash = Duration(milliseconds: 600);
 
 const _commonSvgs = [
   'doodle-01.svg',
@@ -40,7 +48,7 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
 
     _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
 
@@ -49,49 +57,90 @@ class _SplashScreenState extends State<SplashScreen>
       end: 0.0,
     ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeOut));
 
-    _precacheSvgs();
-    Future.delayed(const Duration(milliseconds: 1200), _navigate);
+    unawaited(_precacheSvgs());
+    unawaited(_boot());
   }
 
-  Future<void> _navigate() async {
-    final userData = await AuthService.getMe();
+  Future<void> _boot() async {
+    final minSplash = Future<void>.delayed(_minSplash);
+    final token = await TokenService.getToken();
 
+    // No token: skip the pointless /auth/me round-trip and go straight to welcome.
+    if (token == null) {
+      await minSplash;
+      await _exit(const WelcomeScreen());
+      return;
+    }
+
+    // Start the network identity refresh immediately so it overlaps the splash.
+    final mePromise = AuthService.getMe();
+    final cachedRole = await TokenService.getRole();
+
+    if (cachedRole != null) {
+      // Optimistic route: show the last-known home without blocking on the
+      // network, then re-validate the session in the background.
+      await _goHome(cachedRole);
+      unawaited(_revalidate(mePromise));
+      return;
+    }
+
+    // No cached role (legacy install): must wait for the network to learn which
+    // home to show, but still honor the minimum splash duration.
+    final results = await Future.wait([mePromise, minSplash]);
+    final me = results.first as Map<String, dynamic>?;
+    if (me == null) {
+      await _exit(const WelcomeScreen());
+    } else {
+      await _goHome(me['role'] ?? 'PATIENT');
+    }
+  }
+
+  // Re-check the session after an optimistic route. The request interceptor
+  // clears the token when a refresh fails, so a missing token here means the
+  // session is truly invalid (vs. merely offline, where the token survives).
+  Future<void> _revalidate(Future<Map<String, dynamic>?> mePromise) async {
+    await mePromise;
+    final token = await TokenService.getToken();
+    if (token != null) return; // still authenticated, or just offline — stay put.
+
+    await AuthService.logout();
+    navigatorKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+      (route) => false,
+    );
+  }
+
+  Future<void> _goHome(String role) async {
+    // Preload profiles cached-first in the background; the home screen renders
+    // from cache and refreshes itself, so navigation never waits on /profiles.
+    unawaited(ProfileService.instance.initialize());
+    await _exit(_homeFor(role));
+  }
+
+  Widget _homeFor(String role) {
+    switch (role) {
+      case 'ADMIN':
+        return const AdminMainScreen();
+      case 'SUPERADMIN':
+        return const SuperadminMainScreen();
+      default:
+        return const PatientMainScreen();
+    }
+  }
+
+  Future<void> _exit(Widget destination) async {
+    if (!mounted) return;
     await _fadeController.forward();
     if (!mounted) return;
-
-    if (userData != null) {
-      await ProfileService.instance.initialize();
-      if (!mounted) return;
-      final role = userData['role'] ?? 'PATIENT';
-      Widget destination;
-      if (role == 'ADMIN') {
-        destination = const AdminMainScreen();
-      } else if (role == 'SUPERADMIN') {
-        destination = const SuperadminMainScreen();
-      } else {
-        destination = const PatientMainScreen();
-      }
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => destination,
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 500),
-        ),
-      );
-    } else {
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const WelcomeScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 500),
-        ),
-      );
-    }
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => destination,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
+    );
   }
 
   @override

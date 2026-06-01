@@ -12,13 +12,14 @@ import 'services/connectivity_service.dart';
 import 'services/notification_service.dart';
 import 'services/platform_util.dart';
 
+// Global navigator key: lets background tasks (e.g. token re-validation after an
+// optimistic relaunch route) redirect without holding a screen's BuildContext.
+final navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Cap image cache so large herbal photos don't pin RAM.
   PaintingBinding.instance.imageCache.maximumSizeBytes = 50 << 20;
-  if (PlatformUtil.firebaseAvailable) {
-    await Firebase.initializeApp();
-  }
 
   ApiService.setupInterceptors();
   await CacheService.init();
@@ -29,7 +30,15 @@ void main() async {
         : const MyApp(),
   );
 
-  // Non-critical services start after first frame so UI isn't blocked.
+  // Firebase + non-critical services start after the first frame so the splash
+  // paints immediately and auth resolution isn't blocked by SDK init.
+  _initBackgroundServices();
+}
+
+Future<void> _initBackgroundServices() async {
+  if (PlatformUtil.firebaseAvailable) {
+    await Firebase.initializeApp();
+  }
   ConnectivityService.instance.initialize();
   NotificationService.instance.initialize();
 }
@@ -42,6 +51,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'MEDIKU',
       debugShowCheckedModeBanner: false,
+      navigatorKey: navigatorKey,
       theme: AppTheme.lightTheme,
       home: const SplashScreen(),
       builder: kDebugMode ? DevicePreview.appBuilder : null,
