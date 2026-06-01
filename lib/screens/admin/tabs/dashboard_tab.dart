@@ -73,6 +73,11 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
 
+  Future<void> _refresh() async {
+    _currentPage = 1;
+    await _fetchPatients();
+  }
+
   Future<void> _fetchPatients({bool loadMore = false}) async {
     if (loadMore) {
       setState(() => _isLoadingMore = true);
@@ -184,7 +189,10 @@ class _DashboardTabState extends State<DashboardTab> {
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.qr_code_scanner, color: Colors.white),
       ),
-      body: CustomScrollView(
+      body: RefreshIndicator(
+        onRefresh: _refresh,
+        color: AppColors.primary,
+        child: CustomScrollView(
         slivers: [
             SliverToBoxAdapter(
               child: GreetingHeader(
@@ -272,6 +280,7 @@ class _DashboardTabState extends State<DashboardTab> {
               child: SizedBox(height: ResponsiveSize.spacingXLarge * 2),
             ),
           ],
+        ),
         ),
       ),
     );

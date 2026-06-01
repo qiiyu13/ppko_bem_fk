@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/connectivity_service.dart';
 
@@ -11,6 +12,24 @@ class SyncStatusBanner extends StatefulWidget {
 }
 
 class _SyncStatusBannerState extends State<SyncStatusBanner> {
+  bool _showSynced = false;
+  Timer? _dismissTimer;
+
+  @override
+  void dispose() {
+    _dismissTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onSyncCompleted() {
+    if (!mounted) return;
+    setState(() => _showSynced = true);
+    _dismissTimer?.cancel();
+    _dismissTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _showSynced = false);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<SyncStatus>(
@@ -19,6 +38,13 @@ class _SyncStatusBannerState extends State<SyncStatusBanner> {
         final status = snapshot.data ?? SyncStatus.idle;
         final isOnline = ConnectivityService.instance.isOnline;
         final pendingCount = ConnectivityService.instance.pendingSyncCount;
+
+        if (status == SyncStatus.completed && pendingCount == 0 && !_showSynced) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _onSyncCompleted());
+        }
+        if (status != SyncStatus.completed) {
+          _showSynced = false;
+        }
 
         return Column(
           children: [
@@ -32,13 +58,13 @@ class _SyncStatusBannerState extends State<SyncStatusBanner> {
                     Icon(Icons.cloud_off, size: 16, color: Colors.red.shade700),
                     const SizedBox(width: 8),
                     Text(
-                      'Offline \u2014 changes will sync when reconnected',
+                      'Offline \u2014 perubahan akan disinkron saat terhubung',
                       style: TextStyle(color: Colors.red.shade700, fontSize: 12),
                     ),
                     if (pendingCount > 0) ...[
                       const Spacer(),
                       Text(
-                        '$pendingCount pending',
+                        '$pendingCount tertunda',
                         style: TextStyle(color: Colors.red.shade700, fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -59,13 +85,13 @@ class _SyncStatusBannerState extends State<SyncStatusBanner> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Syncing changes...',
+                      'Menyinkronkan...',
                       style: TextStyle(color: Colors.blue.shade700, fontSize: 12),
                     ),
                   ],
                 ),
               )
-            else if (status == SyncStatus.completed && pendingCount == 0)
+            else if (_showSynced)
               Container(
                 width: double.infinity,
                 color: Colors.green.shade50,
@@ -75,7 +101,7 @@ class _SyncStatusBannerState extends State<SyncStatusBanner> {
                     Icon(Icons.check_circle, size: 16, color: Colors.green.shade700),
                     const SizedBox(width: 8),
                     Text(
-                      'All changes synced',
+                      'Semua perubahan tersinkron',
                       style: TextStyle(color: Colors.green.shade700, fontSize: 12),
                     ),
                   ],

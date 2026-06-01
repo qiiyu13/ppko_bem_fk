@@ -213,7 +213,10 @@ class _PublishTabState extends State<PublishTab> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
+      body: RefreshIndicator(
+        onRefresh: _loadArticles,
+        color: AppColors.primary,
+        child: CustomScrollView(
         physics: const BouncingScrollPhysics(
           parent: AlwaysScrollableScrollPhysics(),
         ),
@@ -242,6 +245,7 @@ class _PublishTabState extends State<PublishTab> {
               ),
             ),
         ],
+      ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'admin_publish_fab',

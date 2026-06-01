@@ -367,7 +367,10 @@ class _HomeTabState extends State<HomeTab> {
       builder: (context, constraints) {
         final screenWidth = constraints.maxWidth;
 
-        return SingleChildScrollView(
+        return RefreshIndicator(
+          onRefresh: _loadData,
+          color: AppColors.primary,
+          child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
           ),
@@ -603,6 +606,7 @@ class _HomeTabState extends State<HomeTab> {
               ),
             ),
           ),
+        ),
         );
       },
     );

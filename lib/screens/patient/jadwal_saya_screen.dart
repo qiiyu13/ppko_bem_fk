@@ -214,7 +214,11 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
   Widget _buildDaftarTab() {
     final today = DateTime.now();
 
-    return SingleChildScrollView(
+    return RefreshIndicator(
+      onRefresh: _loadAppointments,
+      color: AppColors.primary,
+      child: SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,6 +265,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
           // Bottom spacer for nav bar clearance
           const SizedBox(height: 100),
         ],
+      ),
       ),
     );
   }
@@ -501,7 +506,11 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
   }
 
   Widget _buildKalenderTab() {
-    return SingleChildScrollView(
+    return RefreshIndicator(
+      onRefresh: _loadAppointments,
+      color: AppColors.primary,
+      child: SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
       child: Column(
         children: [
@@ -519,6 +528,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
           // Bottom spacer for nav bar clearance
           const SizedBox(height: 100),
         ],
+      ),
       ),
     );
   }

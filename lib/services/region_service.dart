@@ -27,8 +27,12 @@ class RegionService {
   }
 
   static Future<Map<String, dynamic>> getStats() async {
-    final response = await ApiService.get('/regions/stats');
-    return response.data['data'] as Map<String, dynamic>;
+    try {
+      final response = await ApiService.get('/regions/stats');
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (_) {
+      return {'profileCount': 0};
+    }
   }
 
   static Future<List<Map<String, dynamic>>> getUsersByRegion(String regionId) async {
