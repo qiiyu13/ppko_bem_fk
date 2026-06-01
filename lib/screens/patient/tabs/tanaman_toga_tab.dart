@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/tanaman_article.dart';
 import '../../../services/article_service.dart';
+import '../../../services/websocket_service.dart';
 import '../../../widgets/article_image.dart';
 import '../tanaman_article_detail_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
@@ -17,11 +19,28 @@ class _TanamanTogaTabState extends State<TanamanTogaTab> {
   List<TanamanArticle> _articles = [];
   bool _isLoading = true;
   String? _error;
+  StreamSubscription<Map<String, dynamic>>? _wsSub;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
     super.initState();
     _loadArticles();
+    _wsSub = WebSocketService.instance.dataUpdateStream.listen((payload) {
+      if (payload['type'] == 'articles' && mounted) {
+        _debounceTimer?.cancel();
+        _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+          if (mounted) _loadArticles();
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _wsSub?.cancel();
+    _debounceTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadArticles() async {

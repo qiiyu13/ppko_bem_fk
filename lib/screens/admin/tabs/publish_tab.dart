@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/tanaman_article.dart';
 import '../../../services/article_service.dart';
+import '../../../services/websocket_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../widgets/article_image.dart';
 import '../../../widgets/dashboard/notification_bell.dart';
@@ -21,15 +23,32 @@ class _PublishTabState extends State<PublishTab> {
   String _searchQuery = '';
   final List<String> _filters = ['Semua', 'Dipublikasikan', 'Draft'];
   bool _isLoading = false;
+  StreamSubscription<Map<String, dynamic>>? _wsSub;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
     super.initState();
     _loadArticles();
+    _wsSub = WebSocketService.instance.dataUpdateStream.listen((payload) {
+      if (payload['type'] == 'articles' && mounted) {
+        _debounceTimer?.cancel();
+        _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+          if (mounted) _loadArticles(showLoading: false);
+        });
+      }
+    });
   }
 
-  Future<void> _loadArticles() async {
-    setState(() => _isLoading = true);
+  @override
+  void dispose() {
+    _wsSub?.cancel();
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadArticles({bool showLoading = true}) async {
+    if (showLoading) setState(() => _isLoading = true);
     try {
       final articles = await ArticleService.getAllArticles();
       setState(() {
