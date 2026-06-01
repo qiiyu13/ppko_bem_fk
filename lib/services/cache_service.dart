@@ -11,6 +11,17 @@ import 'api_service.dart';
 class CacheService {
   static Database? _db;
 
+  // Persistent store for GET responses so cold start and bad-network requests
+  // can render from disk instead of hanging on the network.
+  static const _httpCacheTableSql = '''
+    CREATE TABLE IF NOT EXISTS http_cache (
+      key TEXT PRIMARY KEY,
+      body TEXT NOT NULL,
+      status INTEGER NOT NULL,
+      expires_at TEXT NOT NULL
+    )
+  ''';
+
   static Future<void> init() async {
     if (!kIsWeb && Platform.isLinux) {
       sqfliteFfiInit();
@@ -19,7 +30,7 @@ class CacheService {
 
     _db = await openDatabase(
       join(await getDatabasesPath(), 'mediku_cache.db'),
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE profiles (
@@ -54,8 +65,12 @@ class CacheService {
             updated_at TEXT NOT NULL
           )
         ''');
+        await db.execute(_httpCacheTableSql);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 3) {
+          await db.execute(_httpCacheTableSql);
+        }
         if (oldVersion < 2) {
           await db.execute('''
             CREATE TABLE IF NOT EXISTS articles (
@@ -191,10 +206,40 @@ class CacheService {
     return (result?.first['count'] as int?) ?? 0;
   }
 
+  static Future<void> saveHttpCache(
+      String key, String body, int status, DateTime expiresAt) async {
+    await _db?.insert('http_cache', {
+      'key': key,
+      'body': body,
+      'status': status,
+      'expires_at': expiresAt.toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  /// Returns {body, status, expiresAt} for a cached GET, or null if absent.
+  static Future<Map<String, dynamic>?> getHttpCache(String key) async {
+    final rows = await _db?.query('http_cache',
+        where: 'key = ?', whereArgs: [key], limit: 1);
+    if (rows == null || rows.isEmpty) return null;
+    final row = rows.first;
+    return {
+      'body': row['body'] as String,
+      'status': row['status'] as int,
+      'expiresAt': DateTime.parse(row['expires_at'] as String),
+    };
+  }
+
+  /// Drops every persisted GET whose key starts with [prefix] (e.g. '/profiles'),
+  /// so a write is never followed by a stale offline read.
+  static Future<void> invalidateHttpCache(String prefix) async {
+    await _db?.delete('http_cache', where: 'key LIKE ?', whereArgs: ['$prefix%']);
+  }
+
   static Future<void> clearAll() async {
     await _db?.delete('profiles');
     await _db?.delete('articles');
     await _db?.delete('appointments');
     await _db?.delete('pending_sync');
+    await _db?.delete('http_cache');
   }
 }

@@ -16,8 +16,10 @@ class ApiService {
   static final Dio dio = Dio(
     BaseOptions(
       baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      // Fail fast on bad networks: a short connect timeout drops straight into
+      // the cache fallback (stale-if-error) instead of hanging the UI for 10s.
+      connectTimeout: const Duration(seconds: 5),
+      receiveTimeout: const Duration(seconds: 8),
       headers: {'Content-Type': 'application/json'},
     ),
   );

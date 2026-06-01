@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'cache_service.dart';
+import 'connectivity_service.dart';
 
 class CacheEntry {
   final Response response;
@@ -10,36 +13,33 @@ class CacheEntry {
 }
 
 class DioCacheInterceptor extends Interceptor {
+  // L1: in-memory, instant. L2: CacheService (sqlite), survives app restart.
   final Map<String, CacheEntry> _cache = {};
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+  void onRequest(
+      RequestOptions options, RequestInterceptorHandler handler) async {
     // Only cache GET requests
     if (options.method.toUpperCase() != 'GET') {
       return handler.next(options);
     }
 
     final key = _buildCacheKey(options);
-    final cached = _cache[key];
+    final mem = _cache[key];
 
-    if (cached != null) {
-      if (!cached.isExpired) {
-        // Return a fresh copy of the cached response with current RequestOptions
-        final response = Response(
-          requestOptions: options,
-          data: cached.response.data,
-          headers: cached.response.headers,
-          isRedirect: cached.response.isRedirect,
-          redirects: cached.response.redirects,
-          extra: cached.response.extra,
-          statusCode: cached.response.statusCode,
-          statusMessage: cached.response.statusMessage,
-        );
-        return handler.resolve(response);
-      } else {
-        // Evict expired cache entry
-        _cache.remove(key);
-      }
+    // Fresh in-memory hit — serve instantly, no disk, no network.
+    if (mem != null && !mem.isExpired) {
+      return handler.resolve(_copy(mem.response, options));
+    }
+
+    // Offline: don't burn the full timeout waiting for a request that can't
+    // succeed. Serve whatever we have (stale is fine) so the UI never blanks.
+    if (!ConnectivityService.instance.isOnline) {
+      final cached = await _readAnyCache(key, options);
+      if (cached != null) return handler.resolve(cached);
+      // Nothing cached — fall through so the request fails fast.
+    } else if (mem != null) {
+      _cache.remove(key); // expired; let the network refresh it
     }
 
     handler.next(options);
@@ -58,39 +58,99 @@ class DioCacheInterceptor extends Interceptor {
       return handler.next(response);
     }
 
-    final path = response.requestOptions.path;
-    Duration? ttl;
-
-    // TTLs are a fallback ceiling; the WebSocket data:update event invalidates
-    // these prefixes the moment the underlying data changes, so the cache stays
-    // correct in real time and the TTL only bounds staleness when offline.
-    if (path.startsWith('/articles')) {
-      ttl = const Duration(minutes: 5);
-    } else if (path.startsWith('/regions')) {
-      ttl = const Duration(minutes: 30);
-    } else if (path.startsWith('/profiles')) {
-      ttl = const Duration(minutes: 10);
-    } else if (path.startsWith('/appointments')) {
-      ttl = const Duration(minutes: 5);
-    } else if (path.startsWith('/metrics')) {
-      ttl = const Duration(minutes: 5);
-    }
-
+    final ttl = _ttlFor(response.requestOptions.path);
     if (ttl != null) {
       final key = _buildCacheKey(response.requestOptions);
       final expiresAt = DateTime.now().add(ttl);
       _cache[key] = CacheEntry(response, expiresAt);
+      _persist(key, response, expiresAt); // fire-and-forget disk write
     }
 
     handler.next(response);
   }
 
-  /// Invalidates cache entries matching the given path prefix
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
+    // Stale-if-error: on a network/timeout failure (not an HTTP error response
+    // like 401/409), serve the last cached value so a flaky connection degrades
+    // to "slightly stale" instead of "broken".
+    const networkFailures = {
+      DioExceptionType.connectionError,
+      DioExceptionType.connectionTimeout,
+      DioExceptionType.receiveTimeout,
+      DioExceptionType.sendTimeout,
+    };
+    if (networkFailures.contains(err.type) &&
+        err.requestOptions.method.toUpperCase() == 'GET') {
+      final key = _buildCacheKey(err.requestOptions);
+      final cached = await _readAnyCache(key, err.requestOptions);
+      if (cached != null) return handler.resolve(cached);
+    }
+    handler.next(err);
+  }
+
+  /// Invalidates cache entries matching the given path prefix (memory + disk).
   void invalidate(String pathPrefix) {
     final cleanPath = pathPrefix.startsWith('/') ? pathPrefix : '/$pathPrefix';
     _cache.removeWhere((key, entry) {
       return key.startsWith(cleanPath) || key.contains(cleanPath);
     });
+    CacheService.invalidateHttpCache(cleanPath);
+  }
+
+  // Reads any cached value (in-memory first, then disk), even if expired.
+  Future<Response?> _readAnyCache(String key, RequestOptions options) async {
+    final mem = _cache[key];
+    if (mem != null) return _copy(mem.response, options);
+
+    final disk = await CacheService.getHttpCache(key);
+    if (disk != null) {
+      return Response(
+        requestOptions: options,
+        data: jsonDecode(disk['body'] as String),
+        statusCode: disk['status'] as int? ?? 200,
+        extra: const {'fromCache': true},
+      );
+    }
+    return null;
+  }
+
+  void _persist(String key, Response response, DateTime expiresAt) {
+    try {
+      CacheService.saveHttpCache(
+        key,
+        jsonEncode(response.data),
+        response.statusCode ?? 200,
+        expiresAt,
+      );
+    } catch (_) {
+      // Non-JSON-serializable body — skip disk persistence, keep memory cache.
+    }
+  }
+
+  Response _copy(Response cached, RequestOptions options) {
+    return Response(
+      requestOptions: options,
+      data: cached.data,
+      headers: cached.headers,
+      isRedirect: cached.isRedirect,
+      redirects: cached.redirects,
+      extra: cached.extra,
+      statusCode: cached.statusCode,
+      statusMessage: cached.statusMessage,
+    );
+  }
+
+  // TTLs are a fallback ceiling; the WebSocket data:update event invalidates
+  // these prefixes the moment the underlying data changes, so the cache stays
+  // correct in real time and the TTL only bounds staleness when offline.
+  Duration? _ttlFor(String path) {
+    if (path.startsWith('/articles')) return const Duration(minutes: 5);
+    if (path.startsWith('/regions')) return const Duration(minutes: 30);
+    if (path.startsWith('/profiles')) return const Duration(minutes: 10);
+    if (path.startsWith('/appointments')) return const Duration(minutes: 5);
+    if (path.startsWith('/metrics')) return const Duration(minutes: 5);
+    return null;
   }
 
   /// Builds a unique cache key based on path and query parameters
@@ -103,7 +163,8 @@ class DioCacheInterceptor extends Interceptor {
         ..sort((a, b) => a.key.compareTo(b.key)),
     );
     final queryStr = sortedParams.entries
-        .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value.toString())}')
+        .map((e) =>
+            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value.toString())}')
         .join('&');
     return '${options.path}?$queryStr';
   }
