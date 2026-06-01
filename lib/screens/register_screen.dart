@@ -16,6 +16,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _kkController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
+  int _kkLength = 0;
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
@@ -33,6 +34,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void initState() {
     super.initState();
     _loadVillages();
+    _kkController.addListener(() {
+      setState(() => _kkLength = _kkController.text.length);
+    });
   }
 
   Future<void> _loadVillages() async {
@@ -168,6 +172,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               // KK Input
               _buildInputLabel('Nomor Kartu Keluarga (KK)'),
+              const SizedBox(height: 4),
+              const Text(
+                'Masukkan 16 digit angka sesuai Kartu Keluarga Anda',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
               const SizedBox(height: 8),
               TextField(
                 controller: _kkController,
@@ -178,8 +187,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ],
                 style: const TextStyle(color: AppColors.textPrimary),
                 decoration: _buildInputDecoration(
-                  hint: 'Masukkan 16 digit KK',
+                  hint: 'Contoh: 3201234567890001',
                   icon: Icons.badge_outlined,
+                ).copyWith(
+                  counterText: '$_kkLength/16',
+                  counterStyle: TextStyle(
+                    fontSize: 12,
+                    color: _kkLength == 16
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                    fontWeight: _kkLength == 16
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
