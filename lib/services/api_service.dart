@@ -60,7 +60,15 @@ class ApiService {
                 try {
                   final currentToken = await TokenService.getToken();
                   if (currentToken != null) {
-                    final refreshResponse = await Dio().post(
+                    // Bare Dio() has no timeouts (infinite). On a dead network
+                    // the refresh would hang forever and the single-flight
+                    // completer below would never resolve, stalling every
+                    // queued 401 retry. Match the main client's timeouts.
+                    final refreshDio = Dio(BaseOptions(
+                      connectTimeout: const Duration(seconds: 5),
+                      receiveTimeout: const Duration(seconds: 8),
+                    ));
+                    final refreshResponse = await refreshDio.post(
                       '$baseUrl/auth/refresh',
                       options: Options(headers: {'Authorization': 'Bearer $currentToken'}),
                     );

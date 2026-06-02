@@ -11,6 +11,12 @@ const forgotPasswordLimiter = rateLimit({
   message: { success: false, error: { code: 'RATE_LIMIT', message: 'Too many reset requests. Try again later.' } },
 });
 
+const resetPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { success: false, error: { code: 'RATE_LIMIT', message: 'Too many reset attempts. Try again later.' } },
+});
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -51,7 +57,7 @@ router.post('/forgot-password', [forgotPasswordLimiter,
   validate,
 ], controller.forgotPassword);
 
-router.post('/reset-password', [
+router.post('/reset-password', [resetPasswordLimiter,
   body('kkNumber').isString().matches(/^\d{16}$/),
   body('firebaseToken').isString().notEmpty(),
   body('newPassword').isString().isLength({ min: 6 }),

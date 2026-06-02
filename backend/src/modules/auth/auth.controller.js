@@ -35,8 +35,6 @@ const forgotPassword = async (req, res, next) => {
     const result = await authService.forgotPassword(req.body);
     return success(res, result);
   } catch (err) {
-    if (err.statusCode === 404) return error(res, err.message, 404, 'NOT_FOUND');
-    if (err.statusCode === 400) return error(res, err.message, 400, 'VALIDATION_ERROR');
     next(err);
   }
 };
@@ -54,8 +52,24 @@ const resetPassword = async (req, res, next) => {
 const refreshToken = async (req, res, next) => {
   try {
     const { generateToken } = require('../../utils/jwt');
-    const user = await authService.getMe(req.user.id);
-    const token = generateToken({ userId: user.id, role: user.role });
+    const config = require('../../config');
+
+    const account = await authService.getAccountStatus(req.user.id);
+    if (!account) return error(res, 'Invalid or expired token', 401, 'INVALID_TOKEN');
+    // Deactivated accounts can no longer mint fresh tokens. Their current token
+    // keeps working until it expires (sliding window) — closing that residual
+    // gap fully needs a per-request isActive check or a shorter token TTL.
+    if (!account.isActive) return error(res, 'Account is deactivated', 403, 'ACCOUNT_DISABLED');
+
+    // Absolute session cap: authAt is the original login time. Tokens issued
+    // before this claim existed fall back to their issue time (iat).
+    const claims = req.tokenClaims || {};
+    const authAt = claims.authAt || claims.iat;
+    if (authAt && (Math.floor(Date.now() / 1000) - authAt) > config.maxSessionAge) {
+      return error(res, 'Session expired. Please log in again.', 401, 'SESSION_EXPIRED');
+    }
+
+    const token = generateToken({ userId: account.id, role: account.role, authAt });
     return success(res, { token });
   } catch (err) {
     next(err);

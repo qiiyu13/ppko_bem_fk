@@ -171,6 +171,7 @@ model Region {
   children Region[] @relation("RegionHierarchy")
   users    User[]
 
+  @@unique([type, name, parentId])
   @@index([parentId])
   @@index([name])
   @@map("regions")

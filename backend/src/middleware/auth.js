@@ -18,6 +18,9 @@ const authenticate = (req, res, next) => {
   try {
     const decoded = verifyToken(token);
     req.user = { id: decoded.userId, role: decoded.role };
+    // Preserve original-login time and issue time for the refresh endpoint's
+    // absolute-session-age cap (authAt is absent on pre-cap legacy tokens).
+    req.tokenClaims = { authAt: decoded.authAt, iat: decoded.iat };
     next();
   } catch (err) {
     return error(res, 'Invalid or expired token', 401, 'INVALID_TOKEN');

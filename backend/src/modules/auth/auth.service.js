@@ -4,6 +4,24 @@ const { verifyFirebaseToken } = require('../../utils/firebase');
 
 const prisma = require('../../utils/prisma');
 
+// Race-safe find-or-create for a region row. The common path (region already
+// exists) is a single indexed read. On a miss we create; if a concurrent
+// register created the same (type, name, parentId) first, the @@unique
+// constraint rejects our insert with P2002 and we re-read the winner instead of
+// silently duplicating the RW/RT row.
+const findOrCreateRegion = async (type, name, parentId) => {
+  const existing = await prisma.region.findFirst({ where: { type, name, parentId } });
+  if (existing) return existing;
+  try {
+    return await prisma.region.create({ data: { type, name, parentId } });
+  } catch (err) {
+    if (err.code === 'P2002') {
+      return prisma.region.findFirst({ where: { type, name, parentId } });
+    }
+    throw err;
+  }
+};
+
 const register = async ({ kkNumber, responsibleName, password, phone, villageId, rwNumber, rtNumber }) => {
   const existing = await prisma.user.findUnique({ where: { kkNumber } });
   if (existing) throw Object.assign(new Error('KK number already registered'), { code: 'P2002' });
@@ -13,11 +31,8 @@ const register = async ({ kkNumber, responsibleName, password, phone, villageId,
     const rwName = `RW ${String(rwNumber).padStart(2, '0')}`;
     const rtName = `RT ${String(rtNumber).padStart(2, '0')}`;
 
-    let rw = await prisma.region.findFirst({ where: { type: 'RW', name: rwName, parentId: villageId } });
-    if (!rw) rw = await prisma.region.create({ data: { type: 'RW', name: rwName, parentId: villageId } });
-
-    let rt = await prisma.region.findFirst({ where: { type: 'RT', name: rtName, parentId: rw.id } });
-    if (!rt) rt = await prisma.region.create({ data: { type: 'RT', name: rtName, parentId: rw.id } });
+    const rw = await findOrCreateRegion('RW', rwName, villageId);
+    const rt = await findOrCreateRegion('RT', rtName, rw.id);
 
     regionId = rt.id;
   }
@@ -28,7 +43,8 @@ const register = async ({ kkNumber, responsibleName, password, phone, villageId,
     select: { id: true, kkNumber: true, responsibleName: true, role: true },
   });
 
-  const token = generateToken({ userId: user.id, role: user.role });
+  const authAt = Math.floor(Date.now() / 1000);
+  const token = generateToken({ userId: user.id, role: user.role, authAt });
   return { user, token };
 };
 
@@ -47,7 +63,12 @@ const login = async ({ identifier, password }) => {
   const valid = await comparePassword(password, user.password);
   if (!valid) throw Object.assign(new Error('Invalid credentials'), { statusCode: 401 });
 
-  const token = generateToken({ userId: user.id, role: user.role });
+  // Deactivated accounts cannot obtain a token. Generic error to avoid
+  // distinguishing "disabled" from "wrong password" (no enumeration).
+  if (!user.isActive) throw Object.assign(new Error('Invalid credentials'), { statusCode: 401 });
+
+  const authAt = Math.floor(Date.now() / 1000);
+  const token = generateToken({ userId: user.id, role: user.role, authAt });
   return {
     user: { id: user.id, kkNumber: user.kkNumber, username: user.username, responsibleName: user.responsibleName, role: user.role },
     token,
@@ -67,6 +88,15 @@ const getMe = async (userId) => {
   return user;
 };
 
+// Lean lookup for the refresh path: just the fields needed to decide whether a
+// new token may be minted. Avoids pulling the full profile that getMe returns.
+const getAccountStatus = async (userId) => {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true, isActive: true },
+  });
+};
+
 const updateAvatar = async (userId, avatarPath) => {
   await prisma.user.update({
     where: { id: userId },
@@ -74,12 +104,14 @@ const updateAvatar = async (userId, avatarPath) => {
   });
 };
 
-const forgotPassword = async ({ kkNumber, phone }) => {
-  const user = await prisma.user.findUnique({ where: { kkNumber } });
-  if (!user) throw Object.assign(new Error('KK number not found'), { statusCode: 404 });
-  if (user.phone !== phone) throw Object.assign(new Error('Phone number does not match'), { statusCode: 400 });
-
-  return { message: 'OTP sent to your phone number' };
+const forgotPassword = async ({ kkNumber }) => {
+  // Always return the same response whether or not the KK exists / phone matches,
+  // to prevent account enumeration. The lookup is run (result intentionally
+  // unused) so response timing does not leak existence. Real verification happens
+  // at resetPassword: the Firebase OTP proves phone ownership and the stored
+  // phone must match the verified number.
+  await prisma.user.findUnique({ where: { kkNumber } });
+  return { message: 'If the data matches, an OTP has been sent to the registered phone number.' };
 };
 
 const resetPassword = async ({ kkNumber, firebaseToken, newPassword }) => {
@@ -106,4 +138,4 @@ const resetPassword = async ({ kkNumber, firebaseToken, newPassword }) => {
   return { message: 'Password reset successful' };
 };
 
-module.exports = { register, login, getMe, updateAvatar, forgotPassword, resetPassword };
+module.exports = { register, login, getMe, getAccountStatus, updateAvatar, forgotPassword, resetPassword };
