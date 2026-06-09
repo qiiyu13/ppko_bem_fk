@@ -48,6 +48,22 @@ async function main() {
   });
 
   console.log('✅ Created 3 superadmin accounts');
+
+  // Dev-only fixture: tests/conflict.test.js and tests/websocket.test.js log in
+  // as this patient. Without it the suite fails on a freshly-seeded database.
+  if (process.env.NODE_ENV !== 'production') {
+    await prisma.user.create({
+      data: {
+        kkNumber: '3275000000000003',
+        responsibleName: 'Test Patient Fixture',
+        password: await hashPassword('patient123'),
+        role: 'PATIENT',
+        phone: '08120000003',
+      },
+    });
+    console.log('✅ Created test fixture patient (3275000000000003 / patient123)');
+  }
+
   console.log('\n🎉 Seed completed successfully!');
   console.log('\nLogin credentials (change passwords before real users onboard):');
   console.log('  SUPERADMIN: username=superadmin.wati  password=Mediku@2026!');

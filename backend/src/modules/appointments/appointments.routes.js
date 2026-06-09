@@ -14,12 +14,14 @@ router.get('/:id', controller.getAppointmentById);
 router.post('/', [
   body('title').isString().notEmpty(),
   body('date').isISO8601(),
+  body('type').optional().isIn(['GENERAL', 'JADWAL']),
   validate,
 ], controller.createAppointment);
 
 router.put('/:id', [
   body('title').optional().isString().notEmpty(),
   body('date').optional().isISO8601(),
+  body('type').optional().isIn(['GENERAL', 'JADWAL']),
   body('updatedAt').isISO8601().withMessage('updatedAt is required for conflict detection'),
   validate,
 ], conflictDetection('appointment'), controller.updateAppointment);

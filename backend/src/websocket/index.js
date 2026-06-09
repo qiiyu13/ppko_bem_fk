@@ -1,5 +1,6 @@
 const { WebSocketServer } = require('ws');
 const { verifyToken } = require('../utils/jwt');
+const { isBlacklisted } = require('../modules/auth/tokenBlacklist');
 const events = require('./events');
 
 let wss;
@@ -48,6 +49,9 @@ function initWebSocketServer(server) {
         if (!authenticated) {
           if (message.event === 'auth' && message.data?.token) {
             try {
+              // Logged-out (blacklisted) tokens must not open a WS session,
+              // same as the HTTP auth middleware.
+              if (isBlacklisted(message.data.token)) throw new Error('Token revoked');
               const decoded = verifyToken(message.data.token);
               userId = decoded.userId;
               userRole = decoded.role;
@@ -65,6 +69,11 @@ function initWebSocketServer(server) {
           } else {
             ws.send(JSON.stringify({ event: events.ERROR, data: { message: 'Authentication required' } }));
           }
+          return;
+        }
+
+        if (!checkWsRateLimit(userId)) {
+          ws.send(JSON.stringify({ event: events.ERROR, data: { message: 'Rate limit exceeded' } }));
           return;
         }
 

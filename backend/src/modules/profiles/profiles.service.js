@@ -36,8 +36,18 @@ const createProfile = async (data, userId) => {
   return result;
 };
 
-const updateProfile = async (id, data, userId) => {
-  await getProfile(id, userId); // verify ownership
+// Ownership gate that prefers the row conflictDetection already fetched
+// (req.existingRecord) over a second read.
+const assertOwnership = async (id, userId, existing) => {
+  if (existing) {
+    if (existing.userId !== userId) throw Object.assign(new Error('Profile not found'), { statusCode: 404 });
+    return existing;
+  }
+  return getProfile(id, userId);
+};
+
+const updateProfile = async (id, data, userId, existing) => {
+  await assertOwnership(id, userId, existing);
 
   const updateData = {};
   if (data.name !== undefined) updateData.name = data.name;
@@ -58,8 +68,8 @@ const updateProfile = async (id, data, userId) => {
   return result;
 };
 
-const deleteProfile = async (id, userId) => {
-  await getProfile(id, userId); // verify ownership
+const deleteProfile = async (id, userId, existing) => {
+  await assertOwnership(id, userId, existing);
 
   await prisma.$transaction([
     prisma.healthMetric.deleteMany({ where: { profileId: id } }),

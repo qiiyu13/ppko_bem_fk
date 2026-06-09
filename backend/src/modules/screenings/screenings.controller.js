@@ -3,7 +3,7 @@ const { success, error, paginated } = require('../../utils/response');
 
 const createScreening = async (req, res, next) => {
   try {
-    const screening = await screeningsService.createScreening(req.body, req.user.id);
+    const screening = await screeningsService.createScreening(req.body, req.user.id, req.user.role);
     return success(res, screening, 'Screening recorded successfully', 201);
   } catch (err) {
     if (err.message === 'Profile not found') return error(res, err.message, 404, 'NOT_FOUND');
@@ -15,7 +15,7 @@ const createScreening = async (req, res, next) => {
 const getScreenings = async (req, res, next) => {
   try {
     const { profileId } = req.query;
-    const result = await screeningsService.getScreenings(profileId, req.query);
+    const result = await screeningsService.getScreenings(profileId, req.query, req.user);
     return paginated(res, result.data, result.total, result.page, result.limit);
   } catch (err) {
     next(err);

@@ -50,7 +50,15 @@ const getAppointments = async (userId, profileId, query = {}) => {
   });
 };
 
-const createAppointment = async (data, userId) => {
+const createAppointment = async (data, userId, role) => {
+  // JADWAL appointments broadcast to every patient (WebSocket + FCM push), so
+  // only admins may create them — otherwise any patient could mass-notify the
+  // whole user base.
+  const isAdmin = role === 'ADMIN' || role === 'SUPERADMIN';
+  if (data.type === 'JADWAL' && !isAdmin) {
+    throw Object.assign(new Error('Not authorized to create broadcast appointments'), { statusCode: 403 });
+  }
+
   const result = await prisma.appointment.create({
     data: {
       userId,
@@ -95,14 +103,22 @@ const createAppointment = async (data, userId) => {
   return result;
 };
 
-const updateAppointment = async (id, data, userId, role) => {
+// Mirrors the old findFirst filters: admins touch their own rows or any
+// broadcast (JADWAL) row; patients only their own.
+const canTouchAppointment = (appointment, userId, isAdmin) =>
+  appointment.userId === userId || (isAdmin && appointment.type === 'JADWAL');
+
+const updateAppointment = async (id, data, userId, role, existing) => {
   const isAdmin = role === 'ADMIN' || role === 'SUPERADMIN';
-  const appointment = await prisma.appointment.findFirst({
-    where: isAdmin
-      ? { id, OR: [{ userId }, { type: 'JADWAL' }] }
-      : { id, userId },
-  });
-  if (!appointment) throw Object.assign(new Error('Appointment not found'), { statusCode: 404 });
+  // conflictDetection already fetched the row (req.existingRecord) — reuse it
+  // instead of a second read.
+  const appointment = existing || await prisma.appointment.findUnique({ where: { id } });
+  if (!appointment || !canTouchAppointment(appointment, userId, isAdmin)) {
+    throw Object.assign(new Error('Appointment not found'), { statusCode: 404 });
+  }
+  if (data.type === 'JADWAL' && appointment.type !== 'JADWAL' && !isAdmin) {
+    throw Object.assign(new Error('Not authorized to create broadcast appointments'), { statusCode: 403 });
+  }
 
   const updateData = {};
   if (data.title !== undefined) updateData.title = data.title;
@@ -125,14 +141,12 @@ const updateAppointment = async (id, data, userId, role) => {
   return result;
 };
 
-const deleteAppointment = async (id, userId, role) => {
+const deleteAppointment = async (id, userId, role, existing) => {
   const isAdmin = role === 'ADMIN' || role === 'SUPERADMIN';
-  const appointment = await prisma.appointment.findFirst({
-    where: isAdmin
-      ? { id, OR: [{ userId }, { type: 'JADWAL' }] }
-      : { id, userId },
-  });
-  if (!appointment) throw Object.assign(new Error('Appointment not found'), { statusCode: 404 });
+  const appointment = existing || await prisma.appointment.findUnique({ where: { id } });
+  if (!appointment || !canTouchAppointment(appointment, userId, isAdmin)) {
+    throw Object.assign(new Error('Appointment not found'), { statusCode: 404 });
+  }
 
   await prisma.appointment.delete({ where: { id } });
   try {

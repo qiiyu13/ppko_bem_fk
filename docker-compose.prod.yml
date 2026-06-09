@@ -54,6 +54,8 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      # Uploads served directly by nginx (read-only) — node never touches them
+      - uploads_data:/var/www/uploads:ro
       # Mount SSL certs from host — populate these before starting
       # Example with certbot: /etc/letsencrypt/live/<domain>/
       - ${SSL_CERT_PATH}:/etc/nginx/ssl/fullchain.pem:ro

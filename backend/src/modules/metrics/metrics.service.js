@@ -91,29 +91,27 @@ const getLatest = async (profileId, userId) => {
 
   const metricTypes = ['blood_pressure', 'cholesterol', 'blood_sugar', 'uric_acid'];
 
-  // Single round-trip: ordered by type then date desc so rows per type are
-  // contiguous — we group in JS and cap at 7 per type for sparklines.
-  const rows = await prisma.healthMetric.findMany({
-    where: { profileId, type: { in: metricTypes } },
-    orderBy: [{ type: 'asc' }, { recordedAt: 'desc' }],
-    select: {
-      type: true,
-      value: true,
-      secondaryValue: true,
-      unit: true,
-      notes: true,
-      recordedAt: true,
-    },
-  });
+  // One bounded query per type (parallel), each served entirely by the
+  // (profileId, type, recordedAt DESC) index. The previous single query had no
+  // take and pulled the profile's full metric history to keep 7 rows per type.
+  const perType = await Promise.all(metricTypes.map((type) =>
+    prisma.healthMetric.findMany({
+      where: { profileId, type },
+      orderBy: { recordedAt: 'desc' },
+      take: 7,
+      select: {
+        type: true,
+        value: true,
+        secondaryValue: true,
+        unit: true,
+        notes: true,
+        recordedAt: true,
+      },
+    })
+  ));
 
-  const grouped = new Map(metricTypes.map((t) => [t, []]));
-  for (const row of rows) {
-    const bucket = grouped.get(row.type);
-    if (bucket && bucket.length < 7) bucket.push(row);
-  }
-
-  return metricTypes.map((type) => {
-    const recent = grouped.get(type);
+  return metricTypes.map((type, i) => {
+    const recent = perType[i];
     if (!recent || recent.length === 0) return null;
     const latest = recent[0];
     return {

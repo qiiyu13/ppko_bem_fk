@@ -26,26 +26,28 @@ const getAppointmentById = async (req, res, next) => {
 
 const createAppointment = async (req, res, next) => {
   try {
-    const appointment = await appointmentsService.createAppointment(req.body, req.user.id);
+    const appointment = await appointmentsService.createAppointment(req.body, req.user.id, req.user.role);
     return success(res, appointment, 'Appointment created successfully', 201);
   } catch (err) {
+    if (err.statusCode === 403) return error(res, err.message, 403, 'FORBIDDEN');
     next(err);
   }
 };
 
 const updateAppointment = async (req, res, next) => {
   try {
-    const appointment = await appointmentsService.updateAppointment(req.params.id, req.body, req.user.id, req.user.role);
+    const appointment = await appointmentsService.updateAppointment(req.params.id, req.body, req.user.id, req.user.role, req.existingRecord);
     return success(res, appointment, 'Appointment updated successfully');
   } catch (err) {
     if (err.message === 'Appointment not found') return error(res, err.message, 404, 'NOT_FOUND');
+    if (err.statusCode === 403) return error(res, err.message, 403, 'FORBIDDEN');
     next(err);
   }
 };
 
 const deleteAppointment = async (req, res, next) => {
   try {
-    const result = await appointmentsService.deleteAppointment(req.params.id, req.user.id, req.user.role);
+    const result = await appointmentsService.deleteAppointment(req.params.id, req.user.id, req.user.role, req.existingRecord);
     return success(res, result);
   } catch (err) {
     if (err.message === 'Appointment not found') return error(res, err.message, 404, 'NOT_FOUND');

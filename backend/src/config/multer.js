@@ -67,10 +67,40 @@ const processAvatar = async (req, res, next) => {
   }
 };
 
+// Same treatment for article images: re-encoding through sharp both bounds the
+// payload and guarantees the stored file really is an image (the extension
+// check alone trusts the client). Wider than avatars; capped at 1280px.
+const processArticleImage = async (req, res, next) => {
+  if (!req.file) return next();
+  const original = req.file.path;
+  try {
+    const outName = `article-${Date.now()}-${Math.round(Math.random() * 1e9)}.webp`;
+    const outPath = path.join(articlesDir, outName);
+    await sharp(original)
+      .rotate()
+      .resize({ width: 1280, withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toFile(outPath);
+    fs.unlink(original, () => {});
+    req.file.filename = outName;
+    req.file.path = outPath;
+    next();
+  } catch (err) {
+    fs.unlink(original, () => {});
+    return res.status(400).json({
+      success: false,
+      error: { code: 'IMAGE_ERROR', message: 'Gagal memproses gambar' },
+    });
+  }
+};
+
 const uploadAvatarMiddleware = [
   makeUploadMiddleware(makeStorage(avatarsDir, 'avatar'), 'avatar'),
   processAvatar,
 ];
-const uploadArticleImageMiddleware = makeUploadMiddleware(makeStorage(articlesDir, 'article'), 'image');
+const uploadArticleImageMiddleware = [
+  makeUploadMiddleware(makeStorage(articlesDir, 'article'), 'image'),
+  processArticleImage,
+];
 
 module.exports = { uploadAvatarMiddleware, uploadArticleImageMiddleware };

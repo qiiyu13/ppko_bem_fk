@@ -35,7 +35,7 @@ const updateProfile = async (req, res, next) => {
   try {
     const data = { ...req.body };
     if (req.file) data.avatarPath = `/uploads/avatars/${req.file.filename}`;
-    const profile = await profilesService.updateProfile(req.params.id, data, req.user.id);
+    const profile = await profilesService.updateProfile(req.params.id, data, req.user.id, req.existingRecord);
     return success(res, profile, 'Profile updated successfully');
   } catch (err) {
     if (err.message === 'Profile not found') return error(res, err.message, 404, 'NOT_FOUND');
@@ -45,7 +45,7 @@ const updateProfile = async (req, res, next) => {
 
 const deleteProfile = async (req, res, next) => {
   try {
-    const result = await profilesService.deleteProfile(req.params.id, req.user.id);
+    const result = await profilesService.deleteProfile(req.params.id, req.user.id, req.existingRecord);
     return success(res, result);
   } catch (err) {
     if (err.message === 'Profile not found') return error(res, err.message, 404, 'NOT_FOUND');

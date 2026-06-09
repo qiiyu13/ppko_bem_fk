@@ -5,14 +5,14 @@ const { createAndSend } = require('../notifications/notifications.service');
 
 const prisma = require('../../utils/prisma');
 
-const createScreening = async (data, userId) => {
+const createScreening = async (data, userId, role) => {
   const profile = await prisma.familyProfile.findUnique({
     where: { id: data.profileId },
   });
   if (!profile) throw Object.assign(new Error('Profile not found'), { statusCode: 404 });
 
-  const screener = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
-  if (profile.userId !== userId && screener.role === 'PATIENT') {
+  // Role comes from the verified JWT (req.user.role) — no DB read needed.
+  if (profile.userId !== userId && role === 'PATIENT') {
     throw Object.assign(new Error('Not authorized to screen this profile'), { statusCode: 403 });
   }
 
@@ -127,9 +127,14 @@ const createScreening = async (data, userId) => {
   return result;
 };
 
-const getScreenings = async (profileId, query) => {
+const getScreenings = async (profileId, query, requester) => {
   const { page, limit, skip } = parsePagination(query);
   const where = profileId ? { profileId } : {};
+  // Patients may only read screenings of their own family profiles, regardless
+  // of which profileId they pass (or none). Admins see everything.
+  if (requester.role === 'PATIENT') {
+    where.profile = { userId: requester.id };
+  }
   const [data, total] = await Promise.all([
     prisma.medicalScreening.findMany({
       where, skip, take: limit,
