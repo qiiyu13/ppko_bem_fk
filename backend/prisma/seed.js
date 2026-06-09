@@ -6,54 +6,31 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting seed...\n');
 
-  // Clean existing data (respect FK order)
-  await prisma.healthMetric.deleteMany();
-  await prisma.medicalScreening.deleteMany();
-  await prisma.appointment.deleteMany();
-  await prisma.familyProfile.deleteMany();
-  await prisma.notification.deleteMany();
-  await prisma.article.deleteMany();
-  await prisma.region.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.tokenBlacklist.deleteMany();
-
-  console.log('✅ Cleaned existing data');
-
   const password = await hashPassword('Mediku@2026!');
 
-  await prisma.user.createMany({
-    data: [
-      {
-        id: 'superadmin-wati',
-        username: 'superadmin.wati',
-        responsibleName: 'Wati',
-        password,
-        role: 'SUPERADMIN',
-      },
-      {
-        id: 'superadmin-aidut',
-        username: 'superadmin.aidut',
-        responsibleName: 'Aidut',
-        password,
-        role: 'SUPERADMIN',
-      },
-      {
-        id: 'superadmin-qyu',
-        username: 'superadmin.qyu',
-        responsibleName: 'Qyu',
-        password,
-        role: 'SUPERADMIN',
-      },
-    ],
-  });
+  const superadmins = [
+    { id: 'superadmin-wati',  username: 'superadmin.wati',  responsibleName: 'Wati'  },
+    { id: 'superadmin-aidut', username: 'superadmin.aidut', responsibleName: 'Aidut' },
+    { id: 'superadmin-qyu',   username: 'superadmin.qyu',   responsibleName: 'Qyu'   },
+  ];
 
-  console.log('✅ Created 3 superadmin accounts');
+  for (const sa of superadmins) {
+    await prisma.user.upsert({
+      where: { id: sa.id },
+      update: {},
+      create: { ...sa, password, role: 'SUPERADMIN' },
+    });
+  }
+
+  console.log('✅ Ensured 3 superadmin accounts exist');
 
   // Dev-only fixture: tests/conflict.test.js and tests/websocket.test.js log in
   // as this patient. Without it the suite fails on a freshly-seeded database.
   if (process.env.NODE_ENV !== 'production') {
-    await prisma.user.create({
-      data: {
+    await prisma.user.upsert({
+      where: { kkNumber: '3275000000000003' },
+      update: {},
+      create: {
         kkNumber: '3275000000000003',
         responsibleName: 'Test Patient Fixture',
         password: await hashPassword('patient123'),
@@ -61,7 +38,7 @@ async function main() {
         phone: '08120000003',
       },
     });
-    console.log('✅ Created test fixture patient (3275000000000003 / patient123)');
+    console.log('✅ Ensured test fixture patient (3275000000000003 / patient123) exists');
   }
 
   console.log('\n🎉 Seed completed successfully!');

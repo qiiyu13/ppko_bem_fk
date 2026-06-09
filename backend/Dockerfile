@@ -14,4 +14,4 @@ RUN npx prisma generate
 COPY src/ ./src/
 RUN mkdir -p /app/uploads/avatars /app/uploads/articles
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy && node src/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node prisma/seed.js && node src/index.js"]
