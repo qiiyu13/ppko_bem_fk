@@ -65,6 +65,11 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Liveness probe — no DB, no rate limit, tiny body. Clients hit this to confirm
+// real internet reachability (not just a live network interface) before trusting
+// connectivity state. Must stay cheap and ahead of the rate limiter.
+app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
+
 // Routes
 app.use('/api/v1', apiLimiter, routes);
 

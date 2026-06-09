@@ -5,6 +5,7 @@ import '../config/env.dart';
 import '../exceptions/sync_conflict_exception.dart';
 import 'token_service.dart';
 import 'dio_cache_interceptor.dart';
+import 'connectivity_service.dart';
 
 class ApiService {
   static const String baseUrl = Env.apiBaseUrl;
@@ -40,6 +41,17 @@ class ApiService {
           handler.next(options);
         },
         onError: (error, handler) async {
+          // Timeout/connection failure on a live request means the link is
+          // effectively down even if the OS still reports a network interface.
+          // Flip offline now so the cache layer serves stale data and the next
+          // requests don't each burn the full timeout. ConnectivityService
+          // polls /health and recovers on its own.
+          if (error.type == DioExceptionType.connectionTimeout ||
+              error.type == DioExceptionType.receiveTimeout ||
+              error.type == DioExceptionType.sendTimeout ||
+              error.type == DioExceptionType.connectionError) {
+            ConnectivityService.instance.reportUnreachable();
+          }
           if (error.response?.statusCode == 401) {
             try {
               if (_isRefreshing && _refreshCompleter != null) {
