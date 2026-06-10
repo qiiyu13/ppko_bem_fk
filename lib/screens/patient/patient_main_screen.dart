@@ -1,10 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import '../../components/animated_line_navbar.dart';
 import '../../constants/app_colors.dart';
 import '../../models/family_profile.dart';
 import '../../services/profile_service.dart';
+import '../../widgets/profile_qr_dialog.dart';
 import 'tabs/home_tab.dart';
 import 'tabs/profil_tab.dart';
 import 'tabs/settings_tab.dart';
@@ -26,9 +25,9 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
 
   final List<String> _tabTitles = const [
     '',
-    'Jadwal',
+    'Jadwal Screening',
     'Berita',
-    'Profil',
+    'Anggota Keluarga',
   ];
 
   Widget _buildTab(int i) {
@@ -60,15 +59,15 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
       svgIcon: AssetHelper.getIconPath('icons8-schedule.svg'),
     ),
     NavBarItem(
-      icon: Icons.eco_outlined,
-      activeIcon: Icons.eco,
+      icon: Icons.article_outlined,
+      activeIcon: Icons.article,
       label: 'Berita',
       svgIcon: AssetHelper.getIconPath('icons8-magazine.svg'),
     ),
     NavBarItem(
       icon: Icons.person_outline,
       activeIcon: Icons.person,
-      label: 'Profil',
+      label: 'Keluarga',
       svgIcon: AssetHelper.getIconPath('icons8-person.svg'),
     ),
   ];
@@ -78,70 +77,6 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
       _currentIndex = index;
       _built.add(index);
     });
-  }
-
-  void _showQRCodeDialog(BuildContext context, FamilyProfile profile) {
-    final qrData = jsonEncode({
-      'profileId': profile.id,
-      'name': profile.name,
-      'nik': profile.nik,
-    });
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          profile.name,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            QrImageView(
-              data: qrData,
-              version: QrVersions.auto,
-              size: 220,
-              backgroundColor: Colors.white,
-              errorCorrectionLevel: QrErrorCorrectLevel.H,
-              eyeStyle: const QrEyeStyle(
-                eyeShape: QrEyeShape.square,
-                color: Colors.black,
-              ),
-              dataModuleStyle: const QrDataModuleStyle(
-                dataModuleShape: QrDataModuleShape.square,
-                color: Colors.black,
-              ),
-              embeddedImage: const AssetImage('assets/icon/logo_only.png'),
-              embeddedImageStyle: const QrEmbeddedImageStyle(
-                size: Size(44, 44),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'NIK: ${profile.formattedNik}',
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Tutup',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -159,7 +94,7 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
                 if (profile == null) return const SizedBox.shrink();
                 return FloatingActionButton(
                   heroTag: 'patient_home_qr_fab',
-                  onPressed: () => _showQRCodeDialog(context, profile),
+                  onPressed: () => showProfileQrDialog(context, profile),
                   backgroundColor: AppColors.primary,
                   child: const Icon(Icons.qr_code, color: Colors.white),
                 );
@@ -172,14 +107,7 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
               elevation: 0,
               surfaceTintColor: Colors.transparent,
               centerTitle: true,
-              title: Text(
-                _tabTitles[_currentIndex],
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              title: Text(_tabTitles[_currentIndex]),
               actions: _currentIndex == 3
                   ? [
                       IconButton(
@@ -190,9 +118,7 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            ParallaxPageRoute(
-                              page: const SettingsTab(),
-                            ),
+                            ParallaxPageRoute(page: const SettingsTab()),
                           );
                         },
                       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mediku/widgets/app_avatar.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/auth_service.dart';
@@ -93,16 +94,20 @@ class _AdminProfilTabState extends State<AdminProfilTab> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(height: ResponsiveSize.spacingLarge),
-                  _buildUnifiedCard(name, idDisplay, role, position, wilayah, phone),
-                  const SizedBox(height: 100),
-                ],
+          : RefreshIndicator(
+              onRefresh: _loadProfile,
+              color: AppColors.primary,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(height: ResponsiveSize.spacingLarge),
+                    _buildUnifiedCard(name, idDisplay, role, position, wilayah, phone, id),
+                    const SizedBox(height: 100),
+                  ],
+                ),
               ),
             ),
     );
@@ -115,6 +120,7 @@ class _AdminProfilTabState extends State<AdminProfilTab> {
     String position,
     String wilayah,
     String phone,
+    String fullId,
   ) {
     final avatarSize = ResponsiveSize.screenWidth * 0.22;
 
@@ -148,16 +154,46 @@ class _AdminProfilTabState extends State<AdminProfilTab> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Padding(
-                        padding: EdgeInsets.only(
-                          left: ResponsiveSize.paddingSmall * 0.5,
-                        ),
-                        child: Text(
-                          'ID: $idDisplay',
-                          style: TextStyle(
-                            fontSize: ResponsiveSize.fontMedium,
-                            color: AppColors.textOnPrimary.withValues(alpha: 0.7),
-                            fontWeight: FontWeight.w500,
+                      InkWell(
+                        onTap: fullId.isEmpty
+                            ? null
+                            : () {
+                                Clipboard.setData(ClipboardData(text: fullId));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('ID disalin ke papan klip'),
+                                    behavior: SnackBarBehavior.floating,
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            left: ResponsiveSize.paddingSmall * 0.5,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'ID: $idDisplay',
+                                style: TextStyle(
+                                  fontSize: ResponsiveSize.fontMedium,
+                                  color: AppColors.textOnPrimary
+                                      .withValues(alpha: 0.7),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              if (fullId.isNotEmpty) ...[
+                                const SizedBox(width: 6),
+                                Icon(
+                                  Icons.copy_rounded,
+                                  size: 14,
+                                  color: AppColors.textOnPrimary
+                                      .withValues(alpha: 0.7),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ),
@@ -236,9 +272,9 @@ class _AdminProfilTabState extends State<AdminProfilTab> {
               ),
               child: Column(
                 children: [
-                  _buildInfoRow('Jabatan', position == '—' ? position : position),
+                  _buildInfoRow('Jabatan', position),
                   _buildInfoRow('Wilayah Monitoring', wilayah),
-                  _buildInfoRow('Kontak', phone),
+                  _buildInfoRow('Kontak', phone, last: true),
                 ],
               ),
             ),

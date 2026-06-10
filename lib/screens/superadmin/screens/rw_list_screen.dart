@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../widgets/empty_state_widget.dart';
+import '../../../widgets/error_state_widget.dart';
 import 'rt_list_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
@@ -18,6 +20,7 @@ class RwListScreen extends StatefulWidget {
 class _RwListScreenState extends State<RwListScreen> {
   List<Map<String, dynamic>> _rws = [];
   bool _isLoading = true;
+  bool _loadFailed = false;
 
   @override
   void initState() {
@@ -36,13 +39,17 @@ class _RwListScreenState extends State<RwListScreen> {
         }
         return true;
       }).toList();
+      if (!mounted) return;
       setState(() {
         _rws = rwList;
         _isLoading = false;
+        _loadFailed = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
+        _loadFailed = true;
       });
     }
   }
@@ -73,21 +80,26 @@ class _RwListScreenState extends State<RwListScreen> {
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-            : RefreshIndicator(
+            : _loadFailed
+                ? ErrorStateWidget(
+                    message:
+                        'Gagal memuat daftar RW.\nPeriksa koneksi lalu coba lagi.',
+                    onRetry: () {
+                      setState(() => _isLoading = true);
+                      _loadRegions();
+                    },
+                  )
+                : RefreshIndicator(
                 onRefresh: _loadRegions,
                 color: AppColors.primary,
                 child: _rws.isEmpty
                     ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         children: const [
-                          SizedBox(height: 100),
-                          Center(
-                            child: Text(
-                              'Belum ada RW',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 16,
-                              ),
-                            ),
+                          SizedBox(height: 80),
+                          EmptyStateWidget(
+                            icon: Icons.holiday_village_outlined,
+                            title: 'Belum ada RW',
                           ),
                         ],
                       )

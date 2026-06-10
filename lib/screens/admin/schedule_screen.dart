@@ -75,6 +75,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
         final fallbackTime =
             '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 
+        final isPast = ScheduleStatus.isPast(date, notesTime, now);
+
         return {
           'id': a['id'],
           'title': a['title'],
@@ -84,13 +86,13 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           'time': notesTime.isNotEmpty ? notesTime : fallbackTime,
           'location': a['location'] ?? 'Lokasi belum ditentukan',
           'mapsUrl': mapsUrl,
-          'status': isToday ? 'Segera' : null,
-          'type': isToday ? 'today' : 'upcoming',
-          'isPast': ScheduleStatus.isPast(date, notesTime, now),
+          'status': isPast ? 'Selesai' : (isToday ? 'Segera' : null),
+          'type': isToday ? 'today' : (isPast ? 'past' : 'upcoming'),
+          'isPast': isPast,
           'notes': rawNotes,
           'updatedAt': a['updatedAt'],
         };
-      }).where((s) => s['isPast'] != true).toList();
+      }).toList();
 
       if (!mounted) return;
       setState(() {
@@ -103,7 +105,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
         _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memuat jadwal: $e')),
+        const SnackBar(
+            content: Text('Gagal memuat jadwal. Periksa koneksi lalu coba lagi.')),
       );
     }
   }
@@ -117,7 +120,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
   }
 
   List<Map<String, dynamic>> get _todaySchedules {
-    return _schedules.where((s) => s['type'] == 'today').toList();
+    return _schedules
+        .where((s) => s['type'] == 'today' && s['isPast'] != true)
+        .toList();
   }
 
   List<Map<String, dynamic>> get _upcomingSchedules {
@@ -232,7 +237,11 @@ class _ScheduleScreenState extends State<ScheduleScreen>
       return const Center(child: CircularProgressIndicator());
     }
     final today = DateTime.now();
-    return SingleChildScrollView(
+    return RefreshIndicator(
+      onRefresh: _loadAppointments,
+      color: AppColors.primary,
+      child: SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -281,6 +290,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           // Bottom spacer for nav bar clearance
           const SizedBox(height: 100),
         ],
+      ),
       ),
     );
   }
@@ -410,9 +420,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menghapus: $e'),
-            backgroundColor: Colors.red,
+          const SnackBar(
+            content: Text('Gagal menghapus jadwal. Coba lagi.'),
+            backgroundColor: AppColors.statusRed,
           ),
         );
       }
@@ -421,13 +431,19 @@ class _ScheduleScreenState extends State<ScheduleScreen>
 
   Widget _buildScheduleCard(Map<String, dynamic> schedule, bool isToday) {
     final date = schedule['date'] as DateTime;
-    final hasStatus = schedule['status'] != null;
+    final status = schedule['status'] as String?;
+    final hasStatus = status != null;
+    final isPast = schedule['isPast'] == true;
+    final statusColor =
+        status == 'Selesai' ? AppColors.textSecondary : AppColors.statusAmber;
     final mapsUrl = schedule['mapsUrl'] as String?;
     final hasMaps = mapsUrl != null && mapsUrl.isNotEmpty;
     final timeRange = schedule['timeRange'] as String?;
     final timeText = timeRange ?? schedule['time'] as String;
 
-    return Container(
+    return Opacity(
+      opacity: isPast ? 0.6 : 1.0,
+      child: Container(
       margin: EdgeInsets.only(bottom: ResponsiveSize.spacingMedium),
       padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
       decoration: BoxDecoration(
@@ -503,13 +519,13 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.15),
+                          color: statusColor.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          schedule['status'],
+                          status,
                           style: TextStyle(
-                            color: AppColors.success,
+                            color: statusColor,
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                           ),
@@ -595,6 +611,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
+            tooltip: 'Opsi jadwal',
             color: AppColors.card,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             onSelected: (value) {
@@ -605,29 +622,33 @@ class _ScheduleScreenState extends State<ScheduleScreen>
               }
             },
             itemBuilder: (_) => [
-              const PopupMenuItem(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
-                    SizedBox(width: 12),
-                    Text('Edit'),
-                  ],
+              if (!isPast)
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
+                      SizedBox(width: 12),
+                      Text('Edit'),
+                    ],
+                  ),
                 ),
-              ),
               const PopupMenuItem(
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                    Icon(Icons.delete_outline,
+                        color: AppColors.statusRed, size: 20),
                     SizedBox(width: 12),
-                    Text('Hapus', style: TextStyle(color: Colors.red)),
+                    Text('Hapus',
+                        style: TextStyle(color: AppColors.statusRed)),
                   ],
                 ),
               ),
             ],
           ),
         ],
+      ),
       ),
     );
   }
@@ -636,24 +657,29 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-      child: Column(
-        children: [
-          // Custom Calendar
-          _buildCustomCalendar(),
-          SizedBox(height: ResponsiveSize.spacingXLarge),
-          // Selected date events
-          if (_selectedDate != null) ...[
-            _buildSectionHeader(
-              'Jadwal ${_selectedDate!.day} ${IndonesianDate.fullMonth(_selectedDate!.month)} ${_selectedDate!.year}',
-            ),
-            SizedBox(height: ResponsiveSize.spacingMedium),
-            _buildSelectedDateEvents(),
+    return RefreshIndicator(
+      onRefresh: _loadAppointments,
+      color: AppColors.primary,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+        child: Column(
+          children: [
+            // Custom Calendar
+            _buildCustomCalendar(),
+            SizedBox(height: ResponsiveSize.spacingXLarge),
+            // Selected date events
+            if (_selectedDate != null) ...[
+              _buildSectionHeader(
+                'Jadwal ${_selectedDate!.day} ${IndonesianDate.fullMonth(_selectedDate!.month)} ${_selectedDate!.year}',
+              ),
+              SizedBox(height: ResponsiveSize.spacingMedium),
+              _buildSelectedDateEvents(),
+            ],
+            // Bottom spacer for nav bar clearance
+            const SizedBox(height: 100),
           ],
-          // Bottom spacer for nav bar clearance
-          const SizedBox(height: 100),
-        ],
+        ),
       ),
     );
   }

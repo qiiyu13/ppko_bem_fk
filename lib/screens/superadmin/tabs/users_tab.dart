@@ -5,6 +5,8 @@ import '../../../services/admin_service.dart';
 import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../widgets/app_avatar.dart';
+import '../../../widgets/empty_state_widget.dart';
+import '../../../widgets/error_state_widget.dart';
 import '../screens/rw_list_screen.dart';
 import '../screens/user_form_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
@@ -22,9 +24,12 @@ class _UsersTabState extends State<UsersTab>
 
   List<Map<String, dynamic>> _admins = [];
   bool _isLoading = true;
+  bool _loadUsersFailed = false;
+  bool _isDeleting = false;
   Map<String, dynamic>? _regionStats;
   List<Map<String, dynamic>> _villages = [];
   bool _isLoadingVillages = true;
+  bool _loadVillagesFailed = false;
 
   @override
   void initState() {
@@ -38,13 +43,17 @@ class _UsersTabState extends State<UsersTab>
   Future<void> _loadUsers() async {
     try {
       final users = await AdminService.getUsers(role: 'ADMIN');
+      if (!mounted) return;
       setState(() {
         _admins = users;
         _isLoading = false;
+        _loadUsersFailed = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
+        _loadUsersFailed = true;
       });
     }
   }
@@ -52,6 +61,7 @@ class _UsersTabState extends State<UsersTab>
   Future<void> _loadStats() async {
     try {
       final stats = await RegionService.getStats();
+      if (!mounted) return;
       setState(() {
         _regionStats = stats;
       });
@@ -139,21 +149,28 @@ class _UsersTabState extends State<UsersTab>
           ),
         ),
         Expanded(
-          child: RefreshIndicator(
+          child: _loadUsersFailed
+              ? ErrorStateWidget(
+                  message:
+                      'Gagal memuat daftar admin.\nPeriksa koneksi lalu coba lagi.',
+                  onRetry: () {
+                    setState(() => _isLoading = true);
+                    _loadUsers();
+                  },
+                )
+              : RefreshIndicator(
             onRefresh: _loadUsers,
             color: AppColors.primary,
             child: _admins.isEmpty
                 ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     children: const [
-                      SizedBox(height: 100),
-                      Center(
-                        child: Text(
-                          'Belum ada admin',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 16,
-                          ),
-                        ),
+                      SizedBox(height: 80),
+                      EmptyStateWidget(
+                        icon: Icons.people_outline,
+                        title: 'Belum ada admin',
+                        subtitle:
+                            'Tambah admin untuk mulai mengelola wilayah.',
                       ),
                     ],
                   )
@@ -175,7 +192,7 @@ class _UsersTabState extends State<UsersTab>
     final isActive = admin['isActive'] == true;
     final name = admin['responsibleName'] ?? admin['name'] ?? 'Unknown';
     final role = admin['role'] ?? 'ADMIN';
-    final id = admin['id'] ?? '';
+    final username = (admin['username'] as String?) ?? '';
 
     final region = admin['region'] as Map<String, dynamic>?;
     final villageName = region?['name'] as String? ?? 'Belum ditentukan';
@@ -257,14 +274,19 @@ class _UsersTabState extends State<UsersTab>
                             ),
                           ),
                         ),
-                        SizedBox(width: ResponsiveSize.paddingSmall),
-                        Text(
-                          'ID: ${id.length > 8 ? id.substring(0, 8) : id}...',
-                          style: TextStyle(
-                            fontSize: ResponsiveSize.fontSmall,
-                            color: AppColors.textSecondary,
+                        if (username.isNotEmpty) ...[
+                          SizedBox(width: ResponsiveSize.paddingSmall),
+                          Flexible(
+                            child: Text(
+                              '@$username',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: ResponsiveSize.fontSmall,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ],
@@ -273,6 +295,7 @@ class _UsersTabState extends State<UsersTab>
               Column(
                 children: [
                   IconButton(
+                    tooltip: 'Edit admin',
                     icon: const Icon(Icons.edit, color: AppColors.primary),
                     onPressed: () {
                       Navigator.push(
@@ -283,9 +306,12 @@ class _UsersTabState extends State<UsersTab>
                       ).then((_) => _loadUsers());
                     },
                   ),
+                  SizedBox(height: ResponsiveSize.spacingSmall * 0.5),
                   IconButton(
-                    icon: const Icon(Icons.delete, color: AppColors.textSecondary),
-                    onPressed: () => _deleteAdmin(admin),
+                    tooltip: 'Hapus admin',
+                    icon: const Icon(Icons.delete_outline,
+                        color: AppColors.statusRed),
+                    onPressed: _isDeleting ? null : () => _deleteAdmin(admin),
                   ),
                 ],
               ),
@@ -298,11 +324,17 @@ class _UsersTabState extends State<UsersTab>
 
   Future<void> _deleteAdmin(Map<String, dynamic> admin) async {
     final name = admin['responsibleName'] ?? admin['name'] ?? 'Unknown';
+    final region = admin['region'] as Map<String, dynamic>?;
+    final villageName = region?['name'] as String?;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Hapus Admin'),
-        content: Text('Apakah Anda yakin ingin menghapus $name?'),
+        content: Text(
+          villageName != null
+              ? 'Apakah Anda yakin ingin menghapus $name (wilayah $villageName)? Tindakan ini tidak dapat dibatalkan.'
+              : 'Apakah Anda yakin ingin menghapus $name? Tindakan ini tidak dapat dibatalkan.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -310,14 +342,18 @@ class _UsersTabState extends State<UsersTab>
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.statusRed,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Hapus'),
           ),
         ],
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed == true && !_isDeleting) {
+      setState(() => _isDeleting = true);
       try {
         await AdminService.deleteUser(
           admin['id'] as String,
@@ -326,7 +362,9 @@ class _UsersTabState extends State<UsersTab>
         _showSnackBar('Admin berhasil dihapus');
         _loadUsers();
       } catch (e) {
-        _showSnackBar('Gagal menghapus admin');
+        _showSnackBar('Gagal menghapus admin. Periksa koneksi lalu coba lagi.');
+      } finally {
+        if (mounted) setState(() => _isDeleting = false);
       }
     }
   }
@@ -344,12 +382,18 @@ class _UsersTabState extends State<UsersTab>
   Future<void> _loadVillages() async {
     try {
       final villages = await RegionService.getVillages();
+      if (!mounted) return;
       setState(() {
         _villages = villages;
         _isLoadingVillages = false;
+        _loadVillagesFailed = false;
       });
     } catch (e) {
-      setState(() => _isLoadingVillages = false);
+      if (!mounted) return;
+      setState(() {
+        _isLoadingVillages = false;
+        _loadVillagesFailed = true;
+      });
     }
   }
 
@@ -377,13 +421,20 @@ class _UsersTabState extends State<UsersTab>
         ],
       ),
     );
-    if (confirmed == true && controller.text.trim().isNotEmpty) {
+    final name = controller.text.trim();
+    if (confirmed == true && name.isNotEmpty) {
+      final exists = _villages.any((v) =>
+          (v['name'] as String?)?.trim().toLowerCase() == name.toLowerCase());
+      if (exists) {
+        _showSnackBar('Desa/kelurahan "$name" sudah terdaftar');
+        return;
+      }
       try {
-        await RegionService.createRegion(type: 'VILLAGE', name: controller.text.trim());
+        await RegionService.createRegion(type: 'VILLAGE', name: name);
         _loadVillages();
         _loadStats();
       } catch (e) {
-        _showSnackBar('Gagal menambah desa');
+        _showSnackBar('Gagal menambah desa. Periksa koneksi lalu coba lagi.');
       }
     }
   }
@@ -427,19 +478,28 @@ class _UsersTabState extends State<UsersTab>
         Expanded(
           child: _isLoadingVillages
               ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-              : RefreshIndicator(
+              : _loadVillagesFailed
+                  ? ErrorStateWidget(
+                      message:
+                          'Gagal memuat daftar desa.\nPeriksa koneksi lalu coba lagi.',
+                      onRetry: () {
+                        setState(() => _isLoadingVillages = true);
+                        _loadVillages();
+                      },
+                    )
+                  : RefreshIndicator(
                   onRefresh: _loadVillages,
                   color: AppColors.primary,
                   child: _villages.isEmpty
                       ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
                           children: const [
-                            SizedBox(height: 80),
-                            Center(
-                              child: Text(
-                                'Belum ada desa/kelurahan.\nTambah untuk mengaktifkan pendaftaran pasien.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
-                              ),
+                            SizedBox(height: 60),
+                            EmptyStateWidget(
+                              icon: Icons.location_city_outlined,
+                              title: 'Belum ada desa/kelurahan',
+                              subtitle:
+                                  'Tambah untuk mengaktifkan pendaftaran pasien.',
                             ),
                           ],
                         )

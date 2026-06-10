@@ -5,6 +5,7 @@ import '../../../models/tanaman_article.dart';
 import '../../../services/article_service.dart';
 import '../../../services/websocket_service.dart';
 import '../../../widgets/article_image.dart';
+import '../../../widgets/empty_state_widget.dart';
 import '../tanaman_article_detail_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
@@ -84,16 +85,26 @@ class _TanamanTogaTabState extends State<TanamanTogaTab> {
           children: [
             if (_error != null)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                color: AppColors.warning.withValues(alpha: 0.1),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                color: AppColors.statusAmber.withValues(alpha: 0.1),
                 child: Row(
                   children: [
-                    Icon(Icons.warning_amber, color: AppColors.warning, size: 16),
+                    const Icon(
+                      Icons.warning_amber,
+                      color: AppColors.statusAmber,
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         _error!,
-                        style: TextStyle(color: AppColors.warning, fontSize: 12),
+                        style: const TextStyle(
+                          color: AppColors.statusAmber,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ],
@@ -108,14 +119,10 @@ class _TanamanTogaTabState extends State<TanamanTogaTab> {
                     ? ListView(
                         children: const [
                           SizedBox(height: 100),
-                          Center(
-                            child: Text(
-                              'Berita segera datang',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 16,
-                              ),
-                            ),
+                          EmptyStateWidget(
+                            icon: Icons.article_outlined,
+                            title: 'Berita segera datang',
+                            subtitle: 'Artikel kesehatan akan muncul di sini',
                           ),
                         ],
                       )
@@ -134,9 +141,6 @@ class _TanamanTogaTabState extends State<TanamanTogaTab> {
                       ),
               ),
             ),
-
-            // Bottom spacing for nav bar
-            const SizedBox(height: 100),
           ],
         ),
       ),
@@ -155,9 +159,7 @@ class _ArticleCard extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          ParallaxPageRoute(
-            page: TanamanArticleDetailScreen(article: article),
-          ),
+          ParallaxPageRoute(page: TanamanArticleDetailScreen(article: article)),
         );
       },
       child: Container(

@@ -7,6 +7,8 @@ import '../../../services/websocket_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../widgets/article_image.dart';
 import '../../../widgets/dashboard/notification_bell.dart';
+import '../../../widgets/empty_state_widget.dart';
+import '../../../widgets/error_state_widget.dart';
 import '../article_editor_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
@@ -21,8 +23,10 @@ class _PublishTabState extends State<PublishTab> {
   List<TanamanArticle> _articles = [];
   String _selectedFilter = 'Semua';
   String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
   final List<String> _filters = ['Semua', 'Dipublikasikan', 'Draft'];
   bool _isLoading = false;
+  bool _hasError = false;
   StreamSubscription<Map<String, dynamic>>? _wsSub;
   Timer? _debounceTimer;
 
@@ -44,23 +48,35 @@ class _PublishTabState extends State<PublishTab> {
   void dispose() {
     _wsSub?.cancel();
     _debounceTimer?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
   Future<void> _loadArticles({bool showLoading = true}) async {
-    if (showLoading) setState(() => _isLoading = true);
+    if (showLoading) {
+      setState(() {
+        _isLoading = true;
+        _hasError = false;
+      });
+    }
     try {
       final articles = await ArticleService.getAllArticles();
+      if (!mounted) return;
       setState(() {
         _articles = articles;
         _isLoading = false;
+        _hasError = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _articles = TanamanArticle.getMockArticles();
         _isLoading = false;
+        // Keep whatever was already on screen; flag error only when empty.
+        _hasError = _articles.isEmpty;
       });
-      _showSnackBar('Gagal memuat artikel dari server. Menampilkan data lokal.');
+      if (_articles.isNotEmpty) {
+        _showSnackBar('Gagal memperbarui daftar artikel');
+      }
     }
   }
 
@@ -100,7 +116,9 @@ class _PublishTabState extends State<PublishTab> {
       setState(() {
         _articles.insert(0, result);
       });
-      _showSnackBar('Artikel berhasil dibuat');
+      _showSnackBar(result.id.startsWith('local_')
+          ? 'Artikel disimpan offline. Akan dikirim saat kembali online.'
+          : 'Artikel berhasil dibuat');
     }
   }
 
@@ -129,7 +147,7 @@ class _PublishTabState extends State<PublishTab> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Unpublish Artikel'),
+        title: const Text('Jadikan Draft'),
         content: Text('Artikel "${article.title}" akan diubah ke draft. Lanjutkan?'),
         actions: [
           TextButton(
@@ -159,7 +177,8 @@ class _PublishTabState extends State<PublishTab> {
                 _showSnackBar('Gagal mengubah status artikel');
               }
             },
-            child: const Text('Unpublish', style: TextStyle(color: Colors.orange)),
+            child: const Text('Jadikan Draft',
+                style: TextStyle(color: AppColors.statusAmber)),
           ),
         ],
       ),
@@ -167,6 +186,26 @@ class _PublishTabState extends State<PublishTab> {
   }
 
   void _publishArticle(TanamanArticle article) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Publikasikan Artikel'),
+        content: Text(
+            'Artikel "${article.title}" akan tampil untuk semua pasien. Lanjutkan?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Publikasikan',
+                style: TextStyle(color: AppColors.statusGreen)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     try {
       await ArticleService.publishArticle(article.id, article.updatedAt);
       if (!mounted) return;
@@ -208,7 +247,8 @@ class _PublishTabState extends State<PublishTab> {
                 _showSnackBar('Gagal menghapus artikel');
               }
             },
-            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+            child: const Text('Hapus',
+                style: TextStyle(color: AppColors.statusRed)),
           ),
         ],
       ),
@@ -246,6 +286,14 @@ class _PublishTabState extends State<PublishTab> {
               hasScrollBody: false,
               child: Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+            )
+          else if (_hasError)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: ErrorStateWidget(
+                message: 'Gagal memuat artikel.\nPeriksa koneksi lalu coba lagi.',
+                onRetry: _loadArticles,
               ),
             )
           else if (articles.isEmpty)
@@ -382,6 +430,7 @@ class _PublishTabState extends State<PublishTab> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
+        controller: _searchController,
         onChanged: (value) => setState(() => _searchQuery = value),
         decoration: InputDecoration(
           isDense: true,
@@ -395,6 +444,26 @@ class _PublishTabState extends State<PublishTab> {
             Icons.search,
             color: AppColors.textSecondary,
             size: 20,
+          ),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(
+                    Icons.close,
+                    color: AppColors.textSecondary,
+                    size: 20,
+                  ),
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Hapus pencarian',
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                )
+              : null,
+          suffixIconConstraints: const BoxConstraints(
+            minWidth: 36,
+            minHeight: 36,
           ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
@@ -442,11 +511,11 @@ class _PublishTabState extends State<PublishTab> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? color : AppColors.card,
+          color: isSelected ? color.withValues(alpha: 0.12) : AppColors.card,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? color : AppColors.divider,
-            width: 1,
+            width: isSelected ? 1.5 : 1,
           ),
         ),
         child: Row(
@@ -457,7 +526,7 @@ class _PublishTabState extends State<PublishTab> {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.textOnPrimary : color,
+                  color: color,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -466,9 +535,7 @@ class _PublishTabState extends State<PublishTab> {
             Text(
               label,
               style: TextStyle(
-                color: isSelected
-                    ? AppColors.textOnPrimary
-                    : AppColors.textPrimary,
+                color: isSelected ? color : AppColors.textPrimary,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -478,9 +545,7 @@ class _PublishTabState extends State<PublishTab> {
               Text(
                 count.toString(),
                 style: TextStyle(
-                  color: isSelected
-                      ? AppColors.textOnPrimary
-                      : AppColors.textSecondary,
+                  color: isSelected ? color : AppColors.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -583,6 +648,7 @@ class _PublishTabState extends State<PublishTab> {
                     size: 18,
                     color: AppColors.textSecondary,
                   ),
+                  tooltip: 'Opsi artikel',
                   padding: EdgeInsets.zero,
                   splashRadius: 18,
                   onSelected: (value) {
@@ -602,66 +668,46 @@ class _PublishTabState extends State<PublishTab> {
                     }
                   },
                   itemBuilder: (context) {
-                    if (article.isPublished && !article.isDraft) {
-                      return [
-                        const PopupMenuItem(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit, color: Colors.blue),
-                              SizedBox(width: 8),
-                              Text('Edit'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'unpublish',
-                          child: Row(
-                            children: [
-                              Icon(Icons.unpublished, color: Colors.orange),
-                              SizedBox(width: 8),
-                              Text('Unpublish'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete, color: Colors.red),
-                              SizedBox(width: 8),
-                              Text('Hapus'),
-                            ],
-                          ),
-                        ),
-                      ];
-                    }
+                    final isLive = article.isPublished && !article.isDraft;
                     return [
                       const PopupMenuItem(
                         value: 'edit',
                         child: Row(
                           children: [
-                            Icon(Icons.edit, color: Colors.blue),
+                            Icon(Icons.edit, color: AppColors.primary),
                             SizedBox(width: 8),
                             Text('Edit'),
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
-                        value: 'publish',
-                        child: Row(
-                          children: [
-                            Icon(Icons.publish, color: Colors.green),
-                            SizedBox(width: 8),
-                            Text('Publikasikan'),
-                          ],
+                      if (isLive)
+                        const PopupMenuItem(
+                          value: 'unpublish',
+                          child: Row(
+                            children: [
+                              Icon(Icons.unpublished,
+                                  color: AppColors.statusAmber),
+                              SizedBox(width: 8),
+                              Text('Jadikan Draft'),
+                            ],
+                          ),
+                        )
+                      else
+                        const PopupMenuItem(
+                          value: 'publish',
+                          child: Row(
+                            children: [
+                              Icon(Icons.publish, color: AppColors.statusGreen),
+                              SizedBox(width: 8),
+                              Text('Publikasikan'),
+                            ],
+                          ),
                         ),
-                      ),
                       const PopupMenuItem(
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete, color: Colors.red),
+                            Icon(Icons.delete, color: AppColors.statusRed),
                             SizedBox(width: 8),
                             Text('Hapus'),
                           ],
@@ -679,25 +725,22 @@ class _PublishTabState extends State<PublishTab> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.article_outlined,
-            size: 72,
-            color: AppColors.textSecondary.withValues(alpha: 0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Belum ada artikel ${_selectedFilter.toLowerCase()}',
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
+    final String title;
+    if (_searchQuery.trim().isNotEmpty) {
+      title = 'Tidak ada artikel yang cocok';
+    } else if (_selectedFilter == 'Dipublikasikan') {
+      title = 'Belum ada artikel dipublikasikan';
+    } else if (_selectedFilter == 'Draft') {
+      title = 'Belum ada draft';
+    } else {
+      title = 'Belum ada artikel';
+    }
+    return EmptyStateWidget(
+      icon: Icons.article_outlined,
+      title: title,
+      subtitle: _searchQuery.trim().isNotEmpty
+          ? 'Coba kata kunci lain'
+          : 'Tekan "Artikel Baru" untuk mulai menulis',
     );
   }
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../constants/app_colors.dart';
+import '../../../constants/app_theme.dart';
 import '../../../screens/welcome_screen.dart';
 import '../../../screens/common/settings/about_screen.dart';
 import '../../../screens/common/settings/help_screen.dart';
@@ -8,20 +10,32 @@ import '../../../screens/common/settings/notification_settings_screen.dart';
 import '../../../services/profile_service.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
-const String _kAppVersion = '1.0.0';
-
 void _push(BuildContext context, Widget screen) {
   Navigator.push(context, ParallaxPageRoute(page: screen));
 }
 
-class SettingsTab extends StatelessWidget {
+class SettingsTab extends StatefulWidget {
   const SettingsTab({super.key});
 
   @override
+  State<SettingsTab> createState() => _SettingsTabState();
+}
+
+class _SettingsTabState extends State<SettingsTab> {
+  String _appVersion = '';
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform().then((info) {
+      if (mounted) setState(() => _appVersion = info.version);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final padding = screenWidth * 0.04;
-    final spacing = screenWidth * 0.03;
+    const padding = 16.0;
+    const spacing = 12.0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -29,14 +43,7 @@ class SettingsTab extends StatelessWidget {
         backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Pengaturan',
-          style: TextStyle(
-            color: AppColors.primary,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        title: const Text('Pengaturan'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
@@ -45,11 +52,11 @@ class SettingsTab extends StatelessWidget {
       body: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
-          padding: EdgeInsets.all(padding),
+          padding: const EdgeInsets.all(padding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: spacing),
+              const SizedBox(height: spacing),
 
               // Settings Items - White cards
               _buildSettingsItem(
@@ -82,99 +89,77 @@ class SettingsTab extends StatelessWidget {
               _buildSettingsItem(
                 icon: Icons.info_outline,
                 title: 'Tentang Aplikasi',
-                subtitle: 'Versi $_kAppVersion',
+                subtitle: _appVersion.isEmpty ? 'Versi' : 'Versi $_appVersion',
                 onTap: () => _push(context, const AboutScreen()),
                 padding: padding,
                 spacing: spacing,
               ),
 
-              SizedBox(height: spacing),
+              const SizedBox(height: spacing),
 
-              // Logout Button - Dark teal
+              // Logout - destructive action styled as such (outlined, red)
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        backgroundColor: AppColors.background,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        title: const Text(
-                          'Keluar',
-                          style: TextStyle(
-                            fontSize: 20,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        content: const Text(
-                          'Apakah Anda yakin ingin keluar?',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text(
-                              'Batal',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              await ProfileService.instance.logout();
-                              if (context.mounted) {
-                                Navigator.pop(context);
-                                Navigator.of(context).pushAndRemoveUntil(
-                                  ParallaxPageRoute(
-                                    page: const WelcomeScreen(),
-                                  ),
-                                  (route) => false,
-                                );
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                            ),
-                            child: const Text(
-                              'Keluar',
-                              style: TextStyle(fontSize: 14),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                child: OutlinedButton.icon(
+                  onPressed: () => _confirmLogout(context),
                   icon: const Icon(
                     Icons.logout,
                     size: 20,
-                    color: AppColors.background,
+                    color: AppColors.statusRed,
                   ),
                   label: const Text(
                     'Keluar',
-                    style: TextStyle(fontSize: 16, color: AppColors.background),
+                    style: TextStyle(fontSize: 16, color: AppColors.statusRed),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.background,
-                    padding: EdgeInsets.symmetric(vertical: padding * 0.75),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.statusRed,
+                    side: const BorderSide(color: AppColors.statusRed),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 0,
                   ),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _confirmLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Keluar'),
+        content: const Text('Apakah Anda yakin ingin keluar?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await ProfileService.instance.logout();
+              if (context.mounted) {
+                Navigator.pop(context);
+                Navigator.of(context).pushAndRemoveUntil(
+                  ParallaxPageRoute(page: const WelcomeScreen()),
+                  (route) => false,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.statusRed,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Keluar'),
+          ),
+        ],
       ),
     );
   }
@@ -191,15 +176,9 @@ class SettingsTab extends StatelessWidget {
       margin: EdgeInsets.only(bottom: spacing),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.radiusCard),
         border: Border.all(color: AppColors.surface, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppTheme.cardShadowLight,
       ),
       child: ListTile(
         leading: Container(
@@ -214,13 +193,13 @@ class SettingsTab extends StatelessWidget {
           title,
           style: const TextStyle(
             fontWeight: FontWeight.w600,
-            fontSize: 14,
+            fontSize: 15,
             color: AppColors.textPrimary,
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
         trailing: const Icon(
           Icons.arrow_forward_ios,

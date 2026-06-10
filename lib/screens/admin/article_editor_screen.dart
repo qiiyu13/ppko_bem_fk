@@ -27,13 +27,59 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
 
   File? _selectedImage;
   String? _existingImagePath;
-  DateTime _publishDate = DateTime.now();
   bool _isLoading = false;
+
+  // Snapshot of initial state for unsaved-changes detection
+  late final String _initialTitle;
+  late final String _initialTags;
+  late final String? _initialImagePath;
+  late final String _initialContentJson;
 
   @override
   void initState() {
     super.initState();
     _initializeEditor();
+    _initialTitle = _titleController.text;
+    _initialTags = _tagsController.text;
+    _initialImagePath = _existingImagePath;
+    _initialContentJson =
+        jsonEncode(_quillController.document.toDelta().toJson());
+  }
+
+  bool get _isDirty {
+    if (_titleController.text != _initialTitle) return true;
+    if (_tagsController.text != _initialTags) return true;
+    if (_selectedImage != null) return true;
+    if (_existingImagePath != _initialImagePath) return true;
+    return jsonEncode(_quillController.document.toDelta().toJson()) !=
+        _initialContentJson;
+  }
+
+  Future<void> _confirmDiscard() async {
+    if (!_isDirty) {
+      Navigator.pop(context);
+      return;
+    }
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Buang Perubahan?'),
+        content: const Text(
+            'Perubahan artikel belum disimpan dan akan hilang jika keluar.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Lanjut Menulis'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Buang',
+                style: TextStyle(color: AppColors.statusRed)),
+          ),
+        ],
+      ),
+    );
+    if (discard == true && mounted) Navigator.pop(context);
   }
 
   void _initializeEditor() {
@@ -44,7 +90,6 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
       _existingImagePath = widget.article!.imagePath.isNotEmpty
           ? widget.article!.imagePath
           : null;
-      _publishDate = widget.article!.publishDate;
 
       // Parse content for Quill
       try {
@@ -182,34 +227,6 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
     );
   }
 
-  Future<void> _selectPublishDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _publishDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              surface: AppColors.card,
-              onSurface: AppColors.textPrimary,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      setState(() {
-        _publishDate = picked;
-      });
-    }
-  }
-
   bool _validateForm() {
     if (_titleController.text.trim().isEmpty) {
       _showSnackBar('Judul artikel tidak boleh kosong');
@@ -272,26 +289,13 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
         Navigator.pop(context, article);
       }
     } catch (e) {
+      // Reachable when image upload fails — article was NOT saved or queued.
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-        // Fallback to local-only article on API error
-        final now = DateTime.now();
-        final article = TanamanArticle(
-          id: widget.article?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-          title: _titleController.text.trim(),
-          content: jsonEncode(_quillController.document.toDelta().toJson()),
-          imagePath: imagePath,
-          publishDate: _publishDate,
-          createdAt: widget.article?.createdAt ?? now,
-          updatedAt: now,
-          tags: tags,
-          isPublished: publish,
-          isDraft: !publish,
-        );
-        _showSnackBar('Gagal menyimpan ke server. Artikel disimpan secara lokal.');
-        Navigator.pop(context, article);
+        _showSnackBar(
+            'Gagal mengunggah gambar. Artikel belum disimpan — coba lagi.');
       }
     }
   }
@@ -304,14 +308,19 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _confirmDiscard();
+      },
+      child: Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.card,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
+          onPressed: _confirmDiscard,
         ),
         title: Text(
           widget.article != null ? 'Edit Artikel' : 'Artikel Baru',
@@ -348,10 +357,6 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
                   _buildTitleInput(),
                   const SizedBox(height: 16),
 
-                  // Publish Date
-                  _buildPublishDatePicker(),
-                  const SizedBox(height: 16),
-
                   // Tags Input
                   _buildTagsInput(),
                   const SizedBox(height: 24),
@@ -367,6 +372,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
           // Bottom Action Bar
           _buildBottomActionBar(),
         ],
+      ),
       ),
     );
   }
@@ -458,49 +464,6 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
           maxLines: 2,
         ),
       ],
-    );
-  }
-
-  Widget _buildPublishDatePicker() {
-    return InkWell(
-      onTap: _selectPublishDate,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.calendar_today, color: AppColors.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Tanggal Publikasi',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${_publishDate.day}/${_publishDate.month}/${_publishDate.year}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-          ],
-        ),
-      ),
     );
   }
 

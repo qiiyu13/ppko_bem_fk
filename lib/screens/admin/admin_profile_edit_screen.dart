@@ -78,9 +78,9 @@ class _AdminProfileEditScreenState extends State<AdminProfileEditScreen> {
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Gagal: $e'),
-        backgroundColor: Colors.red,
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Gagal menyimpan profil. Periksa koneksi lalu coba lagi.'),
+        backgroundColor: AppColors.statusRed,
       ));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

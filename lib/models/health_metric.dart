@@ -19,6 +19,9 @@ class HealthMetric {
   final String? svgIcon;
   final String? svgBackground;
 
+  /// True when no measurement exists yet — UI must not show status or trend.
+  final bool isPlaceholder;
+
   const HealthMetric({
     required this.type,
     required this.name,
@@ -32,6 +35,7 @@ class HealthMetric {
     this.recentValues = const [],
     this.svgIcon,
     this.svgBackground,
+    this.isPlaceholder = false,
   });
 }
 
@@ -301,5 +305,4 @@ class HealthMetricData {
         return Icons.error;
     }
   }
-
 }

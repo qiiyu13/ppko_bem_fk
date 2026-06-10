@@ -10,6 +10,8 @@ import '../../../services/admin_service.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/screening_service.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../widgets/empty_state_widget.dart';
+import '../../../widgets/error_state_widget.dart';
 
 /// Report screen for admins/superadmins to extract the screenings they recorded,
 /// filtered by date range. Admins see only their own; superadmins can pick an
@@ -35,6 +37,7 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
 
   List<Map<String, dynamic>> _results = [];
   bool _fetching = false;
+  bool _fetchFailed = false;
 
   @override
   void initState() {
@@ -46,12 +49,21 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
   }
 
   Future<void> _init() async {
-    final me = await AuthService.getMe();
-    final role = (me?['role'] ?? '').toString();
-    _isSuperadmin = role == 'SUPERADMIN';
-    _screenerName = me?['responsibleName']?.toString();
-    if (_isSuperadmin) {
-      _admins = await AdminService.getUsers(role: 'ADMIN');
+    try {
+      final me = await AuthService.getMe();
+      final role = (me?['role'] ?? '').toString();
+      _isSuperadmin = role == 'SUPERADMIN';
+      _screenerName = me?['responsibleName']?.toString();
+      if (_isSuperadmin) {
+        _admins = await AdminService.getUsers(role: 'ADMIN');
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _fetchFailed = true;
+      });
+      return;
     }
     if (!mounted) return;
     setState(() => _loading = false);
@@ -64,17 +76,28 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
       DateTime(_to.year, _to.month, _to.day, 23, 59, 59, 999);
 
   Future<void> _fetch() async {
-    setState(() => _fetching = true);
-    final data = await ScreeningService.getScreeningReport(
-      screenedBy: _isSuperadmin ? _selectedAdminId : null,
-      from: _fromBound,
-      to: _toBound,
-    );
-    if (!mounted) return;
     setState(() {
-      _results = data;
-      _fetching = false;
+      _fetching = true;
+      _fetchFailed = false;
     });
+    try {
+      final data = await ScreeningService.getScreeningReport(
+        screenedBy: _isSuperadmin ? _selectedAdminId : null,
+        from: _fromBound,
+        to: _toBound,
+      );
+      if (!mounted) return;
+      setState(() {
+        _results = data;
+        _fetching = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _fetching = false;
+        _fetchFailed = true;
+      });
+    }
   }
 
   Future<void> _pickDate({required bool isFrom}) async {
@@ -84,6 +107,12 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
       initialDate: initial,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(primary: AppColors.primary),
+        ),
+        child: child!,
+      ),
     );
     if (picked == null) return;
     setState(() {
@@ -171,7 +200,7 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Export CSV'),
+        title: const Text('Salin CSV'),
         content: SingleChildScrollView(
           child: SelectableText(
             csv,
@@ -436,10 +465,41 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
     );
   }
 
+  Color _categoryColor(String category) {
+    final c = category.toLowerCase();
+    if (c.contains('high') || c.contains('tinggi')) return AppColors.statusRed;
+    if (c.contains('atten') || c.contains('waspada') || c.contains('perhati')) {
+      return AppColors.statusAmber;
+    }
+    if (c.contains('normal')) return AppColors.statusGreen;
+    return AppColors.textSecondary;
+  }
+
   Widget _buildList() {
-    if (_fetching) return const Center(child: CircularProgressIndicator());
+    if (_fetching) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+    if (_fetchFailed) {
+      return ErrorStateWidget(
+        message: 'Gagal memuat laporan.\nPeriksa koneksi lalu coba lagi.',
+        onRetry: () {
+          if (_screenerName == null) {
+            setState(() => _loading = true);
+            _init();
+          } else {
+            _fetch();
+          }
+        },
+      );
+    }
     if (_results.isEmpty) {
-      return const Center(child: Text('Tidak ada data pada rentang ini'));
+      return const EmptyStateWidget(
+        icon: Icons.assignment_outlined,
+        title: 'Tidak ada data pada rentang ini',
+        subtitle: 'Ubah tanggal atau petugas untuk melihat hasil lain.',
+      );
     }
     return ListView.separated(
       padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
@@ -447,16 +507,70 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
       separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (_, i) {
         final r = _results[i];
-        return Card(
-          margin: EdgeInsets.zero,
-          child: ListTile(
-            title: Text(_patientName(r)),
-            subtitle: Text(
-                '${_rowDate(r)} • TD ${_int(r['systolic'])}/${_int(r['diastolic'])} • IRD ${_num(r['irdScore'], decimals: 2)}'
-                '${_isSuperadmin ? '\nPetugas: ${_screenerOf(r)}' : ''}'),
-            isThreeLine: _isSuperadmin,
-            trailing: Text(_category(r),
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+        final category = _category(r);
+        final categoryColor = _categoryColor(category);
+        return Container(
+          padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.surface, width: 1),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _patientName(r),
+                      style: TextStyle(
+                        fontSize: ResponsiveSize.fontMedium,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${_rowDate(r)} • TD ${_int(r['systolic'])}/${_int(r['diastolic'])} • IRD ${_num(r['irdScore'], decimals: 2)}',
+                      style: TextStyle(
+                        fontSize: ResponsiveSize.fontSmall,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    if (_isSuperadmin) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Petugas: ${_screenerOf(r)}',
+                        style: TextStyle(
+                          fontSize: ResponsiveSize.fontSmall,
+                          color: AppColors.textSecondary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: categoryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  category,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: categoryColor,
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -472,8 +586,8 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: _exportCsv,
-                icon: const Icon(Icons.table_chart),
-                label: const Text('Export CSV'),
+                icon: const Icon(Icons.copy_all_outlined),
+                label: const Text('Salin CSV'),
               ),
             ),
             SizedBox(width: ResponsiveSize.paddingSmall),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
+import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../widgets/empty_state_widget.dart';
 import 'family_accounts_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
@@ -22,11 +24,37 @@ class RtListScreen extends StatefulWidget {
 
 class _RtListScreenState extends State<RtListScreen> {
   List<Map<String, dynamic>> _rts = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _rts = widget.rtData ?? [];
+    if (_rts.isEmpty) {
+      _isLoading = true;
+    }
+    _loadRts();
+  }
+
+  Future<void> _loadRts() async {
+    try {
+      final regions = await RegionService.getRegions();
+      final rw = regions.firstWhere(
+        (r) => r['id'] == widget.rwId,
+        orElse: () => const {},
+      );
+      final children = (rw['children'] as List<dynamic>? ?? [])
+          .cast<Map<String, dynamic>>();
+      if (!mounted) return;
+      setState(() {
+        if (rw.isNotEmpty) _rts = children;
+        _isLoading = false;
+      });
+    } catch (_) {
+      // Keep the data passed in from the parent screen as a fallback.
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -53,23 +81,33 @@ class _RtListScreenState extends State<RtListScreen> {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: _rts.isEmpty
+        child: _isLoading
             ? const Center(
-                child: Text(
-                  'Belum ada RT',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 16,
-                  ),
-                ),
+                child: CircularProgressIndicator(color: AppColors.primary),
               )
-            : ListView.builder(
-                padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                itemCount: _rts.length,
-                itemBuilder: (context, index) {
-                  final rt = _rts[index];
-                  return _buildRtCard(context, rt);
-                },
+            : RefreshIndicator(
+                onRefresh: _loadRts,
+                color: AppColors.primary,
+                child: _rts.isEmpty
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(height: 80),
+                          EmptyStateWidget(
+                            icon: Icons.home_outlined,
+                            title: 'Belum ada RT',
+                          ),
+                        ],
+                      )
+                    : ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+                        itemCount: _rts.length,
+                        itemBuilder: (context, index) {
+                          final rt = _rts[index];
+                          return _buildRtCard(context, rt);
+                        },
+                      ),
               ),
       ),
     );
@@ -104,7 +142,7 @@ class _RtListScreenState extends State<RtListScreen> {
                 rwName: widget.rwName,
               ),
             ),
-          );
+          ).then((_) => _loadRts());
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(

@@ -22,14 +22,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _addressController;
   late final TextEditingController _phoneController;
-  
+
   late String _selectedGender;
   String? _selectedBloodType;
   DateTime? _selectedBirthDate;
   File? _avatarFile;
   bool _isLoading = false;
 
-  static const List<String> _bloodTypes = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+  static const List<String> _bloodTypes = [
+    'A+',
+    'A-',
+    'B+',
+    'B-',
+    'O+',
+    'O-',
+    'AB+',
+    'AB-',
+  ];
 
   Future<void> _pickImage() async {
     final cropped = await AvatarPicker.pickAndCrop();
@@ -43,7 +52,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     _nikController = TextEditingController(text: widget.profile.nik);
     _nameController = TextEditingController(text: widget.profile.name);
-    _addressController = TextEditingController(text: widget.profile.address ?? '');
+    _addressController = TextEditingController(
+      text: widget.profile.address ?? '',
+    );
     _phoneController = TextEditingController(text: widget.profile.phone ?? '');
     final g = widget.profile.gender.toLowerCase();
     _selectedGender = g == 'wanita' ? 'Wanita' : 'Pria';
@@ -71,13 +82,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Edit Profil',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('Edit Profil'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -119,12 +124,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       : AppAvatar(
                           imageUrl: widget.profile.avatarUrl,
                           fallback: Icon(
-                            _selectedGender == 'Wanita' ? Icons.female : Icons.male,
+                            _selectedGender == 'Wanita'
+                                ? Icons.female
+                                : Icons.male,
                             size: 40,
                             color: AppColors.textOnPrimary,
                           ),
                           size: 90,
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                          backgroundColor: AppColors.primary.withValues(
+                            alpha: 0.15,
+                          ),
                           borderColor: AppColors.primary,
                           borderWidth: 2,
                         ),
@@ -134,10 +143,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               Center(
                 child: TextButton.icon(
                   onPressed: _pickImage,
-                  icon: const Icon(Icons.camera_alt, size: 18, color: AppColors.primary),
+                  icon: const Icon(
+                    Icons.camera_alt,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
                   label: Text(
                     _avatarFile != null ? 'Ganti Foto' : 'Tambah Foto',
-                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -146,7 +162,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               // NIK (read-only)
               ProfileFormField(
                 controller: _nikController,
-                label: 'NIK',
+                label: 'NIK *',
                 hint: 'Masukkan 16 digit NIK',
                 keyboardType: TextInputType.number,
                 maxLength: 16,
@@ -161,7 +177,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               // Name
               ProfileFormField(
                 controller: _nameController,
-                label: 'Nama Lengkap',
+                label: 'Nama Lengkap *',
                 hint: 'Masukkan nama lengkap',
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -175,19 +191,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const ProfileFieldLabel('Jenis Kelamin'),
               Row(
                 children: [
-                  Expanded(
-                    child: _buildGenderOption('Pria', Icons.male),
-                  ),
+                  Expanded(child: _buildGenderOption('Pria', Icons.male)),
                   const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildGenderOption('Wanita', Icons.female),
-                  ),
+                  Expanded(child: _buildGenderOption('Wanita', Icons.female)),
                 ],
               ),
               const SizedBox(height: 20),
 
               // Birth Date
-              const ProfileFieldLabel('Tanggal Lahir'),
+              const ProfileFieldLabel('Tanggal Lahir *'),
               InkWell(
                 onTap: _selectBirthDate,
                 child: Container(
@@ -222,7 +234,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 20),
 
               // Blood Type
-              const ProfileFieldLabel('Golongan Darah'),
+              const ProfileFieldLabel('Golongan Darah (Opsional)'),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -238,7 +250,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     },
                     selectedColor: AppColors.primary,
                     labelStyle: TextStyle(
-                      color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary,
+                      color: isSelected
+                          ? AppColors.textOnPrimary
+                          : AppColors.textPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   );
@@ -249,7 +263,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               // Address
               ProfileFormField(
                 controller: _addressController,
-                label: 'Alamat',
+                label: 'Alamat (Opsional)',
                 hint: 'Masukkan alamat lengkap',
                 maxLines: 3,
               ),
@@ -257,7 +271,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               // Phone
               ProfileFormField(
                 controller: _phoneController,
-                label: 'Nomor Telepon',
+                label: 'Nomor Telepon (Opsional)',
                 hint: 'Contoh: 081234567890',
                 keyboardType: TextInputType.phone,
               ),
@@ -283,7 +297,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Text(
@@ -309,7 +325,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : AppColors.card,
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.1)
+              : AppColors.card,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.surface,
@@ -341,15 +359,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _selectBirthDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedBirthDate ?? DateTime.now().subtract(const Duration(days: 365 * 30)),
+      initialDate:
+          _selectedBirthDate ??
+          DateTime.now().subtract(const Duration(days: 365 * 30)),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-            ),
+            colorScheme: const ColorScheme.light(primary: AppColors.primary),
           ),
           child: child!,
         );
@@ -366,9 +384,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedBirthDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih tanggal lahir')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Pilih tanggal lahir')));
       return;
     }
 
@@ -380,11 +398,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         gender: _selectedGender.toLowerCase(),
         birthDate: _selectedBirthDate!,
         bloodType: _selectedBloodType,
-        address: _addressController.text.isEmpty ? null : _addressController.text,
+        address: _addressController.text.isEmpty
+            ? null
+            : _addressController.text,
         phone: _phoneController.text.isEmpty ? null : _phoneController.text,
       );
 
-      await ProfileService.instance.updateProfile(updatedProfile, avatar: _avatarFile);
+      await ProfileService.instance.updateProfile(
+        updatedProfile,
+        avatar: _avatarFile,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -395,7 +418,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          const SnackBar(
+            content: Text('Gagal menyimpan perubahan. Periksa koneksi Anda.'),
+          ),
         );
       }
     } finally {

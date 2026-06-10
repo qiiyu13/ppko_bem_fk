@@ -294,6 +294,8 @@ class AppTheme {
       backgroundColor: AppColors.background,
       foregroundColor: AppColors.textPrimary,
       elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
       centerTitle: true,
       titleTextStyle: appBarTitle,
       iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 24),

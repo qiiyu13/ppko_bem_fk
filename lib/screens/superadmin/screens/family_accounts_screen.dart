@@ -4,6 +4,8 @@ import '../../../constants/app_colors.dart';
 import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../widgets/app_avatar.dart';
+import '../../../widgets/empty_state_widget.dart';
+import '../../../widgets/error_state_widget.dart';
 import '../../admin/admin_family_detail_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
@@ -27,6 +29,7 @@ class _FamilyAccountsScreenState extends State<FamilyAccountsScreen> {
   final ScrollController _scrollController = ScrollController();
   List<Map<String, dynamic>> _families = [];
   bool _isLoading = true;
+  bool _loadFailed = false;
   bool _isLoadingMore = false;
   int _currentPage = 1;
   int _totalPages = 1;
@@ -64,11 +67,13 @@ class _FamilyAccountsScreenState extends State<FamilyAccountsScreen> {
         _currentPage = 1;
         _totalPages = result.totalPages;
         _isLoading = false;
+        _loadFailed = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
+        _loadFailed = true;
       });
     }
   }
@@ -118,21 +123,26 @@ class _FamilyAccountsScreenState extends State<FamilyAccountsScreen> {
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-            : RefreshIndicator(
+            : _loadFailed
+                ? ErrorStateWidget(
+                    message:
+                        'Gagal memuat akun keluarga.\nPeriksa koneksi lalu coba lagi.',
+                    onRetry: () {
+                      setState(() => _isLoading = true);
+                      _loadFamilies();
+                    },
+                  )
+                : RefreshIndicator(
                 onRefresh: _loadFamilies,
                 color: AppColors.primary,
                 child: _families.isEmpty
                     ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         children: const [
-                          SizedBox(height: 100),
-                          Center(
-                            child: Text(
-                              'Belum ada akun keluarga',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 16,
-                              ),
-                            ),
+                          SizedBox(height: 80),
+                          EmptyStateWidget(
+                            icon: Icons.family_restroom,
+                            title: 'Belum ada akun keluarga',
                           ),
                         ],
                       )

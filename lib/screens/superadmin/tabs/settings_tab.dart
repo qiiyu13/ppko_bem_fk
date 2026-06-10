@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../constants/app_colors.dart';
 import '../../../screens/common/settings/about_screen.dart';
 import '../../../screens/common/settings/help_screen.dart';
@@ -13,8 +14,23 @@ void _push(BuildContext context, Widget screen) {
   Navigator.push(context, ParallaxPageRoute(page: screen));
 }
 
-class SuperadminSettingsTab extends StatelessWidget {
+class SuperadminSettingsTab extends StatefulWidget {
   const SuperadminSettingsTab({super.key});
+
+  @override
+  State<SuperadminSettingsTab> createState() => _SuperadminSettingsTabState();
+}
+
+class _SuperadminSettingsTabState extends State<SuperadminSettingsTab> {
+  String _appVersion = '';
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform().then((info) {
+      if (mounted) setState(() => _appVersion = info.version);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +84,7 @@ class SuperadminSettingsTab extends StatelessWidget {
               _buildSettingsItem(
                 icon: Icons.info_outline,
                 title: 'Tentang Aplikasi',
-                subtitle: 'Versi 1.0.0',
+                subtitle: _appVersion.isEmpty ? 'Versi aplikasi' : 'Versi $_appVersion',
                 onTap: () => _push(context, const AboutScreen()),
               ),
 

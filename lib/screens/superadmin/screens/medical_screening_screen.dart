@@ -106,7 +106,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(foregroundColor: AppColors.statusRed),
             child: const Text('Buang'),
           ),
         ],
@@ -242,7 +242,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Data screening berhasil disimpan!'),
-            backgroundColor: AppColors.success,
+            backgroundColor: AppColors.statusGreen,
           ),
         );
         Navigator.pop(context);
@@ -251,9 +251,10 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
       if (mounted) {
         setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menyimpan: $e'),
-            backgroundColor: AppColors.error,
+          const SnackBar(
+            content: Text(
+                'Gagal menyimpan data screening. Periksa koneksi lalu coba lagi.'),
+            backgroundColor: AppColors.statusRed,
           ),
         );
       }
@@ -1048,7 +1049,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
           textInputAction: TextInputAction.newline,
           decoration: InputDecoration(
             hintText: 'Opsional',
-            hintStyle: const TextStyle(color: AppColors.surface),
+            hintStyle: const TextStyle(color: AppColors.textSecondary),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppColors.surface),
@@ -1110,7 +1111,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
           },
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.surface),
+            hintStyle: const TextStyle(color: AppColors.textSecondary),
             suffixText: suffix,
             suffixStyle: const TextStyle(color: AppColors.textSecondary),
             border: OutlineInputBorder(
@@ -1127,11 +1128,12 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.error),
+              borderSide: const BorderSide(color: AppColors.statusRed),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.error, width: 1.5),
+              borderSide:
+                  const BorderSide(color: AppColors.statusRed, width: 1.5),
             ),
             contentPadding: EdgeInsets.symmetric(
               horizontal: ResponsiveSize.paddingMedium,

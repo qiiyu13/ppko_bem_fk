@@ -24,6 +24,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
   bool _isActive = true;
   bool _obscurePassword = true;
   bool _isSubmitting = false;
+  bool _triedSubmit = false;
   String? _selectedVillageId;
   List<Map<String, dynamic>> _villages = [];
   bool _isLoadingVillages = true;
@@ -66,6 +67,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
   }
 
   Future<void> _submit() async {
+    setState(() => _triedSubmit = true);
     if (!_formKey.currentState!.validate()) return;
     if (_selectedVillageId == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -110,8 +112,10 @@ class _UserFormScreenState extends State<UserFormScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Gagal: $e'),
-        backgroundColor: Colors.red,
+        content: Text(isEdit
+            ? 'Gagal menyimpan perubahan. Periksa koneksi lalu coba lagi.'
+            : 'Gagal menambah admin. Pastikan username belum dipakai, lalu coba lagi.'),
+        backgroundColor: AppColors.statusRed,
       ));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -258,7 +262,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.surface),
+            hintStyle: const TextStyle(color: AppColors.textSecondary),
             suffixIcon: suffix,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -371,7 +375,9 @@ class _UserFormScreenState extends State<UserFormScreen> {
                   ),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: _selectedVillageId == null ? AppColors.statusRed.withValues(alpha: 0.5) : AppColors.surface,
+                      color: _triedSubmit && _selectedVillageId == null
+                          ? AppColors.statusRed.withValues(alpha: 0.5)
+                          : AppColors.surface,
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -381,7 +387,9 @@ class _UserFormScreenState extends State<UserFormScreen> {
                         child: Text(
                           selectedVillage ?? 'Pilih desa/kelurahan',
                           style: TextStyle(
-                            color: selectedVillage != null ? AppColors.textPrimary : AppColors.surface,
+                            color: selectedVillage != null
+                                ? AppColors.textPrimary
+                                : AppColors.textSecondary,
                             fontSize: 14,
                           ),
                         ),
@@ -391,7 +399,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
                   ),
                 ),
               ),
-        if (_selectedVillageId == null)
+        if (_triedSubmit && _selectedVillageId == null)
           Padding(
             padding: const EdgeInsets.only(top: 6, left: 12),
             child: Text(

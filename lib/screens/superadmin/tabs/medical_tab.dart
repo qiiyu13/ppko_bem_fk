@@ -7,6 +7,7 @@ import '../../../services/region_service.dart';
 import '../../../services/screening_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../utils/page_transitions.dart';
+import '../../../widgets/error_state_widget.dart';
 import '../screens/screening_report_screen.dart';
 
 class MedicalTab extends StatefulWidget {
@@ -18,6 +19,7 @@ class MedicalTab extends StatefulWidget {
 
 class _MedicalTabState extends State<MedicalTab> {
   bool _isLoading = true;
+  bool _loadFailed = false;
   List<Map<String, dynamic>> _villageBreakdown = [];
   List<Map<String, dynamic>> _admins = [];
   int _totalScreenings = 0;
@@ -78,13 +80,14 @@ class _MedicalTabState extends State<MedicalTab> {
         _attentionCount = (cats['attention'] as num?)?.toInt() ?? 0;
         _normalCount = (cats['normal'] as num?)?.toInt() ?? 0;
         _isLoading = false;
+        _loadFailed = false;
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal memuat laporan')),
-      );
+      setState(() {
+        _isLoading = false;
+        _loadFailed = true;
+      });
     }
   }
 
@@ -122,7 +125,13 @@ class _MedicalTabState extends State<MedicalTab> {
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             )
-          : RefreshIndicator(
+          : _loadFailed
+              ? ErrorStateWidget(
+                  message:
+                      'Gagal memuat laporan.\nPeriksa koneksi lalu coba lagi.',
+                  onRetry: _load,
+                )
+              : RefreshIndicator(
               onRefresh: _load,
               color: AppColors.primary,
               child: ListView(
@@ -191,9 +200,9 @@ class _MedicalTabState extends State<MedicalTab> {
           SizedBox(height: ResponsiveSize.spacingMedium),
           Row(
             children: [
-              _legend('High', _highRiskCount, AppColors.statusRed),
+              _legend('Tinggi', _highRiskCount, AppColors.statusRed),
               const SizedBox(width: 16),
-              _legend('Attention', _attentionCount, AppColors.statusAmber),
+              _legend('Waspada', _attentionCount, AppColors.statusAmber),
               const SizedBox(width: 16),
               _legend('Normal', _normalCount, AppColors.statusGreen),
             ],
@@ -351,9 +360,9 @@ class _MedicalTabState extends State<MedicalTab> {
             ),
           ),
           _colHeader('Total'),
-          _colHeader('High', AppColors.statusRed),
-          _colHeader('Attn', AppColors.statusAmber),
-          _colHeader('Norm', AppColors.statusGreen),
+          _colHeader('Tinggi', AppColors.statusRed),
+          _colHeader('Waspada', AppColors.statusAmber),
+          _colHeader('Normal', AppColors.statusGreen),
         ],
       ),
     );

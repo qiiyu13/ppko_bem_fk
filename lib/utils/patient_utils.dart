@@ -20,13 +20,20 @@ class PatientUtils {
   static String riskLabel(String riskLevel) {
     switch (riskLevel) {
       case 'high':
-        return 'High Risk';
+        return 'Risiko Tinggi';
       case 'attention':
-        return 'Attention';
+        return 'Waspada';
       case 'normal':
         return 'Normal';
       default:
-        return 'Unknown';
+        return 'Tidak Diketahui';
     }
+  }
+
+  /// IRD score thresholds: >= 1.0 high, >= 0.75 attention, else normal.
+  static String irdCategoryFromScore(double score) {
+    if (score >= 1.0) return 'high';
+    if (score >= 0.75) return 'attention';
+    return 'normal';
   }
 }

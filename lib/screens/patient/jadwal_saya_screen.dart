@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constants/app_colors.dart';
+import '../../constants/app_theme.dart';
 import '../../services/appointment_service.dart';
+import '../../widgets/error_state_widget.dart';
 import '../../services/profile_service.dart';
 import '../../services/websocket_service.dart';
 import '../../utils/date_utils.dart';
@@ -31,6 +33,8 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
   DateTime? _selectedDate;
 
   List<Map<String, dynamic>> _schedules = [];
+  bool _isLoading = true;
+  String? _error;
   StreamSubscription<Map<String, dynamic>>? _wsSub;
 
   @override
@@ -55,50 +59,69 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
   Future<void> _loadAppointments() async {
     try {
       final profileId = ProfileService.instance.activeProfile?.id;
-      final appointments = await AppointmentService.getAppointments(profileId: profileId);
+      final appointments = await AppointmentService.getAppointments(
+        profileId: profileId,
+      );
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
-      final mapped = appointments.map((a) {
-        final date = DateTime.parse(a['date'] as String).toLocal();
-        final dateOnly = DateTime(date.year, date.month, date.day);
-        final isToday = dateOnly == today;
+      final mapped = appointments
+          .map((a) {
+            final date = DateTime.parse(a['date'] as String).toLocal();
+            final dateOnly = DateTime(date.year, date.month, date.day);
+            final isToday = dateOnly == today;
 
-        String notesTime = '';
-        String? mapsUrl;
-        final rawNotes = a['notes'];
-        if (rawNotes is String && rawNotes.isNotEmpty) {
-          try {
-            final parsed = jsonDecode(rawNotes) as Map<String, dynamic>;
-            notesTime = parsed['time'] as String? ?? '';
-            mapsUrl = parsed['mapsUrl'] as String?;
-          } catch (_) {}
-        }
+            String notesTime = '';
+            String? mapsUrl;
+            final rawNotes = a['notes'];
+            if (rawNotes is String && rawNotes.isNotEmpty) {
+              try {
+                final parsed = jsonDecode(rawNotes) as Map<String, dynamic>;
+                notesTime = parsed['time'] as String? ?? '';
+                mapsUrl = parsed['mapsUrl'] as String?;
+              } catch (_) {}
+            }
 
-        final fallbackRange =
-            '${date.hour.toString().padLeft(2, '0')}:00 - ${(date.hour + 2).toString().padLeft(2, '0')}:00';
-        final fallbackTime =
-            '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+            final fallbackRange =
+                '${date.hour.toString().padLeft(2, '0')}:00 - ${(date.hour + 2).toString().padLeft(2, '0')}:00';
+            final fallbackTime =
+                '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 
-        return {
-          'id': a['id'],
-          'title': a['title'],
-          'date': date,
-          'timeRange':
-              notesTime.isNotEmpty ? notesTime : (isToday ? fallbackRange : null),
-          'time': notesTime.isNotEmpty ? notesTime : fallbackTime,
-          'location': a['location'] ?? 'Lokasi belum ditentukan',
-          'mapsUrl': mapsUrl,
-          'status': isToday ? 'Segera' : null,
-          'type': isToday ? 'today' : 'upcoming',
-          'isPast': ScheduleStatus.isPast(date, notesTime, now),
-        };
-      }).where((s) => s['isPast'] != true).toList();
+            return {
+              'id': a['id'],
+              'title': a['title'],
+              'date': date,
+              'timeRange': notesTime.isNotEmpty
+                  ? notesTime
+                  : (isToday ? fallbackRange : null),
+              'time': notesTime.isNotEmpty ? notesTime : fallbackTime,
+              'location': a['location'] ?? 'Lokasi belum ditentukan',
+              'mapsUrl': mapsUrl,
+              'status': isToday ? 'Segera' : null,
+              'type': isToday ? 'today' : 'upcoming',
+              'isPast': ScheduleStatus.isPast(date, notesTime, now),
+            };
+          })
+          .where((s) => s['isPast'] != true)
+          .toList();
 
+      if (!mounted) return;
       setState(() {
         _schedules = mapped;
+        _isLoading = false;
+        _error = null;
       });
-    } catch (_) {}
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        // Keep existing data on background refresh failures; only surface
+        // the error when there is nothing to show.
+        if (_schedules.isEmpty) {
+          _error = 'Gagal memuat jadwal. Periksa koneksi Anda.';
+        }
+      });
+    }
   }
 
   @override
@@ -132,6 +155,35 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
   @override
   Widget build(BuildContext context) {
     ResponsiveSize.init(context);
+
+    if (_isLoading) {
+      final loading = Container(
+        color: AppColors.background,
+        child: const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+      if (widget.isEmbedded) return loading;
+      return Scaffold(backgroundColor: AppColors.background, body: loading);
+    }
+
+    if (_error != null) {
+      final error = Container(
+        color: AppColors.background,
+        child: ErrorStateWidget(
+          message: _error!,
+          onRetry: () {
+            setState(() {
+              _isLoading = true;
+              _error = null;
+            });
+            _loadAppointments();
+          },
+        ),
+      );
+      if (widget.isEmbedded) return error;
+      return Scaffold(backgroundColor: AppColors.background, body: error);
+    }
 
     final content = Column(
       children: [
@@ -197,14 +249,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
         backgroundColor: AppColors.background,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        title: const Text(
-          'Jadwal Screening',
-          style: TextStyle(
-            color: AppColors.primary,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        title: const Text('Jadwal Screening'),
         centerTitle: true,
       ),
       body: content,
@@ -218,54 +263,55 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
       onRefresh: _loadAppointments,
       color: AppColors.primary,
       child: SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Hari Ini Section
-          _buildSectionHeader(
-            'Hari Ini',
-            trailing: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: ResponsiveSize.paddingMedium,
-                vertical: ResponsiveSize.paddingSmall * 0.5,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.primarySurface.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '${today.day} ${_getFullMonthName(today.month)} ${today.year}',
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Hari Ini Section
+            _buildSectionHeader(
+              'Hari Ini',
+              trailing: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveSize.paddingMedium,
+                  vertical: ResponsiveSize.paddingSmall * 0.5,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySurface,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${today.day} ${_getFullMonthName(today.month)} ${today.year}',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ),
-          ),
-          SizedBox(height: ResponsiveSize.spacingMedium),
-          if (_todaySchedules.isEmpty)
-            _buildEmptyState('Tidak ada jadwal screening hari ini')
-          else
-            ..._todaySchedules.map((schedule) => _buildEventCard(schedule, true)),
+            SizedBox(height: ResponsiveSize.spacingMedium),
+            if (_todaySchedules.isEmpty)
+              _buildEmptyState('Tidak ada jadwal screening hari ini')
+            else
+              ..._todaySchedules.map(
+                (schedule) => _buildEventCard(schedule, true),
+              ),
 
-          SizedBox(height: ResponsiveSize.spacingXLarge),
+            SizedBox(height: ResponsiveSize.spacingXLarge),
 
-          // Akan Datang Section
-          _buildSectionHeader('Akan Datang'),
-          SizedBox(height: ResponsiveSize.spacingMedium),
-          if (_upcomingSchedules.isEmpty)
-            _buildEmptyState('Belum ada jadwal screening mendatang')
-          else
-            ..._upcomingSchedules.map(
-              (schedule) => _buildEventCard(schedule, false),
-            ),
-          // Bottom spacer for nav bar clearance
-          const SizedBox(height: 100),
-        ],
-      ),
+            // Akan Datang Section
+            _buildSectionHeader('Akan Datang'),
+            SizedBox(height: ResponsiveSize.spacingMedium),
+            if (_upcomingSchedules.isEmpty)
+              _buildEmptyState('Belum ada jadwal screening mendatang')
+            else
+              ..._upcomingSchedules.map(
+                (schedule) => _buildEventCard(schedule, false),
+              ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
@@ -292,20 +338,31 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
       padding: EdgeInsets.all(ResponsiveSize.paddingLarge),
       decoration: BoxDecoration(
         color: AppColors.surface.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.radiusCard),
       ),
       child: Center(
         child: Column(
           children: [
-            Icon(
-              Icons.event_busy_outlined,
-              size: 48,
-              color: AppColors.textSecondary.withValues(alpha: 0.5),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.primarySurface,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.event_busy_outlined,
+                size: 28,
+                color: AppColors.primary,
+              ),
             ),
             SizedBox(height: ResponsiveSize.spacingSmall),
             Text(
               message,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+              ),
             ),
           ],
         ),
@@ -339,13 +396,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
         color: AppColors.card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.surface, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textPrimary.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppTheme.cardShadowLight,
       ),
       child: Row(
         children: [
@@ -367,7 +418,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
                   _getMonthName(date.month).toUpperCase(),
                   style: const TextStyle(
                     color: AppColors.textSecondary,
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -408,14 +459,14 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.15),
+                          color: AppColors.statusGreen.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           schedule['status'],
-                          style: TextStyle(
-                            color: AppColors.success,
-                            fontSize: 11,
+                          style: const TextStyle(
+                            color: AppColors.statusGreen,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -510,25 +561,24 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
       onRefresh: _loadAppointments,
       color: AppColors.primary,
       child: SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-      child: Column(
-        children: [
-          // Custom Calendar
-          _buildCustomCalendar(),
-          SizedBox(height: ResponsiveSize.spacingXLarge),
-          // Selected date events
-          if (_selectedDate != null) ...[
-            _buildSectionHeader(
-              'Jadwal ${_selectedDate!.day} ${_getFullMonthName(_selectedDate!.month)} ${_selectedDate!.year}',
-            ),
-            SizedBox(height: ResponsiveSize.spacingMedium),
-            _buildSelectedDateEvents(),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+        child: Column(
+          children: [
+            // Custom Calendar
+            _buildCustomCalendar(),
+            SizedBox(height: ResponsiveSize.spacingXLarge),
+            // Selected date events
+            if (_selectedDate != null) ...[
+              _buildSectionHeader(
+                'Jadwal ${_selectedDate!.day} ${_getFullMonthName(_selectedDate!.month)} ${_selectedDate!.year}',
+              ),
+              SizedBox(height: ResponsiveSize.spacingMedium),
+              _buildSelectedDateEvents(),
+            ],
+            const SizedBox(height: 24),
           ],
-          // Bottom spacer for nav bar clearance
-          const SizedBox(height: 100),
-        ],
-      ),
+        ),
       ),
     );
   }
@@ -551,13 +601,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
         color: AppColors.card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.surface, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textPrimary.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppTheme.cardShadowLight,
       ),
       child: Column(
         children: [
@@ -566,7 +610,10 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                icon: const Icon(Icons.chevron_left, color: AppColors.textSecondary),
+                icon: const Icon(
+                  Icons.chevron_left,
+                  color: AppColors.textSecondary,
+                ),
                 onPressed: () {
                   setState(() {
                     _focusedDate = DateTime(
@@ -585,7 +632,10 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                icon: const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.textSecondary,
+                ),
                 onPressed: () {
                   setState(() {
                     _focusedDate = DateTime(
@@ -636,10 +686,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
               final date = DateTime(_focusedDate.year, _focusedDate.month, day);
               final isSelected =
                   _selectedDate != null && _isSameDay(date, _selectedDate!);
-              final isToday = _isSameDay(
-                date,
-                DateTime.now(),
-              );
+              final isToday = _isSameDay(date, DateTime.now());
               final hasEvent = _markedDates.any((d) => _isSameDay(d, date));
 
               return GestureDetector(
@@ -706,7 +753,10 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
                 const SizedBox(width: 6),
                 const Text(
                   'Ada Jadwal',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),

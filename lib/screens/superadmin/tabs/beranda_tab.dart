@@ -9,6 +9,7 @@ import '../../../services/region_service.dart';
 import '../../../services/token_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../widgets/dashboard/greeting_header.dart';
+import '../../../widgets/error_state_widget.dart';
 import '../../admin/qr_scanner_screen.dart';
 import '../screens/appointment_detail_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
@@ -25,8 +26,9 @@ class _BerandaTabState extends State<BerandaTab> {
   static const Color blueAccent = Color(0xFF1976D2);
 
   bool _isLoading = true;
+  bool _loadFailed = false;
   int _totalPatients = 0;
-  int _todayScreenings = 0;
+  int _totalScreenings = 0;
   int _highRiskCount = 0;
   int _attentionCount = 0;
   int _normalCount = 0;
@@ -90,36 +92,30 @@ class _BerandaTabState extends State<BerandaTab> {
 
       setState(() {
         _totalPatients = (regionStats['profileCount'] as num?)?.toInt() ?? 0;
-        _todayScreenings = (stats['total'] as num?)?.toInt() ?? 0;
+        _totalScreenings = (stats['total'] as num?)?.toInt() ?? 0;
         _highRiskCount = highRiskCount;
         _attentionCount = attentionCount;
         _normalCount = normalCount;
         _upcomingAppointments = upcoming.take(3).toList();
         _isLoading = false;
+        _loadFailed = false;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal memuat statistik')),
-      );
+      setState(() {
+        _isLoading = false;
+        _loadFailed = true;
+      });
     }
   }
 
   Future<void> _refresh() async {
-    await _loadAll();
+    await Future.wait([_loadAll(), _loadUser()]);
   }
 
   @override
   Widget build(BuildContext context) {
     ResponsiveSize.init(context);
-
-    if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
-      );
-    }
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(
@@ -127,7 +123,7 @@ class _BerandaTabState extends State<BerandaTab> {
       ),
       child: Scaffold(
         backgroundColor: AppColors.background,
-        floatingActionButton: FloatingActionButton(
+        floatingActionButton: FloatingActionButton.extended(
           heroTag: 'superadmin_beranda_fab',
           onPressed: () {
             Navigator.push(
@@ -136,7 +132,8 @@ class _BerandaTabState extends State<BerandaTab> {
             );
           },
           backgroundColor: AppColors.primary,
-          child: const Icon(Icons.qr_code_scanner, color: Colors.white),
+          icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
+          label: const Text('Scan QR', style: TextStyle(color: Colors.white)),
         ),
         body: RefreshIndicator(
           color: AppColors.primary,
@@ -157,47 +154,84 @@ class _BerandaTabState extends State<BerandaTab> {
                 ),
                 Padding(
                   padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildOverviewCard(),
+                  child: _isLoading
+                      ? _buildSkeleton()
+                      : _loadFailed
+                          ? ErrorStateWidget(
+                              message:
+                                  'Gagal memuat statistik.\nPeriksa koneksi lalu coba lagi.',
+                              onRetry: () {
+                                setState(() => _isLoading = true);
+                                _loadAll();
+                              },
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildOverviewCard(),
 
-                      SizedBox(height: ResponsiveSize.spacingXLarge),
+                                SizedBox(height: ResponsiveSize.spacingXLarge),
 
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _sectionTitle('Jadwal Mendatang'),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              borderRadius: BorderRadius.circular(6),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    _sectionTitle('Jadwal Mendatang'),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surface,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        'Hanya Lihat',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: ResponsiveSize.spacingMedium),
+                                _buildUpcomingAppointments(),
+
+                                SizedBox(
+                                    height: ResponsiveSize.spacingXLarge * 2),
+                              ],
                             ),
-                            child: Text(
-                              'Read-only',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: ResponsiveSize.spacingMedium),
-                      _buildUpcomingAppointments(),
-
-                      SizedBox(height: ResponsiveSize.spacingXLarge * 2),
-                    ],
-                  ),
                 ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _skeletonBox(double height) {
+    return Container(
+      width: double.infinity,
+      height: height,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+    );
+  }
+
+  Widget _buildSkeleton() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _skeletonBox(132),
+        SizedBox(height: ResponsiveSize.spacingXLarge),
+        _skeletonBox(24),
+        SizedBox(height: ResponsiveSize.spacingMedium),
+        _skeletonBox(180),
+      ],
     );
   }
 
@@ -255,9 +289,9 @@ class _BerandaTabState extends State<BerandaTab> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _miniStat('Screened', _todayScreenings, AppColors.primary),
-              _miniStat('High', _highRiskCount, AppColors.statusRed),
-              _miniStat('Attn', _attentionCount, AppColors.statusAmber),
+              _miniStat('Skrining', _totalScreenings, AppColors.primary),
+              _miniStat('Tinggi', _highRiskCount, AppColors.statusRed),
+              _miniStat('Waspada', _attentionCount, AppColors.statusAmber),
               _miniStat('Normal', _normalCount, AppColors.statusGreen),
             ],
           ),

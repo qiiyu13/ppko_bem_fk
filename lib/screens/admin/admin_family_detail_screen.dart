@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:mediku/widgets/app_avatar.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../config/env.dart';
 import '../../constants/app_colors.dart';
 import '../../services/api_service.dart';
 import '../../utils/patient_utils.dart';
 import '../../utils/responsive_size.dart';
+import '../../widgets/empty_state_widget.dart';
+import '../../widgets/error_state_widget.dart';
 import 'admin_patient_detail_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
@@ -25,6 +28,7 @@ class AdminFamilyDetailScreen extends StatefulWidget {
 
 class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
   bool _isLoading = true;
+  bool _hasError = false;
   Map<String, dynamic>? _data;
 
   @override
@@ -34,6 +38,10 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
   }
 
   Future<void> _fetch() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
     try {
       final response =
           await ApiService.get('/admin/patients/${widget.family['id']}');
@@ -45,9 +53,19 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
+  }
+
+  Future<void> _callPhone(String phone) async {
+    final uri = Uri(scheme: 'tel', path: phone);
+    if (!await launchUrl(uri)) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal memuat data keluarga')),
+        const SnackBar(content: Text('Tidak dapat membuka aplikasi telepon')),
       );
     }
   }
@@ -104,6 +122,11 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
+          : _hasError
+          ? ErrorStateWidget(
+              message: 'Gagal memuat data keluarga.\nPeriksa koneksi lalu coba lagi.',
+              onRetry: _fetch,
+            )
           : ListView(
               padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
               children: [
@@ -121,22 +144,12 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
                   ),
                 ),
                 if (profiles.isEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 48),
-                    alignment: Alignment.center,
-                    child: Column(
-                      children: [
-                        const Icon(Icons.group_off,
-                            size: 48, color: AppColors.textSecondary),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Belum ada profil terdaftar',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: ResponsiveSize.fontMedium,
-                          ),
-                        ),
-                      ],
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: EmptyStateWidget(
+                      icon: Icons.group_off,
+                      title: 'Belum ada profil terdaftar',
+                      subtitle: 'Anggota keluarga akan muncul di sini setelah didaftarkan',
                     ),
                   )
                 else
@@ -227,7 +240,12 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
             children: [
               _infoChip(Icons.group, '$count anggota'),
               const SizedBox(width: 8),
-              if (phone.isNotEmpty) _infoChip(Icons.phone, phone),
+              if (phone.isNotEmpty)
+                _infoChip(
+                  Icons.phone,
+                  phone,
+                  onTap: () => _callPhone(phone),
+                ),
             ],
           ),
         ],
@@ -235,28 +253,41 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
     );
   }
 
-  Widget _infoChip(IconData icon, String label) {
-    return Container(
+  Widget _infoChip(IconData icon, String label, {VoidCallback? onTap}) {
+    final isAction = onTap != null;
+    final chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.5),
+        color: isAction
+            ? AppColors.primarySurface
+            : AppColors.surface.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppColors.textSecondary),
+          Icon(
+            icon,
+            size: 14,
+            color: isAction ? AppColors.primary : AppColors.textSecondary,
+          ),
           const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
               fontSize: ResponsiveSize.fontSmall,
-              color: AppColors.textPrimary,
+              color: isAction ? AppColors.primary : AppColors.textPrimary,
               fontWeight: FontWeight.w500,
             ),
           ),
         ],
       ),
+    );
+    if (!isAction) return chip;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: chip,
     );
   }
 

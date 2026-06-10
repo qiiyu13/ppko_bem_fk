@@ -53,13 +53,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Tambah Anggota',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('Tambah Anggota'),
       ),
       body: Form(
         key: _formKey,
@@ -105,12 +99,16 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
                     : AppAvatar(
                         imageUrl: null,
                         fallback: Icon(
-                          _selectedGender == 'Wanita' ? Icons.female : Icons.male,
+                          _selectedGender == 'Wanita'
+                              ? Icons.female
+                              : Icons.male,
                           size: 40,
                           color: AppColors.textOnPrimary,
                         ),
                         size: 90,
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.15,
+                        ),
                         borderColor: AppColors.primary,
                         borderWidth: 2,
                       ),
@@ -120,10 +118,17 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
             Center(
               child: TextButton.icon(
                 onPressed: _pickImage,
-                icon: const Icon(Icons.camera_alt, size: 18, color: AppColors.primary),
+                icon: const Icon(
+                  Icons.camera_alt,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
                 label: Text(
                   _avatarFile != null ? 'Ganti Foto' : 'Tambah Foto',
-                  style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -131,7 +136,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
 
             ProfileFormField(
               controller: _nikController,
-              label: 'NIK',
+              label: 'NIK *',
               hint: 'Masukkan 16 digit NIK',
               keyboardType: TextInputType.number,
               maxLength: 16,
@@ -144,7 +149,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
 
             ProfileFormField(
               controller: _nameController,
-              label: 'Nama Lengkap',
+              label: 'Nama Lengkap *',
               hint: 'Masukkan nama lengkap',
               validator: (value) {
                 if (value == null || value.isEmpty) return 'Nama wajib diisi';
@@ -176,14 +181,14 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
 
             ProfileFormField(
               controller: _addressController,
-              label: 'Alamat',
+              label: 'Alamat (Opsional)',
               hint: 'Masukkan alamat lengkap',
               maxLines: 3,
             ),
 
             ProfileFormField(
               controller: _phoneController,
-              label: 'Nomor Telepon',
+              label: 'Nomor Telepon (Opsional)',
               hint: 'Contoh: 081234567890',
               keyboardType: TextInputType.phone,
             ),
@@ -193,33 +198,35 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submitForm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.textOnPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                onPressed: _isLoading ? null : _submitForm,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.textOnPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Text(
-                          'Simpan Profil',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
                           ),
                         ),
-                ),
+                      )
+                    : const Text(
+                        'Simpan Profil',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
+            ),
           ],
         ),
       ),
@@ -235,9 +242,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-            ),
+            colorScheme: const ColorScheme.light(primary: AppColors.primary),
           ),
           child: child!,
         );
@@ -254,9 +259,9 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedBirthDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih tanggal lahir')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Pilih tanggal lahir')));
       return;
     }
 
@@ -269,7 +274,9 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
         gender: _selectedGender.toLowerCase(),
         birthDate: _selectedBirthDate!,
         bloodType: _selectedBloodType,
-        address: _addressController.text.isEmpty ? null : _addressController.text,
+        address: _addressController.text.isEmpty
+            ? null
+            : _addressController.text,
         phone: _phoneController.text.isEmpty ? null : _phoneController.text,
         avatar: _avatarFile,
       );
@@ -283,7 +290,9 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          const SnackBar(
+            content: Text('Gagal menyimpan profil. Periksa koneksi Anda.'),
+          ),
         );
       }
     } finally {
@@ -365,7 +374,9 @@ class _GenderOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : AppColors.card,
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.1)
+              : AppColors.card,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.surface,
@@ -399,10 +410,7 @@ class _BirthDateField extends StatelessWidget {
   final DateTime? selectedDate;
   final VoidCallback onTap;
 
-  const _BirthDateField({
-    required this.selectedDate,
-    required this.onTap,
-  });
+  const _BirthDateField({required this.selectedDate, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -412,7 +420,7 @@ class _BirthDateField extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.only(bottom: 8),
           child: Text(
-            'Tanggal Lahir',
+            'Tanggal Lahir *',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -431,10 +439,7 @@ class _BirthDateField extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.calendar_today,
-                  color: AppColors.primary,
-                ),
+                const Icon(Icons.calendar_today, color: AppColors.primary),
                 const SizedBox(width: 12),
                 Text(
                   selectedDate != null
@@ -475,7 +480,7 @@ class _BloodTypeSelector extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.only(bottom: 8),
           child: Text(
-            'Golongan Darah',
+            'Golongan Darah (Opsional)',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -496,7 +501,9 @@ class _BloodTypeSelector extends StatelessWidget {
               },
               selectedColor: AppColors.primary,
               labelStyle: TextStyle(
-                color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary,
+                color: isSelected
+                    ? AppColors.textOnPrimary
+                    : AppColors.textPrimary,
                 fontWeight: FontWeight.w600,
               ),
             );

@@ -42,7 +42,7 @@ class _SuperadminMainScreenState extends State<SuperadminMainScreen> {
     NavBarItem(
       icon: Icons.people_outline,
       activeIcon: Icons.people,
-      label: 'Users',
+      label: 'Pengguna',
       svgIcon: AssetHelper.getIconPath('icons8-people.svg'),
     ),
     NavBarItem(

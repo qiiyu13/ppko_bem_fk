@@ -22,7 +22,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
     NavBarItem(
       icon: Icons.dashboard_outlined,
       activeIcon: Icons.dashboard,
-      label: 'Dashboard',
+      label: 'Beranda',
       svgIcon: AssetHelper.getIconPath('icons8-dashboard.svg'),
     ),
     NavBarItem(

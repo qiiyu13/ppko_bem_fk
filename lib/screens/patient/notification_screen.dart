@@ -7,8 +7,10 @@ import '../../services/appointment_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/profile_service.dart';
 import '../../utils/page_transitions.dart';
+import '../../widgets/empty_state_widget.dart';
 import '../superadmin/screens/appointment_detail_screen.dart';
 import '../admin/admin_patient_detail_screen.dart';
+import 'jadwal_saya_screen.dart';
 import 'laporan_saya_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
@@ -37,7 +39,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Hapus Semua Notifikasi'),
-        content: const Text('Semua notifikasi akan dihapus permanen. Lanjutkan?'),
+        content: const Text(
+          'Semua notifikasi akan dihapus permanen. Lanjutkan?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -45,7 +49,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.statusRed),
             child: const Text('Hapus Semua'),
           ),
         ],
@@ -68,29 +72,45 @@ class _NotificationScreenState extends State<NotificationScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final me = await AuthService.getMe();
+      final role = (me?['role'] ?? '').toString();
+
       if (notif.type == NotificationType.appointment) {
+        if (role == 'PATIENT') {
+          // Patients never see admin appointment detail — send them to
+          // their own schedule screen instead.
+          if (!mounted) return;
+          Navigator.push(
+            context,
+            ParallaxPageRoute(
+              page: JadwalSayaScreen(onBack: () {}, isEmbedded: false),
+            ),
+          );
+          return;
+        }
         final appointmentId = notif.data?['appointmentId'] as String?;
         if (appointmentId == null) {
           _showError('Data notifikasi tidak valid');
           return;
         }
         try {
-          final appointment = await AppointmentService.getAppointmentById(appointmentId);
+          final appointment = await AppointmentService.getAppointmentById(
+            appointmentId,
+          );
           if (!mounted) return;
           Navigator.push(
             context,
-            ParallaxPageRoute(page: AppointmentDetailScreen(appointment: appointment)),
+            ParallaxPageRoute(
+              page: AppointmentDetailScreen(appointment: appointment),
+            ),
           );
         } catch (_) {
           _showError('Jadwal tidak ditemukan atau telah dihapus');
         }
       } else if (notif.type == NotificationType.screeningResult) {
-        final me = await AuthService.getMe();
-        final role = (me?['role'] ?? '').toString();
-
         if (role == 'PATIENT') {
           final profile = ProfileService.instance.activeProfile;
-          final gender = profile?.gender ?? 'male';
+          final gender = profile?.gender ?? 'Pria';
           if (!mounted) return;
           Navigator.push(
             context,
@@ -106,9 +126,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           Navigator.push(
             context,
             ParallaxPageRoute(
-              page: AdminPatientDetailScreen(
-                patient: {'profileId': profileId},
-              ),
+              page: AdminPatientDetailScreen(patient: {'profileId': profileId}),
             ),
           );
         }
@@ -135,16 +153,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
-        title: const Text(
-          'Notifikasi',
-          style: TextStyle(
-            color: AppColors.primary,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        title: const Text('Notifikasi'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.primary),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
@@ -154,7 +165,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
               if (list.isEmpty) return const SizedBox.shrink();
               return PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, color: AppColors.primary),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 onSelected: (value) {
                   if (value == 'mark_all') _markAllRead();
                   if (value == 'delete_all') _deleteAll();
@@ -165,7 +178,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       value: 'mark_all',
                       child: Row(
                         children: [
-                          Icon(Icons.done_all, color: AppColors.primary, size: 20),
+                          Icon(
+                            Icons.done_all,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
                           SizedBox(width: 12),
                           Text('Tandai semua dibaca'),
                         ],
@@ -175,9 +192,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     value: 'delete_all',
                     child: Row(
                       children: [
-                        Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                        Icon(
+                          Icons.delete_outline,
+                          color: AppColors.statusRed,
+                          size: 20,
+                        ),
                         SizedBox(width: 12),
-                        Text('Hapus semua', style: TextStyle(color: Colors.red)),
+                        Text(
+                          'Hapus semua',
+                          style: TextStyle(color: AppColors.statusRed),
+                        ),
                       ],
                     ),
                   ),
@@ -258,40 +282,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: AppColors.primarySurface,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Icon(
-              Icons.notifications_none_outlined,
-              color: AppColors.primary,
-              size: 40,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Belum ada notifikasi',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Jadwal dan hasil skrining\nakan muncul di sini',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-          ),
-        ],
-      ),
+    return const EmptyStateWidget(
+      icon: Icons.notifications_none_outlined,
+      title: 'Belum ada notifikasi',
+      subtitle: 'Jadwal dan hasil skrining\nakan muncul di sini',
     );
   }
 }
@@ -332,7 +326,7 @@ class _NotifTile extends StatelessWidget {
                   Text(
                     notif.body,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 14,
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -340,7 +334,7 @@ class _NotifTile extends StatelessWidget {
                   Text(
                     _formatDate(notif.createdAt),
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 12,
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -370,23 +364,26 @@ class _NotifTile extends StatelessWidget {
     switch (notif.type) {
       case NotificationType.appointment:
         icon = Icons.calendar_month_outlined;
-        bg = const Color(0xFFE3F2FD);
-        fg = const Color(0xFF1565C0);
+        bg = AppColors.primarySurface;
+        fg = AppColors.primary;
         break;
       case NotificationType.screeningResult:
         icon = Icons.assignment_outlined;
-        bg = const Color(0xFFF3E5F5);
-        fg = const Color(0xFF6A1B9A);
+        bg = AppColors.statusAmber.withValues(alpha: 0.12);
+        fg = AppColors.statusAmber;
         break;
       case NotificationType.general:
         icon = Icons.info_outline;
-        bg = AppColors.primarySurface;
-        fg = AppColors.primary;
+        bg = AppColors.surface;
+        fg = AppColors.textSecondary;
     }
     return Container(
       width: 42,
       height: 42,
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Icon(icon, color: fg, size: 22),
     );
   }

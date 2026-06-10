@@ -166,7 +166,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Waktu selesai harus setelah waktu mulai'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.statusRed,
         ),
       );
       return;
@@ -186,7 +186,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Tidak dapat membuka Google Maps'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.statusRed,
         ),
       );
     }
@@ -198,7 +198,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Tanggal wajib diisi'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.statusRed,
         ),
       );
       return;
@@ -255,9 +255,10 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal menyimpan: $e'),
-          backgroundColor: Colors.red,
+        const SnackBar(
+          content:
+              Text('Gagal menyimpan jadwal. Periksa koneksi lalu coba lagi.'),
+          backgroundColor: AppColors.statusRed,
         ),
       );
     } finally {

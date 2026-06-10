@@ -61,17 +61,21 @@ class _MetricDetailScreenState extends State<MetricDetailScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = 'Gagal memuat riwayat: $e';
+        _error = 'Gagal memuat riwayat. Periksa koneksi Anda.';
       });
     }
   }
 
   String _metricTypeToPath(MetricType type) {
     switch (type) {
-      case MetricType.bloodPressure: return 'blood_pressure';
-      case MetricType.cholesterol: return 'cholesterol';
-      case MetricType.bloodSugar: return 'blood_sugar';
-      case MetricType.uricAcid: return 'uric_acid';
+      case MetricType.bloodPressure:
+        return 'blood_pressure';
+      case MetricType.cholesterol:
+        return 'cholesterol';
+      case MetricType.bloodSugar:
+        return 'blood_sugar';
+      case MetricType.uricAcid:
+        return 'uric_acid';
     }
   }
 
@@ -98,7 +102,8 @@ class _MetricDetailScreenState extends State<MetricDetailScreen> {
                       GestureDetector(
                         onTap: () => Navigator.of(context).pop(),
                         child: Container(
-                          padding: const EdgeInsets.all(8),
+                          // 48x48 minimum touch target.
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: AppColors.card,
                             borderRadius: BorderRadius.circular(12),
@@ -175,71 +180,93 @@ class _MetricDetailScreenState extends State<MetricDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        widget.metric.displayValue,
-                        maxLines: 1,
-                        softWrap: false,
-                        style: const TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
+                  if (widget.metric.isPlaceholder)
+                    const Text(
+                      'Belum ada data',
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        widget.metric.unit,
-                        maxLines: 1,
-                        softWrap: false,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.card,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    )
+                  else
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          HealthMetricData.getStatusIcon(widget.metric.status),
-                          color: widget.metric.primaryColor,
-                          size: 16,
+                        Text(
+                          widget.metric.displayValue,
+                          maxLines: 1,
+                          softWrap: false,
+                          style: const TextStyle(
+                            fontSize: 48,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          HealthMetricData.getStatusLabel(widget.metric.status),
-                          style: TextStyle(
-                            color: widget.metric.primaryColor,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                          widget.metric.unit,
+                          maxLines: 1,
+                          softWrap: false,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
-                  ),
+                  const SizedBox(height: 12),
+                  // Status chip uses status colors (green/amber/red), not the
+                  // metric identity color — hidden when no data exists.
+                  if (!widget.metric.isPlaceholder)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.card,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            HealthMetricData.getStatusIcon(
+                              widget.metric.status,
+                            ),
+                            color: HealthMetricData.getStatusColor(
+                              widget.metric.status,
+                            ),
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            HealthMetricData.getStatusLabel(
+                              widget.metric.status,
+                            ),
+                            style: TextStyle(
+                              color: HealthMetricData.getStatusColor(
+                                widget.metric.status,
+                              ),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: 16),
                 ],
               ),
@@ -263,7 +290,7 @@ class _MetricDetailScreenState extends State<MetricDetailScreen> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: AppColors.divider,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -335,10 +362,13 @@ class _MetricDetailScreenState extends State<MetricDetailScreen> {
         ),
       );
     }
-    return MetricChart(
-      type: widget.metric.type,
-      readings: _readings,
-      primaryColor: widget.metric.primaryColor,
+    return Semantics(
+      label: 'Grafik riwayat ${widget.metric.nameId}',
+      child: MetricChart(
+        type: widget.metric.type,
+        readings: _readings,
+        primaryColor: widget.metric.primaryColor,
+      ),
     );
   }
 }

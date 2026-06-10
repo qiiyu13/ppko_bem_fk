@@ -41,9 +41,7 @@ class _TanamanArticleDetailScreenState
     final raw = widget.article.content.trim();
     if (raw.startsWith('[')) {
       try {
-        return Document.fromJson(
-          List<dynamic>.from(jsonDecode(raw) as List),
-        );
+        return Document.fromJson(List<dynamic>.from(jsonDecode(raw) as List));
       } catch (_) {}
     }
     return Document()..insert(0, raw.isEmpty ? '' : raw);
@@ -159,8 +157,7 @@ class _TanamanArticleDetailScreenState
                       }).toList(),
                     ),
 
-                  // Bottom spacing for nav bar
-                  const SizedBox(height: 100),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),

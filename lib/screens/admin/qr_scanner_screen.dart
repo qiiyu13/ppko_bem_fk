@@ -17,6 +17,8 @@ class QrScannerScreen extends StatefulWidget {
 class _QrScannerScreenState extends State<QrScannerScreen> {
   MobileScannerController? _controller;
   bool _isProcessing = false;
+  bool _torchOn = false;
+  DateTime? _lastErrorAt;
 
   @override
   void initState() {
@@ -36,7 +38,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     final barcode = capture.barcodes.firstOrNull;
     if (barcode?.rawValue == null) return;
 
-    _isProcessing = true;
+    setState(() => _isProcessing = true);
     final qrData = barcode!.rawValue;
 
     try {
@@ -44,7 +46,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
       if (!data.containsKey('profileId') || !data.containsKey('name')) {
         _showError('QR Code tidak valid');
-        _isProcessing = false;
+        setState(() => _isProcessing = false);
         return;
       }
 
@@ -61,16 +63,69 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       }
     } catch (e) {
       _showError('Gagal membaca QR Code');
-      _isProcessing = false;
+      setState(() => _isProcessing = false);
     }
   }
 
   void _showError(String message) {
     if (!mounted) return;
+    // Throttle: continuous detection of the same invalid code would
+    // otherwise spam snackbars every frame.
+    final now = DateTime.now();
+    if (_lastErrorAt != null &&
+        now.difference(_lastErrorAt!) < const Duration(seconds: 2)) {
+      return;
+    }
+    _lastErrorAt = now;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: AppColors.statusRed,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _toggleTorch() async {
+    await _controller?.toggleTorch();
+    setState(() => _torchOn = !_torchOn);
+  }
+
+  Widget _buildCameraError(BuildContext context, MobileScannerException error) {
+    final isPermission =
+        error.errorCode == MobileScannerErrorCode.permissionDenied;
+    return Container(
+      color: Colors.black,
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            isPermission ? Icons.no_photography_outlined : Icons.error_outline,
+            size: 56,
+            color: Colors.white54,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            isPermission
+                ? 'Izin kamera ditolak'
+                : 'Kamera tidak dapat dibuka',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isPermission
+                ? 'Buka pengaturan aplikasi lalu izinkan akses kamera untuk memindai QR pasien.'
+                : 'Tutup layar ini lalu coba lagi.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+        ],
       ),
     );
   }
@@ -84,12 +139,21 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.primary,
         surfaceTintColor: Colors.transparent,
+        actions: [
+          IconButton(
+            icon: Icon(_torchOn ? Icons.flash_on : Icons.flash_off),
+            tooltip: _torchOn ? 'Matikan senter' : 'Nyalakan senter',
+            onPressed: _toggleTorch,
+          ),
+        ],
       ),
       body: Stack(
         children: [
           MobileScanner(
             controller: _controller,
             onDetect: _onDetect,
+            errorBuilder: (context, error, child) =>
+                _buildCameraError(context, error),
           ),
           Center(
             child: Container(

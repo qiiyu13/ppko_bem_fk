@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../constants/app_colors.dart';
+import '../../../constants/app_theme.dart';
 import '../../../utils/asset_helper.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../widgets/error_state_widget.dart';
@@ -19,6 +20,14 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:mediku/utils/page_transitions.dart';
 import 'package:mediku/widgets/app_avatar.dart';
+import 'package:mediku/widgets/profile_selector.dart';
+
+// Metric identity colors — single source for cards, detail screens, and
+// sparklines, harmonized with the muted design-system palette.
+const Color _bloodPressureColor = AppColors.statusRed;
+const Color _bloodSugarColor = AppColors.statusGreen;
+const Color _cholesterolColor = AppColors.statusAmber;
+const Color _uricAcidColor = Color(0xFF6B5CA5);
 
 class HomeTab extends StatefulWidget {
   final void Function(int)? onSwitchTab;
@@ -33,7 +42,6 @@ class _HomeTabState extends State<HomeTab> {
   List<HealthMetric> _metrics = [];
   Map<String, dynamic>? _nextAppointment;
   bool _isLoading = true;
-  int _dataVersion = 0;
   String? _error;
   StreamSubscription<FamilyProfile?>? _profileSubscription;
   StreamSubscription<Map<String, dynamic>>? _wsSub;
@@ -134,23 +142,49 @@ class _HomeTabState extends State<HomeTab> {
           ..sort((a, b) {
             return allTypes.indexOf(a.type).compareTo(allTypes.indexOf(b.type));
           });
-        if (appointmentsData.isNotEmpty) {
-          _nextAppointment = Map<String, dynamic>.from(
-            appointmentsData.first as Map<String, dynamic>,
-          );
-        }
+        _nextAppointment = _pickNextAppointment(appointmentsData);
         _isLoading = false;
-        if (_metrics.isNotEmpty || !hasExistingData) {
-          _dataVersion++;
-        }
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _error = 'Gagal memuat data. Periksa koneksi Anda.';
-      });
+      if (hasExistingData) {
+        // Keep showing existing data, but tell the user the refresh failed.
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal memperbarui data. Periksa koneksi Anda.'),
+          ),
+        );
+      } else {
+        setState(() {
+          _isLoading = false;
+          _error = 'Gagal memuat data. Periksa koneksi Anda.';
+        });
+      }
     }
+  }
+
+  /// Soonest upcoming appointment (today or later), or null. Never trusts
+  /// API ordering, and clears stale data when the active profile has none.
+  Map<String, dynamic>? _pickNextAppointment(List<dynamic> raw) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    Map<String, dynamic>? best;
+    DateTime? bestDate;
+    for (final item in raw) {
+      final map = Map<String, dynamic>.from(item as Map<String, dynamic>);
+      final dateStr = map['date'];
+      if (dateStr is! String) continue;
+      final date = DateTime.tryParse(dateStr)?.toLocal();
+      if (date == null) continue;
+      final day = DateTime(date.year, date.month, date.day);
+      if (day.isBefore(today)) continue;
+      if (bestDate == null || date.isBefore(bestDate)) {
+        best = map;
+        bestDate = date;
+      }
+    }
+    return best;
   }
 
   HealthMetric _parseMetric(Map<String, dynamic> json, int age, String gender) {
@@ -172,7 +206,7 @@ class _HomeTabState extends State<HomeTab> {
             age,
           ),
           icon: PhosphorIcons.heart(PhosphorIconsStyle.fill),
-          primaryColor: const Color(0xFFE53935),
+          primaryColor: _bloodPressureColor,
           recentValues: _parseRecentValues(json['recentValues']),
           svgIcon: AssetHelper.getIconPath('icons8-sphygmomanometer.svg'),
           svgBackground: AssetHelper.getSvgPath('blood_pressure.svg'),
@@ -188,7 +222,7 @@ class _HomeTabState extends State<HomeTab> {
           lastUpdated: _parseDate(json['lastUpdated']),
           status: HealthMetricData.getCholesterolStatus(value, age),
           icon: PhosphorIcons.drop(PhosphorIconsStyle.fill),
-          primaryColor: const Color(0xFFFB8C00),
+          primaryColor: _cholesterolColor,
           recentValues: _parseRecentValues(json['recentValues']),
           svgBackground: AssetHelper.getSvgPath('cholestrol.svg'),
         );
@@ -203,7 +237,7 @@ class _HomeTabState extends State<HomeTab> {
           lastUpdated: _parseDate(json['lastUpdated']),
           status: HealthMetricData.getBloodSugarStatus(value, age),
           icon: PhosphorIcons.testTube(PhosphorIconsStyle.fill),
-          primaryColor: const Color(0xFF43A047),
+          primaryColor: _bloodSugarColor,
           recentValues: _parseRecentValues(json['recentValues']),
           svgIcon: AssetHelper.getIconPath('icons8-sugar-cubes.svg'),
           svgBackground: AssetHelper.getSvgPath('blood_sugar.svg'),
@@ -219,7 +253,7 @@ class _HomeTabState extends State<HomeTab> {
           lastUpdated: _parseDate(json['lastUpdated']),
           status: HealthMetricData.getUricAcidStatus(value, age, gender),
           icon: PhosphorIcons.flask(PhosphorIconsStyle.fill),
-          primaryColor: const Color(0xFF5E35B1),
+          primaryColor: _uricAcidColor,
           recentValues: _parseRecentValues(json['recentValues']),
           svgBackground: AssetHelper.getSvgPath('uric_acid.svg'),
         );
@@ -271,8 +305,9 @@ class _HomeTabState extends State<HomeTab> {
           lastUpdated: DateTime.now(),
           status: HealthMetricData.getBloodPressureStatus(0, 0, age),
           icon: PhosphorIcons.heart(PhosphorIconsStyle.fill),
-          primaryColor: const Color(0xFFE53935),
-          recentValues: [0.0, 0.0],
+          primaryColor: _bloodPressureColor,
+          recentValues: const [],
+          isPlaceholder: true,
           svgIcon: AssetHelper.getIconPath('icons8-sphygmomanometer.svg'),
           svgBackground: AssetHelper.getSvgPath('blood_pressure.svg'),
         );
@@ -286,8 +321,9 @@ class _HomeTabState extends State<HomeTab> {
           lastUpdated: DateTime.now(),
           status: HealthMetricData.getBloodSugarStatus(0, age),
           icon: PhosphorIcons.testTube(PhosphorIconsStyle.fill),
-          primaryColor: const Color(0xFF43A047),
-          recentValues: [0.0, 0.0],
+          primaryColor: _bloodSugarColor,
+          recentValues: const [],
+          isPlaceholder: true,
           svgIcon: AssetHelper.getIconPath('icons8-sugar-cubes.svg'),
           svgBackground: AssetHelper.getSvgPath('blood_sugar.svg'),
         );
@@ -301,8 +337,9 @@ class _HomeTabState extends State<HomeTab> {
           lastUpdated: DateTime.now(),
           status: HealthMetricData.getCholesterolStatus(0, age),
           icon: PhosphorIcons.drop(PhosphorIconsStyle.fill),
-          primaryColor: const Color(0xFFFB8C00),
-          recentValues: [0.0, 0.0],
+          primaryColor: _cholesterolColor,
+          recentValues: const [],
+          isPlaceholder: true,
           svgBackground: AssetHelper.getSvgPath('cholestrol.svg'),
         );
       case MetricType.uricAcid:
@@ -315,8 +352,9 @@ class _HomeTabState extends State<HomeTab> {
           lastUpdated: DateTime.now(),
           status: HealthMetricData.getUricAcidStatus(0, age, gender),
           icon: PhosphorIcons.flask(PhosphorIconsStyle.fill),
-          primaryColor: const Color(0xFF5E35B1),
-          recentValues: [0.0, 0.0],
+          primaryColor: _uricAcidColor,
+          recentValues: const [],
+          isPlaceholder: true,
           svgBackground: AssetHelper.getSvgPath('uric_acid.svg'),
         );
     }
@@ -344,13 +382,25 @@ class _HomeTabState extends State<HomeTab> {
       return -1;
     }
     final now = DateTime.now();
-    return appointmentDate.difference(now).inDays;
+    final today = DateTime(now.year, now.month, now.day);
+    final apptDay = DateTime(
+      appointmentDate.year,
+      appointmentDate.month,
+      appointmentDate.day,
+    );
+    return apptDay.difference(today).inDays;
   }
 
   bool _shouldShowAppointmentBanner() {
     if (_nextAppointment == null) return false;
     final days = _getDaysUntilAppointment();
     return days <= 7 && days >= 0;
+  }
+
+  String _appointmentCountdownLabel(int days) {
+    if (days == 0) return 'Hari ini';
+    if (days == 1) return 'Besok';
+    return '$days hari lagi';
   }
 
   @override
@@ -379,118 +429,121 @@ class _HomeTabState extends State<HomeTab> {
           onRefresh: _loadData,
           color: AppColors.primary,
           child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Container(
-              color: AppColors.background,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: MediaQuery.of(context).padding.top + 16),
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Container(
+                color: AppColors.background,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: MediaQuery.of(context).padding.top + 16),
 
-                  // Greeting Section with Profile Dropdown and Notification Icon
-                  Container(
-                    margin: EdgeInsets.symmetric(
-                      horizontal: math.max(ResponsiveSize.paddingMedium, 16),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: StreamBuilder<FamilyProfile?>(
-                            stream: ProfileService.instance.activeProfileStream,
-                            initialData: ProfileService.instance.activeProfile,
-                            builder: (context, activeSnapshot) {
-                              final activeProfile = activeSnapshot.data;
-                              final multiProfile =
-                                  ProfileService.instance.profiles.length > 1;
+                    // Greeting Section with Profile Dropdown and Notification Icon
+                    Container(
+                      margin: EdgeInsets.symmetric(
+                        horizontal: math.max(ResponsiveSize.paddingMedium, 16),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: StreamBuilder<FamilyProfile?>(
+                              stream:
+                                  ProfileService.instance.activeProfileStream,
+                              initialData:
+                                  ProfileService.instance.activeProfile,
+                              builder: (context, activeSnapshot) {
+                                final activeProfile = activeSnapshot.data;
+                                final multiProfile =
+                                    ProfileService.instance.profiles.length > 1;
 
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () => widget.onSwitchTab?.call(3),
-                                    child: AppAvatar(
-                                      imageUrl: activeProfile?.avatarUrl,
-                                      size: 44,
-                                      backgroundColor: AppColors.primarySurface
-                                          .withValues(alpha: 0.3),
-                                      borderColor: AppColors.primary
-                                          .withValues(alpha: 0.2),
-                                      borderWidth: 2,
-                                      fallback: Icon(
-                                        activeProfile != null
-                                            ? _getGenderIcon(activeProfile.gender)
-                                            : Icons.person_outline,
-                                        color: AppColors.primary,
-                                        size: 24,
+                                // One gesture for the whole header: with
+                                // multiple profiles it opens the switcher,
+                                // otherwise it goes to the Profil tab.
+                                return GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: multiProfile
+                                      ? _showProfileSwitcher
+                                      : () => widget.onSwitchTab?.call(3),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      AppAvatar(
+                                        imageUrl: activeProfile?.avatarUrl,
+                                        size: 44,
+                                        backgroundColor: AppColors
+                                            .primarySurface
+                                            .withValues(alpha: 0.3),
+                                        borderColor: AppColors.primary
+                                            .withValues(alpha: 0.2),
+                                        borderWidth: 2,
+                                        fallback: Icon(
+                                          activeProfile != null
+                                              ? _getGenderIcon(
+                                                  activeProfile.gender,
+                                                )
+                                              : Icons.person_outline,
+                                          color: AppColors.primary,
+                                          size: 24,
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: GestureDetector(
-                                      onTap: () => widget.onSwitchTab?.call(3),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            _getGreeting(),
-                                            textAlign: TextAlign.left,
-                                            style: TextStyle(
-                                              fontSize: math.min(
-                                                ResponsiveSize.fontMedium,
-                                                16,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              _getGreeting(),
+                                              textAlign: TextAlign.left,
+                                              style: TextStyle(
+                                                fontSize: math.min(
+                                                  ResponsiveSize.fontMedium,
+                                                  16,
+                                                ),
+                                                color: AppColors.textSecondary,
                                               ),
-                                              color: AppColors.textSecondary,
                                             ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                activeProfile?.name ?? 'Pengguna',
-                                                style: const TextStyle(
-                                                  fontSize: 20,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: AppColors.textPrimary,
-                                                ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              activeProfile?.name ?? 'Pengguna',
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
+                                              style: const TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.textPrimary,
                                               ),
-                                              if (activeProfile != null &&
-                                                  multiProfile) ...[
-                                                const SizedBox(width: 4),
-                                                const Icon(
-                                                  Icons.keyboard_arrow_down,
-                                                  color: AppColors.primary,
-                                                  size: 24,
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                        ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
+                                      if (activeProfile != null && multiProfile)
+                                        const Padding(
+                                          padding: EdgeInsets.only(left: 4),
+                                          child: Icon(
+                                            Icons.keyboard_arrow_down,
+                                            color: AppColors.primary,
+                                            size: 24,
+                                          ),
+                                        ),
+                                    ],
                                   ),
-                                ],
-                              );
-                            },
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                        const NotificationBell(),
-                      ],
+                          const NotificationBell(),
+                        ],
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    child: Column(
-                      key: ValueKey(_dataVersion),
+                    Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (showAppointmentBanner) ...[
@@ -503,15 +556,9 @@ class _HomeTabState extends State<HomeTab> {
                             ),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: AppColors.textOnPrimary,
+                                color: AppColors.card,
                                 borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                                boxShadow: AppTheme.cardShadowLight,
                               ),
                               padding: const EdgeInsets.all(16),
                               child: Row(
@@ -523,7 +570,9 @@ class _HomeTabState extends State<HomeTab> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          '$daysUntilAppointment hari menuju',
+                                          _appointmentCountdownLabel(
+                                            daysUntilAppointment,
+                                          ),
                                           style: const TextStyle(
                                             fontSize: 15,
                                             color: AppColors.textSecondary,
@@ -572,16 +621,17 @@ class _HomeTabState extends State<HomeTab> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               GridView.count(
-                                  crossAxisCount: 2,
-                                  shrinkWrap: true,
-                                  physics:
-                                      const NeverScrollableScrollPhysics(),
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 16,
-                                  childAspectRatio: 1.0,
-                                  padding: EdgeInsets.zero,
-                                  children: _metrics.map(_buildMetricCard).toList(),
-                                ),
+                                crossAxisCount: 2,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: 1.0,
+                                padding: EdgeInsets.zero,
+                                children: _metrics
+                                    .map(_buildMetricCard)
+                                    .toList(),
+                              ),
 
                               const SizedBox(height: 10),
 
@@ -593,8 +643,9 @@ class _HomeTabState extends State<HomeTab> {
                                   Navigator.push(
                                     context,
                                     ParallaxPageRoute(
-                                      page:
-                                          LaporanSayaScreen(gender: userGender),
+                                      page: LaporanSayaScreen(
+                                        gender: userGender,
+                                      ),
                                     ),
                                   );
                                 },
@@ -602,19 +653,19 @@ class _HomeTabState extends State<HomeTab> {
                               ),
 
                               SizedBox(
-                                height: MediaQuery.of(context).padding.bottom + 16,
+                                height:
+                                    MediaQuery.of(context).padding.bottom + 16,
                               ),
                             ],
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
         );
       },
     );
@@ -650,13 +701,7 @@ class _HomeTabState extends State<HomeTab> {
           borderRadius: BorderRadius.circular(
             math.max(ResponsiveSize.cardBorderRadius, 16),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          boxShadow: AppTheme.cardShadow,
         ),
         child: Row(
           children: [
@@ -709,6 +754,15 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
+  void _showProfileSwitcher() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => const ProfileSwitcherSheet(),
+    );
+  }
+
   IconData _getGenderIcon(String gender) {
     return gender == 'Pria' ? Icons.male : Icons.female;
   }
@@ -717,17 +771,11 @@ class _HomeTabState extends State<HomeTab> {
 class _MetricCardWrapper extends StatelessWidget {
   final HealthMetric metric;
 
-  const _MetricCardWrapper({
-    required this.metric,
-  });
+  const _MetricCardWrapper({required this.metric});
 
   @override
   Widget build(BuildContext context) {
-    final cardColor = Color.lerp(
-      Colors.white,
-      metric.primaryColor,
-      0.15,
-    )!;
+    final cardColor = Color.lerp(Colors.white, metric.primaryColor, 0.15)!;
 
     return OpenContainer(
       transitionType: ContainerTransitionType.fade,
@@ -754,9 +802,7 @@ class _MetricCardWrapper extends StatelessWidget {
 class _MetricCardContent extends StatelessWidget {
   final HealthMetric metric;
 
-  const _MetricCardContent({
-    required this.metric,
-  });
+  const _MetricCardContent({required this.metric});
 
   @override
   Widget build(BuildContext context) {
@@ -765,15 +811,31 @@ class _MetricCardContent extends StatelessWidget {
     // Per-metric background illustration treatment.
     final ({BoxFit fit, Alignment align, double opacity, double scale}) bg =
         switch (metric.type) {
-      MetricType.bloodPressure =>
-        (fit: BoxFit.contain, align: Alignment.center, opacity: 0.65, scale: 0.65),
-      MetricType.bloodSugar =>
-        (fit: BoxFit.fitWidth, align: Alignment.center, opacity: 0.7, scale: 1.0),
-      MetricType.cholesterol =>
-        (fit: BoxFit.fitWidth, align: Alignment.center, opacity: 0.7, scale: 1.0),
-      MetricType.uricAcid =>
-        (fit: BoxFit.contain, align: Alignment.center, opacity: 0.7, scale: 1.0),
-    };
+          MetricType.bloodPressure => (
+            fit: BoxFit.contain,
+            align: Alignment.center,
+            opacity: 0.65,
+            scale: 0.65,
+          ),
+          MetricType.bloodSugar => (
+            fit: BoxFit.fitWidth,
+            align: Alignment.center,
+            opacity: 0.7,
+            scale: 1.0,
+          ),
+          MetricType.cholesterol => (
+            fit: BoxFit.fitWidth,
+            align: Alignment.center,
+            opacity: 0.7,
+            scale: 1.0,
+          ),
+          MetricType.uricAcid => (
+            fit: BoxFit.contain,
+            align: Alignment.center,
+            opacity: 0.7,
+            scale: 1.0,
+          ),
+        };
 
     return Stack(
       clipBehavior: Clip.hardEdge,
@@ -813,15 +875,18 @@ class _MetricCardContent extends StatelessWidget {
             ),
           ),
         ],
-        if (metric.recentValues.length >= 2)
+        if (!metric.isPlaceholder && metric.recentValues.length >= 2)
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
             height: 52,
-            child: MiniSparkline(
-              primaryColor: metric.primaryColor,
-              values: metric.recentValues,
+            child: Semantics(
+              label: 'Grafik tren ${metric.nameId}',
+              child: MiniSparkline(
+                primaryColor: metric.primaryColor,
+                values: metric.recentValues,
+              ),
             ),
           ),
         Padding(
@@ -842,34 +907,46 @@ class _MetricCardContent extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    metric.displayValue,
-                    maxLines: 1,
-                    softWrap: false,
-                    style: const TextStyle(
-                      fontSize: 21,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                      height: 1,
-                    ),
+              if (metric.isPlaceholder)
+                const Text(
+                  'Belum ada data',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
                   ),
-                  const SizedBox(width: 3),
-                  Text(
-                    metric.unit,
-                    maxLines: 1,
-                    softWrap: false,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w500,
+                )
+              else
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      metric.displayValue,
+                      maxLines: 1,
+                      softWrap: false,
+                      style: const TextStyle(
+                        fontSize: 21,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                        height: 1,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 3),
+                    Text(
+                      metric.unit,
+                      maxLines: 1,
+                      softWrap: false,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),

@@ -26,8 +26,6 @@ class AdminPatientDetailScreen extends StatefulWidget {
 }
 
 class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
-  static const Color attentionOrange = Color(0xFFFF9800);
-
   bool _isLoading = true;
   Map<String, dynamic>? _patientData;
   List<Map<String, dynamic>> _screenings = [];
@@ -54,6 +52,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
       final data =
           response.data['data'] as Map<String, dynamic>? ?? {};
       final List<dynamic> screenings = data['screenings'] ?? [];
+      if (!mounted) return;
       setState(() {
         _patientData = data;
         _screenings = screenings.cast<Map<String, dynamic>>();
@@ -67,6 +66,8 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
       );
     }
   }
+
+  Future<void> _refresh() => _fetchPatientDetail();
 
   Map<String, dynamic> get _extendedData {
     final patientMap = _patientData ?? widget.patient;
@@ -155,49 +156,15 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
     return weight / (heightInMeters * heightInMeters);
   }
 
-  String get _overallRisk {
-    final score = _overallIrdScore;
-    if (score >= 1.0) {
-      return 'high';
-    } else if (score >= 0.75) {
-      return 'attention';
-    } else {
-      return 'normal';
-    }
-  }
+  String get _overallRisk => PatientUtils.irdCategoryFromScore(_overallIrdScore);
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
+  IconData _getStatusIcon(String category) {
+    switch (category) {
       case 'high':
-      case 'critical':
-      case 'bahaya':
-        return AppColors.error;
-      case 'attention':
-      case 'warning':
-      case 'waspada':
-      case 'perlu pemantauan':
-        return attentionOrange;
-      case 'normal':
-      case 'stabil':
-        return AppColors.success;
-      default:
-        return AppColors.textSecondary;
-    }
-  }
-
-  IconData _getStatusIcon(String status) {
-    switch (status.toLowerCase()) {
-      case 'high':
-      case 'critical':
-      case 'bahaya':
         return Icons.error_outline_rounded;
       case 'attention':
-      case 'warning':
-      case 'waspada':
-      case 'perlu pemantauan':
         return Icons.warning_amber_rounded;
       case 'normal':
-      case 'stabil':
         return Icons.check_circle_outline_rounded;
       default:
         return Icons.info_outline_rounded;
@@ -269,7 +236,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                     const Text(
                       'INDEX RISK DIABETES (IRD)',
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textSecondary,
                         letterSpacing: 0.5,
@@ -310,11 +277,11 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                   children: [
                     Align(
                       alignment: Alignment(-1.0, 0.0),
-                      child: Text('0.00 (Rendah)', style: TextStyle(fontSize: 9, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                      child: Text('0.00 (Rendah)', style: TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
                     ),
                     Align(
                       alignment: Alignment(0.334, 0.0), // 1.00 / 1.5 = 66.7% width (alignment 0.334)
-                      child: Text('1.00 (Tinggi)', style: TextStyle(fontSize: 9, color: AppColors.statusRed, fontWeight: FontWeight.bold)),
+                      child: Text('1.00 (Tinggi)', style: TextStyle(fontSize: 10, color: AppColors.statusRed, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
@@ -390,7 +357,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                   children: [
                     Align(
                       alignment: Alignment(0.0, 0.0), // 0.75 / 1.5 = 50% width (alignment 0.0)
-                      child: Text('0.75 (Waspada)', style: TextStyle(fontSize: 9, color: AppColors.statusAmber, fontWeight: FontWeight.bold)),
+                      child: Text('0.75 (Waspada)', style: TextStyle(fontSize: 10, color: AppColors.statusAmber, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
@@ -456,7 +423,11 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
+      body: RefreshIndicator(
+        onRefresh: _refresh,
+        color: AppColors.primary,
+        child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
           padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
           child: Column(
@@ -507,7 +478,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                   ),
                   const SizedBox(width: 8),
                   const Text(
-                    'Riwayat Screening Kesehatan',
+                    'Riwayat Skrining Kesehatan',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -522,6 +493,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
               SizedBox(height: ResponsiveSize.spacingXLarge * 2),
             ],
           ),
+        ),
         ),
       ),
     );
@@ -641,7 +613,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                 _demographicChip(Icons.cake_outlined, '${data['age']} Tahun'),
                 const SizedBox(width: 8),
                 _demographicChip(
-                  data['gender'].toString().toLowerCase() == 'wanita'
+                  _isFemale(data['gender'].toString())
                       ? Icons.female_rounded
                       : Icons.male_rounded,
                   data['gender'].toString(),
@@ -699,6 +671,11 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
     );
   }
 
+  bool _isFemale(String gender) {
+    final g = gender.toLowerCase().trim();
+    return g == 'wanita' || g == 'perempuan' || g == 'p' || g == 'female';
+  }
+
   Widget _demographicChip(IconData icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -726,36 +703,84 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
   }
 
   Widget _buildVitalStatsGrid(Map<String, dynamic> data) {
-    final age = (data['age'] as num?)?.toInt() ?? 30;
-    final genderStr = (data['gender'] as String?) ?? 'pria';
+    final age = (data['age'] as num?)?.toInt() ?? 0;
+    final hasAge = age > 0;
+    final genderStr = (data['gender'] as String?) ?? '';
 
-    // Real dynamic status checks using HealthMetricData utility:
-    final bpStatus = HealthMetricData.getBloodPressureStatus(data['systolic'], data['diastolic'], age);
-    final bpColor = HealthMetricData.getStatusColor(bpStatus);
+    // Statuses depend on age-based reference ranges — never assume an age.
+    String? statusLabelFor(MetricStatus status) =>
+        HealthMetricData.getStatusLabel(status);
 
-    final sugarStatus = HealthMetricData.getBloodSugarStatus(data['glucose'], age);
-    final sugarColor = HealthMetricData.getStatusColor(sugarStatus);
+    String? bpLabel;
+    Color bpColor = AppColors.textSecondary;
+    if (data['systolic'] > 0 && data['diastolic'] > 0) {
+      if (hasAge) {
+        final s = HealthMetricData.getBloodPressureStatus(
+            data['systolic'], data['diastolic'], age);
+        bpLabel = statusLabelFor(s);
+        bpColor = HealthMetricData.getStatusColor(s);
+      } else {
+        bpLabel = 'Perlu data usia';
+      }
+    }
 
-    final uricAcidStatus = HealthMetricData.getUricAcidStatus(data['uricAcid'], age, genderStr);
-    final uricAcidColor = HealthMetricData.getStatusColor(uricAcidStatus);
+    String? sugarLabel;
+    Color sugarColor = AppColors.textSecondary;
+    if (data['glucose'] > 0) {
+      if (hasAge) {
+        final s = HealthMetricData.getBloodSugarStatus(data['glucose'], age);
+        sugarLabel = statusLabelFor(s);
+        sugarColor = HealthMetricData.getStatusColor(s);
+      } else {
+        sugarLabel = 'Perlu data usia';
+      }
+    }
 
-    final cholesterolStatus = HealthMetricData.getCholesterolStatus(data['cholesterol'], age);
-    final cholesterolColor = HealthMetricData.getStatusColor(cholesterolStatus);
+    String? cholesterolLabel;
+    Color cholesterolColor = AppColors.textSecondary;
+    if (data['cholesterol'] > 0) {
+      if (hasAge) {
+        final s =
+            HealthMetricData.getCholesterolStatus(data['cholesterol'], age);
+        cholesterolLabel = statusLabelFor(s);
+        cholesterolColor = HealthMetricData.getStatusColor(s);
+      } else {
+        cholesterolLabel = 'Perlu data usia';
+      }
+    }
 
-    // Calculate dynamic fraction representation for range bars:
-    final bpFraction = data['systolic'] > 0 ? (data['systolic'] / 180.0) : 0.0;
-    final sugarFraction = data['glucose'] > 0 ? (data['glucose'] / 200.0) : 0.0;
-    final uricAcidFraction = data['uricAcid'] > 0 ? (data['uricAcid'] / 10.0) : 0.0;
-    final cholesterolFraction = data['cholesterol'] > 0 ? (data['cholesterol'] / 300.0) : 0.0;
-    final bmiFraction = _bmi > 0 ? (_bmi / 40.0) : 0.0;
+    String? uricAcidLabel;
+    Color uricAcidColor = AppColors.textSecondary;
+    if (data['uricAcid'] > 0) {
+      if (hasAge) {
+        final s = HealthMetricData.getUricAcidStatus(
+            data['uricAcid'], age, genderStr);
+        uricAcidLabel = statusLabelFor(s);
+        uricAcidColor = HealthMetricData.getStatusColor(s);
+      } else {
+        uricAcidLabel = 'Perlu data usia';
+      }
+    }
 
-    // BMI Color logic:
+    // BMI thresholds are age-independent for adults.
     final bmiVal = _bmi;
-    final bmiColor = bmiVal <= 0
-        ? AppColors.textSecondary
-        : (bmiVal < 18.5 || bmiVal >= 25)
-            ? (bmiVal >= 30 ? AppColors.error : attentionOrange)
-            : AppColors.success;
+    String? bmiLabel;
+    Color bmiColor = AppColors.textSecondary;
+    if (bmiVal > 0) {
+      if (bmiVal < 18.5) {
+        bmiLabel = 'Kurang';
+        bmiColor = AppColors.statusAmber;
+      } else if (bmiVal < 25) {
+        bmiLabel = 'Normal';
+        bmiColor = AppColors.statusGreen;
+      } else if (bmiVal < 30) {
+        bmiLabel = 'Berlebih';
+        bmiColor = AppColors.statusAmber;
+      } else {
+        bmiLabel = 'Obesitas';
+        bmiColor = AppColors.statusRed;
+      }
+    }
 
     return GridView.count(
       crossAxisCount: 2,
@@ -771,29 +796,32 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
               ? '${data['systolic']}/${data['diastolic']}'
               : '-',
           unit: 'mmHg',
-          statusColor: data['systolic'] > 0 ? bpColor : AppColors.textSecondary,
-          fraction: bpFraction,
+          statusLabel: bpLabel,
+          statusColor: bpColor,
         ),
         _buildRedesignedVitalCard(
           label: 'GULA DARAH',
-          value: data['glucose'] > 0 ? '${data['glucose'].toStringAsFixed(0)}' : '-',
+          value: data['glucose'] > 0 ? data['glucose'].toStringAsFixed(0) : '-',
           unit: 'mg/dL',
-          statusColor: data['glucose'] > 0 ? sugarColor : AppColors.textSecondary,
-          fraction: sugarFraction,
+          statusLabel: sugarLabel,
+          statusColor: sugarColor,
         ),
         _buildRedesignedVitalCard(
           label: 'KOLESTEROL',
-          value: data['cholesterol'] > 0 ? '${data['cholesterol'].toStringAsFixed(0)}' : '-',
+          value: data['cholesterol'] > 0
+              ? data['cholesterol'].toStringAsFixed(0)
+              : '-',
           unit: 'mg/dL',
-          statusColor: data['cholesterol'] > 0 ? cholesterolColor : AppColors.textSecondary,
-          fraction: cholesterolFraction,
+          statusLabel: cholesterolLabel,
+          statusColor: cholesterolColor,
         ),
         _buildRedesignedVitalCard(
           label: 'ASAM URAT',
-          value: data['uricAcid'] > 0 ? '${data['uricAcid'].toStringAsFixed(1)}' : '-',
+          value:
+              data['uricAcid'] > 0 ? data['uricAcid'].toStringAsFixed(1) : '-',
           unit: 'mg/dL',
-          statusColor: data['uricAcid'] > 0 ? uricAcidColor : AppColors.textSecondary,
-          fraction: uricAcidFraction,
+          statusLabel: uricAcidLabel,
+          statusColor: uricAcidColor,
         ),
         _buildRedesignedVitalCard(
           label: 'BERAT / TINGGI',
@@ -801,15 +829,13 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
               ? '${data['weight'].toStringAsFixed(0)}/${data['height'].toStringAsFixed(0)}'
               : '-',
           unit: 'kg/cm',
-          statusColor: data['weight'] > 0 ? AppColors.primary : AppColors.textSecondary,
-          fraction: 0.5,
         ),
         _buildRedesignedVitalCard(
           label: 'INDEX MASSA TUBUH',
-          value: _bmi > 0 ? _bmi.toStringAsFixed(1) : '-',
+          value: bmiVal > 0 ? bmiVal.toStringAsFixed(1) : '-',
           unit: 'BMI',
-          statusColor: _bmi > 0 ? bmiColor : AppColors.textSecondary,
-          fraction: bmiFraction,
+          statusLabel: bmiLabel,
+          statusColor: bmiColor,
         ),
       ],
     );
@@ -819,8 +845,8 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
     required String label,
     required String value,
     required String unit,
-    required Color statusColor,
-    required double fraction,
+    String? statusLabel,
+    Color statusColor = AppColors.textSecondary,
   }) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -839,17 +865,16 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Spacer(),
           Text(
             label,
             style: const TextStyle(
-              fontSize: 9,
+              fontSize: 11,
               fontWeight: FontWeight.bold,
               color: AppColors.textSecondary,
               letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(height: 2),
+          const Spacer(),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
@@ -867,7 +892,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                 Text(
                   unit,
                   style: const TextStyle(
-                    fontSize: 10,
+                    fontSize: 11,
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),
@@ -876,25 +901,35 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
             ],
           ),
           const Spacer(),
-          // Custom Visual progress bar
-          Container(
-            height: 4,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppColors.divider.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: fraction.clamp(0.0, 1.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  borderRadius: BorderRadius.circular(2),
+          if (statusLabel != null)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ),
-            ),
-          ),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    statusLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+            const SizedBox(height: 7),
         ],
       ),
     );
@@ -970,15 +1005,8 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
 
     // Status evaluation for color dot based strictly on IRD score
     final score = s['irdScore'] != null ? (s['irdScore'] as num).toDouble() : 0.0;
-    final String irdCat;
-    if (score >= 1.0) {
-      irdCat = 'high';
-    } else if (score >= 0.75) {
-      irdCat = 'attention';
-    } else {
-      irdCat = 'normal';
-    }
-    final dotColor = _getStatusColor(irdCat);
+    final irdCat = PatientUtils.irdCategoryFromScore(score);
+    final dotColor = PatientUtils.riskColor(irdCat);
     final dotIcon = _getStatusIcon(irdCat);
 
     return IntrinsicHeight(
@@ -1047,7 +1075,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                       Text(
                         'Oleh: $screenerName',
                         style: const TextStyle(
-                          fontSize: 9,
+                          fontSize: 11,
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1062,11 +1090,11 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildHistoryMetricItem('Tensi', sys > 0 && dia > 0 ? '$sys/$dia mmHg' : '-', AppColors.primary),
+                            _buildHistoryMetricItem('Tensi', sys > 0 && dia > 0 ? '$sys/$dia mmHg' : '-'),
                             const SizedBox(height: 8),
-                            _buildHistoryMetricItem('Gula Darah', bloodSugar > 0 ? '${bloodSugar.toStringAsFixed(0)} mg/dL' : '-', attentionOrange),
+                            _buildHistoryMetricItem('Gula Darah', bloodSugar > 0 ? '${bloodSugar.toStringAsFixed(0)} mg/dL' : '-'),
                             const SizedBox(height: 8),
-                            _buildHistoryMetricItem('Kolesterol', cholesterol > 0 ? '${cholesterol.toStringAsFixed(0)} mg/dL' : '-', Colors.purple),
+                            _buildHistoryMetricItem('Kolesterol', cholesterol > 0 ? '${cholesterol.toStringAsFixed(0)} mg/dL' : '-'),
                           ],
                         ),
                       ),
@@ -1075,11 +1103,11 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildHistoryMetricItem('Asam Urat', uricAcid > 0 ? '${uricAcid.toStringAsFixed(1)} mg/dL' : '-', Colors.pink),
+                            _buildHistoryMetricItem('Asam Urat', uricAcid > 0 ? '${uricAcid.toStringAsFixed(1)} mg/dL' : '-'),
                             const SizedBox(height: 8),
-                            _buildHistoryMetricItem('Berat', weight > 0 ? '${weight.toStringAsFixed(0)} kg' : '-', Colors.blueGrey),
+                            _buildHistoryMetricItem('Berat', weight > 0 ? '${weight.toStringAsFixed(0)} kg' : '-'),
                             const SizedBox(height: 8),
-                            _buildHistoryMetricItem('Tinggi', height > 0 ? '${height.toStringAsFixed(0)} cm' : '-', Colors.blueGrey),
+                            _buildHistoryMetricItem('Tinggi', height > 0 ? '${height.toStringAsFixed(0)} cm' : '-'),
                           ],
                         ),
                       ),
@@ -1106,7 +1134,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                             child: Text(
                               notes,
                               style: const TextStyle(
-                                fontSize: 10,
+                                fontSize: 11,
                                 color: AppColors.textPrimary,
                                 fontStyle: FontStyle.italic,
                               ),
@@ -1125,14 +1153,14 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
     );
   }
 
-  Widget _buildHistoryMetricItem(String label, String value, Color color) {
+  Widget _buildHistoryMetricItem(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label.toUpperCase(),
           style: const TextStyle(
-            fontSize: 9,
+            fontSize: 11,
             fontWeight: FontWeight.bold,
             color: AppColors.textSecondary,
             letterSpacing: 0.5,
@@ -1144,7 +1172,9 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            color: value == '-' ? AppColors.textSecondary : color,
+            color: value == '-'
+                ? AppColors.textSecondary
+                : AppColors.textPrimary,
           ),
         ),
       ],

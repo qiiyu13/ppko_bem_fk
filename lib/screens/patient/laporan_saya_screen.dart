@@ -4,8 +4,11 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../constants/app_colors.dart';
+import '../../constants/app_theme.dart';
 import '../../utils/asset_helper.dart';
+import '../../utils/date_utils.dart';
 import '../../utils/responsive_size.dart';
+import '../../widgets/empty_state_widget.dart';
 import '../../widgets/error_state_widget.dart';
 import '../../services/api_service.dart';
 import '../../services/profile_service.dart';
@@ -24,6 +27,7 @@ class LaporanSayaScreen extends StatefulWidget {
 class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
   List<BPScreeningData> _screeningData = [];
   bool _isLoading = true;
+  bool _showAll = false;
   String? _error;
 
   @override
@@ -55,20 +59,23 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
 
       final data = response.data['data'] as List? ?? [];
       setState(() {
-        _screeningData = data.map((json) {
-          final map = json as Map<String, dynamic>;
-          return BPScreeningData(
-            date: DateTime.parse(map['screeningAt'] as String),
-            systolic: (map['systolic'] as num).toInt(),
-            diastolic: (map['diastolic'] as num).toInt(),
-            weight: (map['weight'] as num? ?? 0).toDouble(),
-            height: (map['height'] as num? ?? 0).toDouble(),
-            bloodSugar: (map['bloodSugar'] as num? ?? 0).toDouble(),
-            uricAcid: (map['uricAcid'] as num? ?? 0).toDouble(),
-            cholesterol: (map['cholesterol'] as num? ?? 0).toDouble(),
-            gender: widget.gender,
-          );
-        }).toList();
+        _screeningData =
+            data.map((json) {
+                final map = json as Map<String, dynamic>;
+                return BPScreeningData(
+                  date: DateTime.parse(map['screeningAt'] as String),
+                  systolic: (map['systolic'] as num).toInt(),
+                  diastolic: (map['diastolic'] as num).toInt(),
+                  weight: (map['weight'] as num? ?? 0).toDouble(),
+                  height: (map['height'] as num? ?? 0).toDouble(),
+                  bloodSugar: (map['bloodSugar'] as num? ?? 0).toDouble(),
+                  uricAcid: (map['uricAcid'] as num? ?? 0).toDouble(),
+                  cholesterol: (map['cholesterol'] as num? ?? 0).toDouble(),
+                  gender: widget.gender,
+                );
+              }).toList()
+              // Newest first — never trust API ordering.
+              ..sort((a, b) => b.date.compareTo(a.date));
         _isLoading = false;
       });
     } catch (e) {
@@ -84,7 +91,7 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
     ResponsiveSize.init(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
@@ -92,14 +99,7 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Laporan Saya',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
+        title: const Text('Laporan Saya'),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -110,78 +110,101 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
             }
 
             if (_error != null) {
-              return ErrorStateWidget(message: _error!, onRetry: _loadScreenings);
-            }
-
-            if (_screeningData.isEmpty) {
-              return const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.inbox, size: 48, color: AppColors.textSecondary),
-                    SizedBox(height: 16),
-                    Text(
-                      'Belum ada data screening',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
+              return ErrorStateWidget(
+                message: _error!,
+                onRetry: _loadScreenings,
               );
             }
 
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Padding(
-                  padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Screening History Section
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.history,
-                                color: AppColors.primary,
-                                size: ResponsiveSize.iconMedium,
+            if (_screeningData.isEmpty) {
+              return const EmptyStateWidget(
+                icon: Icons.inbox_outlined,
+                title: 'Belum ada data screening',
+                subtitle: 'Hasil screening kesehatan Anda\nakan muncul di sini',
+              );
+            }
+
+            final visible = _showAll
+                ? _screeningData
+                : _screeningData.take(_kRecentReportsLimit).toList();
+            final hasMore = _screeningData.length > _kRecentReportsLimit;
+
+            return RefreshIndicator(
+              onRefresh: _loadScreenings,
+              color: AppColors.primary,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Padding(
+                    padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Screening History Section
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.history,
+                                  color: AppColors.primary,
+                                  size: ResponsiveSize.iconMedium,
+                                ),
+                                SizedBox(width: ResponsiveSize.paddingSmall),
+                                Text(
+                                  'Riwayat Screening',
+                                  style: TextStyle(
+                                    fontSize: ResponsiveSize.fontLarge,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              '${_screeningData.length} screening',
+                              style: TextStyle(
+                                fontSize: ResponsiveSize.fontSmall,
+                                color: AppColors.textSecondary,
                               ),
-                              SizedBox(width: ResponsiveSize.paddingSmall),
-                              Text(
-                                'Riwayat Screening',
-                                style: TextStyle(
-                                  fontSize: ResponsiveSize.fontLarge,
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: ResponsiveSize.spacingMedium),
+                        // Expandable Screening Cards (newest first)
+                        ...visible.map((data) {
+                          return _buildExpandableScreeningCard(
+                            data: data,
+                            isInitiallyExpanded: false,
+                          );
+                        }),
+                        if (hasMore)
+                          Center(
+                            child: TextButton.icon(
+                              onPressed: () {
+                                setState(() => _showAll = !_showAll);
+                              },
+                              icon: Icon(
+                                _showAll
+                                    ? Icons.keyboard_arrow_up
+                                    : Icons.keyboard_arrow_down,
+                                color: AppColors.primary,
+                              ),
+                              label: Text(
+                                _showAll
+                                    ? 'Tampilkan Lebih Sedikit'
+                                    : 'Tampilkan Semua (${_screeningData.length})',
+                                style: const TextStyle(
+                                  color: AppColors.primary,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
                                 ),
                               ),
-                            ],
-                          ),
-                          Text(
-                            '${_screeningData.length} screening',
-                            style: TextStyle(
-                              fontSize: ResponsiveSize.fontSmall,
-                              color: AppColors.textSecondary,
                             ),
                           ),
-                        ],
-                      ),
-                      SizedBox(height: ResponsiveSize.spacingMedium),
-                      // Expandable Screening Cards
-                      ..._screeningData.reversed.take(_kRecentReportsLimit).map((data) {
-                        return _buildExpandableScreeningCard(
-                          data: data,
-                          isInitiallyExpanded: false,
-                        );
-                      }),
-
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -201,7 +224,6 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
       isInitiallyExpanded: isInitiallyExpanded,
     );
   }
-
 }
 
 // Data model for screening
@@ -240,8 +262,15 @@ class BPScreeningData {
     return 'Obesitas';
   }
 
+  /// Accepts both app convention ('Pria'/'Wanita') and API convention
+  /// ('male'/'female') so the uric-acid denominator is never wrong.
+  bool get isMale {
+    final g = gender.toLowerCase();
+    return g == 'pria' || g == 'male' || g == 'laki-laki';
+  }
+
   double get ird {
-    final auDenominator = gender.toLowerCase() == 'pria' ? 7.0 : 6.0;
+    final auDenominator = isMale ? 7.0 : 6.0;
     final gdsComponent = 0.3 * (bloodSugar / 200);
     final bpComponent = 0.2 * ((systolic / 140 + diastolic / 90) / 2);
     final kolComponent = 0.2 * (cholesterol / 240);
@@ -258,6 +287,17 @@ class BPScreeningData {
     if (ird < 0.75) return 'normal';
     if (ird <= 1.0) return 'attention';
     return 'high';
+  }
+
+  String get irdCategoryLabel {
+    switch (irdCategory) {
+      case 'normal':
+        return 'Normal';
+      case 'attention':
+        return 'Perhatian';
+      default:
+        return 'Tinggi';
+    }
   }
 }
 
@@ -287,53 +327,30 @@ class _ExpandableScreeningCardWidgetState
     _isExpanded = widget.isInitiallyExpanded;
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember',
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
-  }
+  String _formatDate(DateTime date) => IndonesianDate.format(date);
 
   Color _getIRDStatusColor(String category) {
     switch (category) {
       case 'normal':
-        return AppColors.success;
+        return AppColors.statusGreen;
       case 'attention':
-        return const Color(0xFFFF9800);
+        return AppColors.statusAmber;
       case 'high':
-        return const Color(0xFFEF5350);
+        return AppColors.statusRed;
       default:
-        return AppColors.success;
+        return AppColors.statusGreen;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.radiusCard),
         border: Border.all(color: AppColors.surface, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppTheme.cardShadowLight,
       ),
       child: Column(
         children: [
@@ -345,10 +362,10 @@ class _ExpandableScreeningCardWidgetState
               });
             },
             borderRadius: BorderRadius.vertical(
-              top: const Radius.circular(12),
+              top: const Radius.circular(AppTheme.radiusCard),
               bottom: _isExpanded
                   ? Radius.zero
-                  : const Radius.circular(12),
+                  : const Radius.circular(AppTheme.radiusCard),
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -389,7 +406,7 @@ class _ExpandableScreeningCardWidgetState
               decoration: const BoxDecoration(
                 color: AppColors.card,
                 borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(12),
+                  bottom: Radius.circular(AppTheme.radiusCard),
                 ),
                 border: Border(top: BorderSide(color: AppColors.surface)),
               ),
@@ -402,9 +419,10 @@ class _ExpandableScreeningCardWidgetState
                       Expanded(
                         child: _buildVitalChip(
                           icon: Icons.favorite,
-                          iconColor: const Color(0xFFEF5350),
+                          iconColor: AppColors.statusRed,
                           label: 'Tekanan Darah',
-                          value: '${widget.data.systolic}/${widget.data.diastolic}',
+                          value:
+                              '${widget.data.systolic}/${widget.data.diastolic}',
                           unit: 'mmHg',
                         ),
                       ),
@@ -412,7 +430,7 @@ class _ExpandableScreeningCardWidgetState
                       Expanded(
                         child: _buildVitalChip(
                           icon: Icons.monitor_weight_outlined,
-                          iconColor: const Color(0xFF42A5F5),
+                          iconColor: AppColors.primaryLight,
                           label: 'Berat Badan',
                           value: widget.data.weight.toStringAsFixed(1),
                           unit: 'kg',
@@ -426,7 +444,7 @@ class _ExpandableScreeningCardWidgetState
                       Expanded(
                         child: _buildVitalChip(
                           icon: Icons.height,
-                          iconColor: const Color(0xFFAB47BC),
+                          iconColor: AppColors.primary,
                           label: 'Tinggi Badan',
                           value: widget.data.height.toStringAsFixed(0),
                           unit: 'cm',
@@ -436,7 +454,7 @@ class _ExpandableScreeningCardWidgetState
                       Expanded(
                         child: _buildVitalChip(
                           icon: Icons.calculate_outlined,
-                          iconColor: const Color(0xFFFFA726),
+                          iconColor: AppColors.statusAmber,
                           label: 'BMI',
                           value: widget.data.bmi.toStringAsFixed(1),
                           unit: widget.data.bmiCategory,
@@ -455,9 +473,29 @@ class _ExpandableScreeningCardWidgetState
                     ),
                   ),
                   const SizedBox(height: 4),
-                  _buildLabRow('Gula Darah', '${widget.data.bloodSugar.toStringAsFixed(0)} mg/dL', _labColor(widget.data.bloodSugar, normal: 100, borderline: 126)),
-                  _buildLabRow('Asam Urat', '${widget.data.uricAcid.toStringAsFixed(1)} mg/dL', _labColor(widget.data.uricAcid, normal: 6, borderline: 7)),
-                  _buildLabRow('Kolesterol', '${widget.data.cholesterol.toStringAsFixed(0)} mg/dL', _labColor(widget.data.cholesterol, normal: 200, borderline: 240)),
+                  _buildLabRow(
+                    'Gula Darah',
+                    '${widget.data.bloodSugar.toStringAsFixed(0)} mg/dL',
+                    _labColor(
+                      widget.data.bloodSugar,
+                      normal: 100,
+                      borderline: 126,
+                    ),
+                  ),
+                  _buildLabRow(
+                    'Asam Urat',
+                    '${widget.data.uricAcid.toStringAsFixed(1)} mg/dL',
+                    _labColor(widget.data.uricAcid, normal: 6, borderline: 7),
+                  ),
+                  _buildLabRow(
+                    'Kolesterol',
+                    '${widget.data.cholesterol.toStringAsFixed(0)} mg/dL',
+                    _labColor(
+                      widget.data.cholesterol,
+                      normal: 200,
+                      borderline: 240,
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   // IRD progress bar
                   _buildIRDBar(),
@@ -468,9 +506,11 @@ class _ExpandableScreeningCardWidgetState
                   _buildActionButton(
                     label: 'Unduh Laporan',
                     icon: Icons.download_outlined,
-                    onTap: () { _downloadReport(); },
+                    onTap: () {
+                      _downloadReport();
+                    },
                     bgColor: AppColors.primary,
-                    fgColor: AppColors.background,
+                    fgColor: AppColors.textOnPrimary,
                     borderColor: AppColors.primary,
                   ),
                 ],
@@ -495,7 +535,9 @@ class _ExpandableScreeningCardWidgetState
         padding: EdgeInsets.symmetric(vertical: ResponsiveSize.paddingMedium),
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(ResponsiveSize.buttonBorderRadius),
+          borderRadius: BorderRadius.circular(
+            ResponsiveSize.buttonBorderRadius,
+          ),
           border: Border.all(color: borderColor, width: 1),
         ),
         child: Row(
@@ -540,7 +582,7 @@ class _ExpandableScreeningCardWidgetState
               Text(
                 unit,
                 style: const TextStyle(
-                  fontSize: 8.5,
+                  fontSize: 12,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textSecondary,
                 ),
@@ -559,7 +601,7 @@ class _ExpandableScreeningCardWidgetState
           Text(
             label,
             style: const TextStyle(
-              fontSize: 8.5,
+              fontSize: 12,
               color: AppColors.textSecondary,
             ),
             maxLines: 1,
@@ -570,10 +612,14 @@ class _ExpandableScreeningCardWidgetState
     );
   }
 
-  Color _labColor(double value, {required double normal, required double borderline}) {
-    if (value < normal) return AppColors.success;
-    if (value < borderline) return const Color(0xFFFFA726);
-    return const Color(0xFFEF5350);
+  Color _labColor(
+    double value, {
+    required double normal,
+    required double borderline,
+  }) {
+    if (value < normal) return AppColors.statusGreen;
+    if (value < borderline) return AppColors.statusAmber;
+    return AppColors.statusRed;
   }
 
   Widget _buildLabRow(String label, String value, Color color) {
@@ -590,12 +636,19 @@ class _ExpandableScreeningCardWidgetState
           Expanded(
             child: Text(
               label,
-              style: TextStyle(fontSize: ResponsiveSize.fontSmall, color: AppColors.textSecondary),
+              style: TextStyle(
+                fontSize: ResponsiveSize.fontSmall,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
           Text(
             value,
-            style: TextStyle(fontSize: ResponsiveSize.fontSmall, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+            style: TextStyle(
+              fontSize: ResponsiveSize.fontSmall,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
           ),
         ],
       ),
@@ -613,11 +666,19 @@ class _ExpandableScreeningCardWidgetState
           children: [
             Text(
               'IRD (Index Risiko Diabetes)',
-              style: TextStyle(fontSize: ResponsiveSize.fontSmall, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+              style: TextStyle(
+                fontSize: ResponsiveSize.fontSmall,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
             ),
             Text(
-              '${widget.data.ird.toStringAsFixed(2)} · ${widget.data.irdCategory}',
-              style: TextStyle(fontSize: ResponsiveSize.fontSmall, fontWeight: FontWeight.w600, color: irdColor),
+              '${widget.data.ird.toStringAsFixed(2)} · ${widget.data.irdCategoryLabel}',
+              style: TextStyle(
+                fontSize: ResponsiveSize.fontSmall,
+                fontWeight: FontWeight.w600,
+                color: irdColor,
+              ),
             ),
           ],
         ),
@@ -675,7 +736,7 @@ class _ExpandableScreeningCardWidgetState
         irdLightColor = PdfColor.fromHex('FFEBEE');
     }
 
-    final auNormal = d.gender.toLowerCase() == 'pria' ? 7.0 : 6.0;
+    final auNormal = d.isMale ? 7.0 : 6.0;
 
     doc.addPage(
       pw.Page(
@@ -705,11 +766,17 @@ class _ExpandableScreeningCardWidgetState
                   pw.SizedBox(height: 4),
                   pw.Text(
                     'Tanggal Screening: ${_formatDate(d.date)}',
-                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.white),
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.white,
+                    ),
                   ),
                   pw.Text(
                     'Dicetak: ${_formatDate(DateTime.now())}',
-                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.white),
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.white,
+                    ),
                   ),
                 ],
               ),
@@ -717,7 +784,11 @@ class _ExpandableScreeningCardWidgetState
             pw.SizedBox(height: 20),
             pw.Text(
               'DATA VITAL',
-              style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: primaryColor),
+              style: pw.TextStyle(
+                fontSize: 12,
+                fontWeight: pw.FontWeight.bold,
+                color: primaryColor,
+              ),
             ),
             pw.SizedBox(height: 6),
             pw.Table(
@@ -736,16 +807,44 @@ class _ExpandableScreeningCardWidgetState
                     _pdfCell('Satuan', bold: true),
                   ],
                 ),
-                pw.TableRow(children: [_pdfCell('Tekanan Darah'), _pdfCell('${d.systolic}/${d.diastolic}'), _pdfCell('mmHg')]),
-                pw.TableRow(children: [_pdfCell('Berat Badan'), _pdfCell(d.weight.toStringAsFixed(1)), _pdfCell('kg')]),
-                pw.TableRow(children: [_pdfCell('Tinggi Badan'), _pdfCell(d.height.toStringAsFixed(0)), _pdfCell('cm')]),
-                pw.TableRow(children: [_pdfCell('BMI'), _pdfCell(d.bmi.toStringAsFixed(1)), _pdfCell(d.bmiCategory)]),
+                pw.TableRow(
+                  children: [
+                    _pdfCell('Tekanan Darah'),
+                    _pdfCell('${d.systolic}/${d.diastolic}'),
+                    _pdfCell('mmHg'),
+                  ],
+                ),
+                pw.TableRow(
+                  children: [
+                    _pdfCell('Berat Badan'),
+                    _pdfCell(d.weight.toStringAsFixed(1)),
+                    _pdfCell('kg'),
+                  ],
+                ),
+                pw.TableRow(
+                  children: [
+                    _pdfCell('Tinggi Badan'),
+                    _pdfCell(d.height.toStringAsFixed(0)),
+                    _pdfCell('cm'),
+                  ],
+                ),
+                pw.TableRow(
+                  children: [
+                    _pdfCell('BMI'),
+                    _pdfCell(d.bmi.toStringAsFixed(1)),
+                    _pdfCell(d.bmiCategory),
+                  ],
+                ),
               ],
             ),
             pw.SizedBox(height: 20),
             pw.Text(
               'HASIL LABORATORIUM',
-              style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: primaryColor),
+              style: pw.TextStyle(
+                fontSize: 12,
+                fontWeight: pw.FontWeight.bold,
+                color: primaryColor,
+              ),
             ),
             pw.SizedBox(height: 6),
             pw.Table(
@@ -766,35 +865,57 @@ class _ExpandableScreeningCardWidgetState
                     _pdfCell('Status', bold: true),
                   ],
                 ),
-                pw.TableRow(children: [
-                  _pdfCell('Gula Darah'),
-                  _pdfCell('${d.bloodSugar.toStringAsFixed(0)} mg/dL'),
-                  _pdfCell('< 100 mg/dL'),
-                  _pdfColorCell(_labStatusText(d.bloodSugar, 100, 126), _pdfLabColor(d.bloodSugar, 100, 126)),
-                ]),
-                pw.TableRow(children: [
-                  _pdfCell('Asam Urat'),
-                  _pdfCell('${d.uricAcid.toStringAsFixed(1)} mg/dL'),
-                  _pdfCell('< ${auNormal.toStringAsFixed(0)} mg/dL'),
-                  _pdfColorCell(_labStatusText(d.uricAcid, auNormal, auNormal + 1), _pdfLabColor(d.uricAcid, auNormal, auNormal + 1)),
-                ]),
-                pw.TableRow(children: [
-                  _pdfCell('Kolesterol'),
-                  _pdfCell('${d.cholesterol.toStringAsFixed(0)} mg/dL'),
-                  _pdfCell('< 200 mg/dL'),
-                  _pdfColorCell(_labStatusText(d.cholesterol, 200, 240), _pdfLabColor(d.cholesterol, 200, 240)),
-                ]),
+                pw.TableRow(
+                  children: [
+                    _pdfCell('Gula Darah'),
+                    _pdfCell('${d.bloodSugar.toStringAsFixed(0)} mg/dL'),
+                    _pdfCell('< 100 mg/dL'),
+                    _pdfColorCell(
+                      _labStatusText(d.bloodSugar, 100, 126),
+                      _pdfLabColor(d.bloodSugar, 100, 126),
+                    ),
+                  ],
+                ),
+                pw.TableRow(
+                  children: [
+                    _pdfCell('Asam Urat'),
+                    _pdfCell('${d.uricAcid.toStringAsFixed(1)} mg/dL'),
+                    _pdfCell('< ${auNormal.toStringAsFixed(0)} mg/dL'),
+                    _pdfColorCell(
+                      _labStatusText(d.uricAcid, auNormal, auNormal + 1),
+                      _pdfLabColor(d.uricAcid, auNormal, auNormal + 1),
+                    ),
+                  ],
+                ),
+                pw.TableRow(
+                  children: [
+                    _pdfCell('Kolesterol'),
+                    _pdfCell('${d.cholesterol.toStringAsFixed(0)} mg/dL'),
+                    _pdfCell('< 200 mg/dL'),
+                    _pdfColorCell(
+                      _labStatusText(d.cholesterol, 200, 240),
+                      _pdfLabColor(d.cholesterol, 200, 240),
+                    ),
+                  ],
+                ),
               ],
             ),
             pw.SizedBox(height: 20),
             pw.Text(
               'INDEX RISIKO DIABETES (IRD)',
-              style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: primaryColor),
+              style: pw.TextStyle(
+                fontSize: 12,
+                fontWeight: pw.FontWeight.bold,
+                color: primaryColor,
+              ),
             ),
             pw.SizedBox(height: 6),
             pw.Container(
               width: double.infinity,
-              padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const pw.EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
               decoration: pw.BoxDecoration(
                 color: irdLightColor,
                 border: pw.Border(
@@ -807,20 +928,33 @@ class _ExpandableScreeningCardWidgetState
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('Nilai IRD', style: pw.TextStyle(fontSize: 9, color: greyColor)),
+                      pw.Text(
+                        'Nilai IRD',
+                        style: pw.TextStyle(fontSize: 9, color: greyColor),
+                      ),
                       pw.Text(
                         d.ird.toStringAsFixed(2),
-                        style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
+                        style: pw.TextStyle(
+                          fontSize: 20,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
-                      pw.Text('Kategori Risiko', style: pw.TextStyle(fontSize: 9, color: greyColor)),
                       pw.Text(
-                        d.irdCategory,
-                        style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: irdColor),
+                        'Kategori Risiko',
+                        style: pw.TextStyle(fontSize: 9, color: greyColor),
+                      ),
+                      pw.Text(
+                        d.irdCategoryLabel,
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                          color: irdColor,
+                        ),
                       ),
                     ],
                   ),
@@ -859,7 +993,11 @@ class _ExpandableScreeningCardWidgetState
       padding: const pw.EdgeInsets.all(6),
       child: pw.Text(
         text,
-        style: pw.TextStyle(fontSize: 10, color: color, fontWeight: pw.FontWeight.bold),
+        style: pw.TextStyle(
+          fontSize: 10,
+          color: color,
+          fontWeight: pw.FontWeight.bold,
+        ),
       ),
     );
   }
@@ -874,367 +1012,5 @@ class _ExpandableScreeningCardWidgetState
     if (value < normal) return PdfColor.fromHex('4CAF50');
     if (value < borderline) return PdfColor.fromHex('FFA726');
     return PdfColor.fromHex('EF5350');
-  }
-}
-
-// Touchable Card Widget with press animation
-class TouchableCard extends StatefulWidget {
-  final Widget child;
-
-  const TouchableCard({super.key, required this.child});
-
-  @override
-  State<TouchableCard> createState() => _TouchableCardState();
-}
-
-class _TouchableCardState extends State<TouchableCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.98,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _onTapDown(TapDownDetails details) {
-    _controller.forward();
-  }
-
-  void _onTapUp(TapUpDetails details) {
-    _controller.reverse();
-  }
-
-  void _onTapCancel() {
-    _controller.reverse();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: _onTapDown,
-      onTapUp: _onTapUp,
-      onTapCancel: _onTapCancel,
-      onTap: () {},
-      child: AnimatedBuilder(
-        animation: _scaleAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(
-                  ResponsiveSize.cardBorderRadius,
-                ),
-                border: Border.all(color: AppColors.surface, width: 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.08),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                    spreadRadius: -5,
-                  ),
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.05),
-                    blurRadius: 40,
-                    offset: const Offset(0, 12),
-                    spreadRadius: -10,
-                  ),
-                ],
-              ),
-              child: child,
-            ),
-          );
-        },
-        child: widget.child,
-      ),
-    );
-  }
-}
-
-// Touchable Suggestion Card
-class TouchableSuggestionCard extends StatefulWidget {
-  final IconData? icon;
-  final String? iconAsset;
-  final bool isSvg;
-  final String title;
-  final String subtitle;
-  final Color iconColor;
-
-  const TouchableSuggestionCard({
-    super.key,
-    this.icon,
-    this.iconAsset,
-    this.isSvg = false,
-    required this.title,
-    required this.subtitle,
-    required this.iconColor,
-  }) : assert(
-         icon != null || iconAsset != null,
-         'Must provide either icon or iconAsset',
-       );
-
-  @override
-  State<TouchableSuggestionCard> createState() =>
-      _TouchableSuggestionCardState();
-}
-
-class _TouchableSuggestionCardState extends State<TouchableSuggestionCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.96,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _onTapDown(TapDownDetails details) {
-    _controller.forward();
-  }
-
-  void _onTapUp(TapUpDetails details) {
-    _controller.reverse();
-  }
-
-  void _onTapCancel() {
-    _controller.reverse();
-  }
-
-  Widget _buildIcon() {
-    if (widget.iconAsset != null) {
-      if (widget.isSvg) {
-        return SvgPicture.asset(
-          AssetHelper.getSvgPath(
-            widget.iconAsset!
-                .replaceFirst('assets/svg/', '')
-                .replaceFirst('assets/images/', ''),
-          ),
-          width: ResponsiveSize.iconMedium,
-          height: ResponsiveSize.iconMedium,
-          colorFilter: ColorFilter.mode(widget.iconColor, BlendMode.srcIn),
-        );
-      } else {
-        return Image.asset(
-          widget.iconAsset!,
-          width: ResponsiveSize.iconMedium,
-          height: ResponsiveSize.iconMedium,
-          color: widget.iconColor,
-        );
-      }
-    }
-    return Icon(
-      widget.icon,
-      color: widget.iconColor,
-      size: ResponsiveSize.iconMedium,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: _onTapDown,
-      onTapUp: _onTapUp,
-      onTapCancel: _onTapCancel,
-      onTap: () {},
-      child: AnimatedBuilder(
-        animation: _scaleAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: Container(
-              padding: EdgeInsets.all(ResponsiveSize.paddingSmall),
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(
-                  ResponsiveSize.cardBorderRadius,
-                ),
-                border: Border.all(color: AppColors.surface, width: 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: widget.iconColor.withValues(alpha: 0.1),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                    spreadRadius: -2,
-                  ),
-                ],
-              ),
-              child: child,
-            ),
-          );
-        },
-        child: Column(
-          children: [
-            Container(
-              padding: EdgeInsets.all(ResponsiveSize.paddingSmall),
-              decoration: BoxDecoration(
-                color: widget.iconColor.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: _buildIcon(),
-            ),
-            SizedBox(height: ResponsiveSize.spacingSmall),
-            Text(
-              widget.title,
-              style: TextStyle(
-                fontSize: ResponsiveSize.fontMedium,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              widget.subtitle,
-              style: TextStyle(
-                fontSize: ResponsiveSize.fontSmall,
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Touchable Button Widget
-class TouchableButton extends StatefulWidget {
-  final VoidCallback onTap;
-  final Widget child;
-  final bool isFilled;
-
-  const TouchableButton({
-    super.key,
-    required this.onTap,
-    required this.child,
-    required this.isFilled,
-  });
-
-  @override
-  State<TouchableButton> createState() => _TouchableButtonState();
-}
-
-class _TouchableButtonState extends State<TouchableButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 100),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _onTapDown(TapDownDetails details) {
-    _controller.forward();
-  }
-
-  void _onTapUp(TapUpDetails details) {
-    _controller.reverse();
-  }
-
-  void _onTapCancel() {
-    _controller.reverse();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: _onTapDown,
-      onTapUp: _onTapUp,
-      onTapCancel: _onTapCancel,
-      onTap: widget.onTap,
-      child: AnimatedBuilder(
-        animation: _scaleAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                vertical: ResponsiveSize.paddingMedium,
-              ),
-              decoration: BoxDecoration(
-                color: widget.isFilled
-                    ? AppColors.primary
-                    : AppColors.background,
-                borderRadius: BorderRadius.circular(
-                  ResponsiveSize.buttonBorderRadius,
-                ),
-                border: Border.all(
-                  color: widget.isFilled
-                      ? AppColors.primary
-                      : AppColors.surface,
-                  width: 1,
-                ),
-                boxShadow: widget.isFilled
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                          spreadRadius: -2,
-                        ),
-                      ]
-                    : [
-                        BoxShadow(
-                          color: AppColors.surface.withValues(alpha: 0.5),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-              ),
-              child: child,
-            ),
-          );
-        },
-        child: widget.child,
-      ),
-    );
   }
 }

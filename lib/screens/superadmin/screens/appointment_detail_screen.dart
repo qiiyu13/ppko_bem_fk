@@ -103,7 +103,7 @@ class AppointmentDetailScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          'Read-only',
+                          'Hanya Lihat',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,

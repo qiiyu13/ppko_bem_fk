@@ -10,6 +10,8 @@ import '../../../services/token_service.dart';
 import '../../../services/notification_service.dart';
 import '../../../widgets/dashboard/greeting_header.dart';
 import '../../../widgets/dashboard/stat_cell.dart';
+import '../../../widgets/empty_state_widget.dart';
+import '../../../widgets/error_state_widget.dart';
 import '../admin_family_detail_screen.dart';
 import '../qr_scanner_screen.dart';
 import '../../superadmin/screens/screening_report_screen.dart';
@@ -29,8 +31,10 @@ class DashboardTab extends StatefulWidget {
 class _DashboardTabState extends State<DashboardTab> {
   String _selectedFilter = 'All';
   String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
   bool _isLoadingMore = false;
+  bool _hasError = false;
   List<Map<String, dynamic>> _patients = [];
   int _totalProfiles = 0;
   int _totalHighRiskProfiles = 0;
@@ -54,6 +58,7 @@ class _DashboardTabState extends State<DashboardTab> {
   @override
   void dispose() {
     _searchDebounce?.cancel();
+    _searchController.dispose();
     AuthService.avatarRevision.removeListener(_loadUser);
     super.dispose();
   }
@@ -82,7 +87,10 @@ class _DashboardTabState extends State<DashboardTab> {
     if (loadMore) {
       setState(() => _isLoadingMore = true);
     } else {
-      setState(() => _isLoading = true);
+      setState(() {
+        _isLoading = true;
+        _hasError = false;
+      });
       _currentPage = 1;
     }
 
@@ -107,6 +115,7 @@ class _DashboardTabState extends State<DashboardTab> {
         final List<dynamic> data = response.data['data'] ?? [];
         final meta = response.data['meta'];
 
+        if (!mounted) return;
         setState(() {
           _patients.addAll(data.cast<Map<String, dynamic>>());
           _totalPages = meta?['totalPages'] ?? 1;
@@ -133,13 +142,15 @@ class _DashboardTabState extends State<DashboardTab> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       if (!loadMore) {
-        if (!mounted) return;
         setState(() {
           _patients = [];
+          _hasError = true;
         });
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gagal memuat data pasien')),
+          const SnackBar(content: Text('Gagal memuat data tambahan')),
         );
       }
     } finally {
@@ -178,8 +189,9 @@ class _DashboardTabState extends State<DashboardTab> {
       ),
       child: Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         heroTag: 'admin_dashboard_fab',
+        tooltip: 'Pindai QR pasien untuk skrining',
         onPressed: () {
           Navigator.push(
             context,
@@ -187,7 +199,8 @@ class _DashboardTabState extends State<DashboardTab> {
           );
         },
         backgroundColor: AppColors.primary,
-        child: const Icon(Icons.qr_code_scanner, color: Colors.white),
+        icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
+        label: const Text('Pindai QR', style: TextStyle(color: Colors.white)),
       ),
       body: RefreshIndicator(
         onRefresh: _refresh,
@@ -222,6 +235,7 @@ class _DashboardTabState extends State<DashboardTab> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: TextField(
+                        controller: _searchController,
                         onChanged: (value) {
                           _searchDebounce?.cancel();
                           _searchDebounce = Timer(const Duration(milliseconds: 500), () {
@@ -244,6 +258,28 @@ class _DashboardTabState extends State<DashboardTab> {
                             color: AppColors.textSecondary,
                             size: ResponsiveSize.iconSmall,
                           ),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.close,
+                                    color: AppColors.textSecondary,
+                                    size: ResponsiveSize.iconSmall,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  visualDensity: VisualDensity.compact,
+                                  tooltip: 'Hapus pencarian',
+                                  onPressed: () {
+                                    _searchDebounce?.cancel();
+                                    _searchController.clear();
+                                    setState(() => _searchQuery = '');
+                                    _fetchPatients();
+                                  },
+                                )
+                              : null,
+                          suffixIconConstraints: const BoxConstraints(
+                            minWidth: 36,
+                            minHeight: 36,
+                          ),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: ResponsiveSize.paddingSmall,
@@ -257,13 +293,13 @@ class _DashboardTabState extends State<DashboardTab> {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          _buildFilterChip('All', _totalProfiles, AppColors.textPrimary),
+                          _buildFilterChip('All', 'Semua', _totalProfiles, AppColors.textPrimary),
                           SizedBox(width: ResponsiveSize.paddingSmall),
-                          _buildFilterChip('High Risk', _totalHighRiskProfiles, AppColors.statusRed),
+                          _buildFilterChip('High Risk', 'Risiko Tinggi', _totalHighRiskProfiles, AppColors.statusRed),
                           SizedBox(width: ResponsiveSize.paddingSmall),
-                          _buildFilterChip('Attention', _totalAttentionProfiles, AppColors.statusAmber),
+                          _buildFilterChip('Attention', 'Waspada', _totalAttentionProfiles, AppColors.statusAmber),
                           SizedBox(width: ResponsiveSize.paddingSmall),
-                          _buildFilterChip('Normal', _totalNormalProfiles, AppColors.statusGreen),
+                          _buildFilterChip('Normal', 'Normal', _totalNormalProfiles, AppColors.statusGreen),
                         ],
                       ),
                     ),
@@ -286,24 +322,24 @@ class _DashboardTabState extends State<DashboardTab> {
     );
   }  // AnnotatedRegion closes Scaffold above
 
-  Widget _buildFilterChip(String label, int count, Color color) {
-    final isSelected = _selectedFilter == label;
-    final showDot = label != 'All';
+  Widget _buildFilterChip(String key, String label, int count, Color color) {
+    final isSelected = _selectedFilter == key;
+    final showDot = key != 'All';
     return InkWell(
       onTap: () {
-        if (_selectedFilter == label) return;
-        setState(() => _selectedFilter = label);
+        if (_selectedFilter == key) return;
+        setState(() => _selectedFilter = key);
         _fetchPatients();
       },
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? color : AppColors.card,
+          color: isSelected ? color.withValues(alpha: 0.12) : AppColors.card,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? color : AppColors.divider,
-            width: 1,
+            width: isSelected ? 1.5 : 1,
           ),
         ),
         child: Row(
@@ -314,7 +350,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.textOnPrimary : color,
+                  color: color,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -323,7 +359,7 @@ class _DashboardTabState extends State<DashboardTab> {
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary,
+                color: isSelected ? color : AppColors.textPrimary,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -333,9 +369,7 @@ class _DashboardTabState extends State<DashboardTab> {
               Text(
                 count.toString(),
                 style: TextStyle(
-                  color: isSelected
-                      ? AppColors.textOnPrimary
-                      : AppColors.textSecondary,
+                  color: isSelected ? color : AppColors.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -368,7 +402,7 @@ class _DashboardTabState extends State<DashboardTab> {
           Expanded(
             child: StatCell(
               value: _totalHighRiskProfiles,
-              label: 'High Risk',
+              label: 'Risiko Tinggi',
               color: AppColors.statusRed,
             ),
           ),
@@ -376,7 +410,7 @@ class _DashboardTabState extends State<DashboardTab> {
           Expanded(
             child: StatCell(
               value: _totalAttentionProfiles,
-              label: 'Attention',
+              label: 'Waspada',
               color: AppColors.statusAmber,
             ),
           ),
@@ -414,22 +448,21 @@ class _DashboardTabState extends State<DashboardTab> {
                 padding: EdgeInsets.all(32),
                 child: Center(child: CircularProgressIndicator()),
               )
-            else if (_patients.isEmpty)
+            else if (_hasError)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 48),
-                child: Column(
-                  children: [
-                    const Icon(Icons.person_search,
-                        size: 48, color: AppColors.textSecondary),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Tidak ada warga ditemukan',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: ResponsiveSize.fontMedium,
-                      ),
-                    ),
-                  ],
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: ErrorStateWidget(
+                  message: 'Gagal memuat data pasien.\nPeriksa koneksi lalu coba lagi.',
+                  onRetry: _fetchPatients,
+                ),
+              )
+            else if (_patients.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: EmptyStateWidget(
+                  icon: Icons.person_search,
+                  title: 'Tidak ada warga ditemukan',
+                  subtitle: 'Coba ubah kata kunci atau filter',
                 ),
               )
             else
@@ -499,7 +532,7 @@ class _DashboardTabState extends State<DashboardTab> {
     final sections = <Widget>[];
     void addSection(String label, Color color, List<Map<String, dynamic>> list) {
       if (list.isEmpty) return;
-      sections.add(_buildSectionHeader(label, list.length, color));
+      sections.add(_buildSectionHeader(label, color));
       for (var i = 0; i < list.length; i++) {
         sections.add(_buildPatientCard(list[i]));
         if (i != list.length - 1) {
@@ -508,8 +541,8 @@ class _DashboardTabState extends State<DashboardTab> {
       }
     }
 
-    addSection('High Risk', AppColors.statusRed, highRisk);
-    addSection('Attention', AppColors.statusAmber, attention);
+    addSection('Risiko Tinggi', AppColors.statusRed, highRisk);
+    addSection('Waspada', AppColors.statusAmber, attention);
     addSection('Normal', AppColors.statusGreen, normal);
     addSection('Lainnya', AppColors.textSecondary, other);
 
@@ -519,7 +552,7 @@ class _DashboardTabState extends State<DashboardTab> {
     );
   }
 
-  Widget _buildSectionHeader(String label, int count, Color color) {
+  Widget _buildSectionHeader(String label, Color color) {
     return Container(
       color: AppColors.card,
       padding: const EdgeInsets.fromLTRB(12, 14, 12, 8),
@@ -540,14 +573,6 @@ class _DashboardTabState extends State<DashboardTab> {
               fontSize: ResponsiveSize.fontMedium,
               fontWeight: FontWeight.bold,
               color: color,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '· $count keluarga',
-            style: TextStyle(
-              fontSize: ResponsiveSize.fontSmall,
-              color: AppColors.textSecondary,
             ),
           ),
         ],
