@@ -61,6 +61,7 @@ class ProfileService {
       _profilesController.add(List.unmodifiable(_profiles));
       _activeProfileController.add(null);
       await CacheService.clearAll();
+      ApiService.cacheInterceptor.clearAll();
       WebSocketService.instance.disconnect();
     }
   }

@@ -98,6 +98,12 @@ class DioCacheInterceptor extends Interceptor {
     CacheService.invalidateHttpCache(cleanPath);
   }
 
+  /// Clears the entire in-memory cache. Called on logout so stale data from the
+  /// previous session is never served to a newly logged-in account.
+  void clearAll() {
+    _cache.clear();
+  }
+
   // Reads any cached value (in-memory first, then disk), even if expired.
   Future<Response?> _readAnyCache(String key, RequestOptions options) async {
     final mem = _cache[key];
