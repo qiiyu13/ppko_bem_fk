@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../components/animated_line_navbar.dart';
 import '../../constants/app_colors.dart';
 import '../../utils/asset_helper.dart';
-import '../../widgets/sync_status_banner.dart';
 import 'tabs/dashboard_tab.dart';
 import 'tabs/profil_tab.dart';
 import 'tabs/publish_tab.dart';
@@ -72,13 +71,11 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SyncStatusBanner(
-        child: IndexedStack(
-          index: _currentIndex,
-          children: List.generate(
-            _navItems.length,
-            (i) => _built.contains(i) ? _buildTab(i) : const SizedBox.shrink(),
-          ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: List.generate(
+          _navItems.length,
+          (i) => _built.contains(i) ? _buildTab(i) : const SizedBox.shrink(),
         ),
       ),
       bottomNavigationBar: AnimatedLineNavBar(

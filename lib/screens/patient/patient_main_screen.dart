@@ -5,7 +5,6 @@ import '../../components/animated_line_navbar.dart';
 import '../../constants/app_colors.dart';
 import '../../models/family_profile.dart';
 import '../../services/profile_service.dart';
-import '../../widgets/sync_status_banner.dart';
 import 'tabs/home_tab.dart';
 import 'tabs/profil_tab.dart';
 import 'tabs/settings_tab.dart';
@@ -202,13 +201,11 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
                   : null,
             )
           : null,
-      body: SyncStatusBanner(
-        child: IndexedStack(
-          index: _currentIndex,
-          children: List.generate(
-            _navItems.length,
-            (i) => _built.contains(i) ? _buildTab(i) : const SizedBox.shrink(),
-          ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: List.generate(
+          _navItems.length,
+          (i) => _built.contains(i) ? _buildTab(i) : const SizedBox.shrink(),
         ),
       ),
       bottomNavigationBar: AnimatedLineNavBar(

@@ -32,6 +32,7 @@ class ConnectivityService {
   // out we get told via reportUnreachable(), then poll /health until the
   // backend answers again and recover online state.
   Timer? _recoveryTimer;
+  Timer? _connectivityPollTimer;
 
   Future<bool> _isReachable() async {
     try {
@@ -53,17 +54,17 @@ class ConnectivityService {
   int get pendingSyncCount => _pendingSyncCount;
 
   Future<void> initialize() async {
+    await _updatePendingCount();
+
     if (!_connectivityAvailable) {
-      await _updatePendingCount();
+      _isOnline = await _isReachable();
+      _startConnectivityPoll();
       return;
     }
 
     final result = await _connectivity.checkConnectivity();
-    // No interface at all → definitely offline, skip the probe. Otherwise
-    // confirm the backend actually answers before declaring online.
     _isOnline =
         result != ConnectivityResult.none && await _isReachable();
-    await _updatePendingCount();
 
     _subscription = _connectivity.onConnectivityChanged.listen((result) async {
       final wasOnline = _isOnline;
@@ -120,9 +121,21 @@ class ConnectivityService {
     }
   }
 
+  void _startConnectivityPoll() {
+    _connectivityPollTimer?.cancel();
+    _connectivityPollTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+      final wasOnline = _isOnline;
+      _isOnline = await _isReachable();
+      if (!wasOnline && _isOnline) {
+        await _syncOnReconnect();
+      }
+    });
+  }
+
   void dispose() {
     _subscription?.cancel();
     _recoveryTimer?.cancel();
+    _connectivityPollTimer?.cancel();
     _syncStatusController.close();
   }
 }
