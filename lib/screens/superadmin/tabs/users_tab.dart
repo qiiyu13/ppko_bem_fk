@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../config/env.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/admin_service.dart';
+import '../../../services/api_service.dart';
 import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../widgets/app_avatar.dart';
@@ -379,6 +380,13 @@ class _UsersTabState extends State<UsersTab>
     );
   }
 
+  /// Pull-to-refresh must bypass the in-memory cache: /regions responses
+  /// carry a 30-min TTL, so a plain reload can replay a stale list.
+  Future<void> _refreshVillages() {
+    ApiService.cacheInterceptor.invalidateMemory('/regions');
+    return _loadVillages();
+  }
+
   Future<void> _loadVillages() async {
     try {
       final villages = await RegionService.getVillages();
@@ -488,7 +496,7 @@ class _UsersTabState extends State<UsersTab>
                       },
                     )
                   : RefreshIndicator(
-                  onRefresh: _loadVillages,
+                  onRefresh: _refreshVillages,
                   color: AppColors.primary,
                   child: _villages.isEmpty
                       ? ListView(

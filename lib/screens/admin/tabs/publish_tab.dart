@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/tanaman_article.dart';
+import '../../../services/api_service.dart';
 import '../../../services/article_service.dart';
 import '../../../services/websocket_service.dart';
 import '../../../utils/responsive_size.dart';
@@ -50,6 +51,14 @@ class _PublishTabState extends State<PublishTab> {
     _debounceTimer?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Pull-to-refresh must bypass the in-memory cache: /articles responses
+  /// are cached 5 min, so without this an explicit refresh can replay the
+  /// same stale list it's trying to replace.
+  Future<void> _refresh() {
+    ApiService.cacheInterceptor.invalidateMemory('/articles');
+    return _loadArticles(showLoading: false);
   }
 
   Future<void> _loadArticles({bool showLoading = true}) async {
@@ -273,7 +282,7 @@ class _PublishTabState extends State<PublishTab> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: RefreshIndicator(
-        onRefresh: _loadArticles,
+        onRefresh: _refresh,
         color: AppColors.primary,
         child: CustomScrollView(
         physics: const BouncingScrollPhysics(

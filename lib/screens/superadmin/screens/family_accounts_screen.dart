@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../config/env.dart';
 import '../../../constants/app_colors.dart';
+import '../../../services/api_service.dart';
 import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../widgets/app_avatar.dart';
@@ -55,6 +56,14 @@ class _FamilyAccountsScreenState extends State<FamilyAccountsScreen> {
         _currentPage < _totalPages) {
       _loadMore();
     }
+  }
+
+  /// Pull-to-refresh must bypass the in-memory cache: /regions/:id/users
+  /// responses inherit the /regions 30-min TTL, so a plain reload can
+  /// replay a stale family list.
+  Future<void> _refresh() {
+    ApiService.cacheInterceptor.invalidateMemory('/regions');
+    return _loadFamilies();
   }
 
   Future<void> _loadFamilies() async {
@@ -133,7 +142,7 @@ class _FamilyAccountsScreenState extends State<FamilyAccountsScreen> {
                     },
                   )
                 : RefreshIndicator(
-                onRefresh: _loadFamilies,
+                onRefresh: _refresh,
                 color: AppColors.primary,
                 child: _families.isEmpty
                     ? ListView(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
+import '../../../services/api_service.dart';
 import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../widgets/empty_state_widget.dart';
@@ -34,6 +35,13 @@ class _RtListScreenState extends State<RtListScreen> {
       _isLoading = true;
     }
     _loadRts();
+  }
+
+  /// Pull-to-refresh must bypass the in-memory cache: /regions responses
+  /// carry a 30-min TTL, so a plain reload can replay a stale list.
+  Future<void> _refresh() {
+    ApiService.cacheInterceptor.invalidateMemory('/regions');
+    return _loadRts();
   }
 
   Future<void> _loadRts() async {
@@ -86,7 +94,7 @@ class _RtListScreenState extends State<RtListScreen> {
                 child: CircularProgressIndicator(color: AppColors.primary),
               )
             : RefreshIndicator(
-                onRefresh: _loadRts,
+                onRefresh: _refresh,
                 color: AppColors.primary,
                 child: _rts.isEmpty
                     ? ListView(

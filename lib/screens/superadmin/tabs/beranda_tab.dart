@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../constants/app_colors.dart';
+import '../../../services/api_service.dart';
 import '../../../services/appointment_service.dart';
 import '../../../services/screening_service.dart';
 import '../../../services/auth_service.dart';
@@ -110,6 +111,10 @@ class _BerandaTabState extends State<BerandaTab> {
   }
 
   Future<void> _refresh() async {
+    // Explicit refresh must bypass the in-memory cache (/regions has a
+    // 30-min TTL, /appointments 5 min); disk copies stay for offline.
+    ApiService.cacheInterceptor.invalidateMemory('/regions');
+    ApiService.cacheInterceptor.invalidateMemory('/appointments');
     await Future.wait([_loadAll(), _loadUser()]);
   }
 

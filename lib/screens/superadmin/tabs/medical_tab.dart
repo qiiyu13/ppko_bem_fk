@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/feature_flags.dart';
 import '../../../services/admin_service.dart';
+import '../../../services/api_service.dart';
 import '../../../services/region_service.dart';
 import '../../../services/screening_service.dart';
 import '../../../utils/responsive_size.dart';
@@ -31,6 +32,13 @@ class _MedicalTabState extends State<MedicalTab> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  /// Pull-to-refresh must bypass the in-memory cache: /regions responses
+  /// carry a 30-min TTL, so a plain reload can replay stale stats.
+  Future<void> _refresh() {
+    ApiService.cacheInterceptor.invalidateMemory('/regions');
+    return _load();
   }
 
   Future<void> _load() async {
@@ -132,7 +140,7 @@ class _MedicalTabState extends State<MedicalTab> {
                   onRetry: _load,
                 )
               : RefreshIndicator(
-              onRefresh: _load,
+              onRefresh: _refresh,
               color: AppColors.primary,
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
