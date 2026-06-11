@@ -97,6 +97,27 @@ const getAccountStatus = async (userId) => {
   });
 };
 
+// Self-service profile update. Field whitelist is the security boundary here:
+// role/isActive/regionId must never be settable through this path — privileged
+// changes go through /admin/users which enforces actor-role checks.
+const updateMe = async (userId, data) => {
+  const updateData = {};
+  if (data.responsibleName !== undefined) updateData.responsibleName = data.responsibleName;
+  if (data.position !== undefined) updateData.position = data.position || null;
+  if (data.phone !== undefined) updateData.phone = data.phone || null;
+  if (data.password) updateData.password = await hashPassword(data.password);
+
+  return prisma.user.update({
+    where: { id: userId },
+    data: updateData,
+    select: {
+      id: true, kkNumber: true, responsibleName: true, phone: true, role: true,
+      position: true, avatarPath: true, createdAt: true, updatedAt: true,
+      region: { select: { id: true, name: true } },
+    },
+  });
+};
+
 const updateAvatar = async (userId, avatarPath) => {
   await prisma.user.update({
     where: { id: userId },
@@ -138,4 +159,4 @@ const resetPassword = async ({ kkNumber, firebaseToken, newPassword }) => {
   return { message: 'Password reset successful' };
 };
 
-module.exports = { register, login, getMe, getAccountStatus, updateAvatar, forgotPassword, resetPassword };
+module.exports = { register, login, getMe, getAccountStatus, updateMe, updateAvatar, forgotPassword, resetPassword };

@@ -48,6 +48,13 @@ router.post('/login', [authLimiter,
 const { uploadAvatarMiddleware } = require('../../config/multer');
 
 router.get('/me', authenticate, controller.getMe);
+router.put('/me', authenticate, [
+  body('responsibleName').optional().isString().notEmpty().withMessage('Name cannot be empty'),
+  body('position').optional({ nullable: true }).isString().isLength({ max: 100 }),
+  body('phone').optional({ nullable: true }).isString(),
+  body('password').optional().isString().isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  validate,
+], controller.updateMe);
 router.put('/me/picture', authenticate, uploadAvatarMiddleware, controller.updatePicture);
 router.post('/refresh', authenticate, controller.refreshToken);
 

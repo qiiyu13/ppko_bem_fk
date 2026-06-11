@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
-import '../../services/admin_service.dart';
 import '../../services/auth_service.dart';
 import '../../utils/avatar_picker.dart';
 import '../../utils/responsive_size.dart';
@@ -56,15 +55,11 @@ class _AdminProfileEditScreenState extends State<AdminProfileEditScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSubmitting = true);
     try {
-      await AdminService.updateUser(
-        widget.user['id'] as String,
+      await AuthService.updateMe(
         responsibleName: _nameController.text.trim(),
         position: _positionController.text.trim(),
         phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
         password: _passwordController.text.isEmpty ? null : _passwordController.text,
-        updatedAt: widget.user['updatedAt'] != null
-            ? DateTime.parse(widget.user['updatedAt'] as String)
-            : DateTime.now(),
       );
       if (_avatarFile != null) {
         await AuthService.updatePicture(_avatarFile!);

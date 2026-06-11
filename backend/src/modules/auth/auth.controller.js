@@ -87,6 +87,15 @@ const logout = async (req, res, next) => {
   }
 };
 
+const updateMe = async (req, res, next) => {
+  try {
+    const user = await authService.updateMe(req.user.id, req.body);
+    return success(res, user, 'Profile updated');
+  } catch (err) {
+    next(err);
+  }
+};
+
 const updatePicture = async (req, res, next) => {
   try {
     if (!req.file) {
@@ -100,4 +109,4 @@ const updatePicture = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, getMe, forgotPassword, resetPassword, refreshToken, logout, updatePicture };
+module.exports = { register, login, getMe, updateMe, forgotPassword, resetPassword, refreshToken, logout, updatePicture };

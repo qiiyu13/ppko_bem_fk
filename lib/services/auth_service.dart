@@ -94,6 +94,23 @@ class AuthService {
     }
   }
 
+  static Future<Map<String, dynamic>?> updateMe({
+    String? responsibleName,
+    String? position,
+    String? phone,
+    String? password,
+  }) async {
+    final response = await ApiService.put('/auth/me', data: {
+      'responsibleName': ?responsibleName,
+      'position': ?position,
+      'phone': ?phone,
+      'password': ?password,
+    });
+    final data = response.data['data'] as Map<String, dynamic>?;
+    if (data != null) _cachedMe = data;
+    return data;
+  }
+
   static Future<String> updatePicture(File file) async {
     final formData = FormData.fromMap({
       'avatar': await MultipartFile.fromFile(file.path),
