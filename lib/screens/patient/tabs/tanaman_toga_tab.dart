@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/tanaman_article.dart';
+import '../../../services/api_service.dart';
 import '../../../services/article_service.dart';
 import '../../../services/websocket_service.dart';
 import '../../../widgets/article_image.dart';
@@ -42,6 +43,13 @@ class _TanamanTogaTabState extends State<TanamanTogaTab> {
     _wsSub?.cancel();
     _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  /// Pull-to-refresh must see articles published while the websocket was
+  /// down: drop the in-memory cache so the GET hits the network.
+  Future<void> _refresh() {
+    ApiService.cacheInterceptor.invalidateMemory('/articles');
+    return _loadArticles();
   }
 
   Future<void> _loadArticles() async {
@@ -113,7 +121,7 @@ class _TanamanTogaTabState extends State<TanamanTogaTab> {
             // Article List
             Expanded(
               child: RefreshIndicator(
-                onRefresh: _loadArticles,
+                onRefresh: _refresh,
                 color: AppColors.primary,
                 child: _articles.isEmpty
                     ? ListView(

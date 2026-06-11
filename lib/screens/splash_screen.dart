@@ -7,6 +7,7 @@ import '../utils/asset_helper.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
 import '../services/token_service.dart';
+import '../services/websocket_service.dart';
 import 'welcome_screen.dart';
 import 'patient/patient_main_screen.dart';
 import 'admin/admin_main_screen.dart';
@@ -111,6 +112,10 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _goHome(String role) async {
+    // Warm start skips the login flow, which is the only other place the
+    // websocket gets connected — without this, a relaunched session has no
+    // live updates at all until the user logs out and back in.
+    WebSocketService.instance.ensureConnected();
     // Preload profiles cached-first in the background; the home screen renders
     // from cache and refreshes itself, so navigation never waits on /profiles.
     unawaited(ProfileService.instance.initialize());

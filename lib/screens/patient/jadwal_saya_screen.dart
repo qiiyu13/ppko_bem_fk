@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_theme.dart';
+import '../../services/api_service.dart';
 import '../../services/appointment_service.dart';
 import '../../widgets/error_state_widget.dart';
 import '../../services/profile_service.dart';
@@ -53,7 +54,15 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _loadAppointments();
+    if (state == AppLifecycleState.resumed) _refresh();
+  }
+
+  /// Resume and pull-to-refresh must see data created while the websocket was
+  /// down (backgrounded app): drop the in-memory cache so the GET hits the
+  /// network instead of replaying a response from before the change.
+  Future<void> _refresh() {
+    ApiService.cacheInterceptor.invalidateMemory('/appointments');
+    return _loadAppointments();
   }
 
   Future<void> _loadAppointments() async {
@@ -260,7 +269,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
     final today = DateTime.now();
 
     return RefreshIndicator(
-      onRefresh: _loadAppointments,
+      onRefresh: _refresh,
       color: AppColors.primary,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -558,7 +567,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
 
   Widget _buildKalenderTab() {
     return RefreshIndicator(
-      onRefresh: _loadAppointments,
+      onRefresh: _refresh,
       color: AppColors.primary,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),

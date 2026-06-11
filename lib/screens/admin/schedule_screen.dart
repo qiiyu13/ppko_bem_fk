@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constants/app_colors.dart';
+import '../../services/api_service.dart';
 import '../../services/appointment_service.dart';
 import '../../services/websocket_service.dart';
 import '../../utils/date_utils.dart';
@@ -45,7 +46,15 @@ class _ScheduleScreenState extends State<ScheduleScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _loadAppointments();
+    if (state == AppLifecycleState.resumed) _refresh();
+  }
+
+  /// Resume and pull-to-refresh must see data created while the websocket was
+  /// down (backgrounded app): drop the in-memory cache so the GET hits the
+  /// network instead of replaying a response from before the change.
+  Future<void> _refresh() {
+    ApiService.cacheInterceptor.invalidateMemory('/appointments');
+    return _loadAppointments();
   }
 
   Future<void> _loadAppointments() async {
@@ -238,7 +247,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     }
     final today = DateTime.now();
     return RefreshIndicator(
-      onRefresh: _loadAppointments,
+      onRefresh: _refresh,
       color: AppColors.primary,
       child: SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -658,7 +667,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
       return const Center(child: CircularProgressIndicator());
     }
     return RefreshIndicator(
-      onRefresh: _loadAppointments,
+      onRefresh: _refresh,
       color: AppColors.primary,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),

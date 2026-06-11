@@ -26,6 +26,17 @@ class WebSocketService {
   static const int _maxReconnectAttempts = 10;
   static const Duration _baseReconnectDelay = Duration(seconds: 2);
 
+  /// Call on warm app start and on foreground resume. Cancels any scheduled
+  /// retry and resets the give-up counter before connecting: a backgrounded
+  /// app can burn through all reconnect attempts (OS kills the socket, network
+  /// flaps) and would otherwise stay dead until the process restarts.
+  void ensureConnected() {
+    if (_isConnected) return;
+    _reconnectTimer?.cancel();
+    _reconnectAttempts = 0;
+    connect();
+  }
+
   Future<void> connect() async {
     if (_isConnected) return;
 

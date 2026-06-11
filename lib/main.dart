@@ -11,6 +11,7 @@ import 'services/cache_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/notification_service.dart';
 import 'services/platform_util.dart';
+import 'services/websocket_service.dart';
 
 // Global navigator key: lets background tasks (e.g. token re-validation after an
 // optimistic relaunch route) redirect without holding a screen's BuildContext.
@@ -43,8 +44,36 @@ Future<void> _initBackgroundServices() async {
   NotificationService.instance.initialize();
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // The OS tears the socket down while the app is backgrounded, and the
+  // reconnect loop gives up after a bounded number of attempts. Re-establish
+  // on every foreground so live updates survive backgrounding. No-ops when
+  // already connected or not logged in.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      WebSocketService.instance.ensureConnected();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
