@@ -29,11 +29,12 @@ else
   $DC up -d --build backend
 fi
 
-# nginx.conf is bind-mounted, so a git pull can change it without compose
-# recreating the container. Reload so config changes always take effect.
-echo "==> reload nginx config"
-$DC exec -T nginx nginx -t && $DC exec -T nginx nginx -s reload \
-  || echo "    WARN: nginx reload failed — check config"
+# nginx.conf is bind-mounted as a single file: git pull replaces it with a
+# new inode, but the container keeps the old one, so even `nginx -s reload`
+# re-reads stale content. Recreating the container is the only reliable way
+# to pick up config changes.
+echo "==> recreate nginx (pick up config changes)"
+$DC up -d --force-recreate nginx
 
 echo "==> prune dangling images"
 docker image prune -f >/dev/null
