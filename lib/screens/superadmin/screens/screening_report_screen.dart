@@ -38,6 +38,7 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
   List<Map<String, dynamic>> _results = [];
   bool _fetching = false;
   bool _fetchFailed = false;
+  bool _truncated = false; // backend hit its row cap; the set is incomplete
 
   @override
   void initState() {
@@ -81,14 +82,15 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
       _fetchFailed = false;
     });
     try {
-      final data = await ScreeningService.getScreeningReport(
+      final report = await ScreeningService.getScreeningReport(
         screenedBy: _isSuperadmin ? _selectedAdminId : null,
         from: _fromBound,
         to: _toBound,
       );
       if (!mounted) return;
       setState(() {
-        _results = data;
+        _results = report.rows;
+        _truncated = report.truncated;
         _fetching = false;
       });
     } catch (_) {
@@ -162,32 +164,62 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
   String _category(Map<String, dynamic> r) =>
       (r['irdCategory'] ?? '-').toString();
 
+  /// One vocabulary everywhere (list, CSV, PDF, patient app, notification)
+  /// instead of leaking the raw English enum values.
+  String _categoryLabel(String raw) {
+    switch (raw.toLowerCase()) {
+      case 'normal':
+        return 'Normal';
+      case 'attention':
+        return 'Perhatian';
+      case 'high':
+        return 'Tinggi';
+      default:
+        return raw;
+    }
+  }
+
   // ---- CSV export ----
+  // Semicolon delimiter + comma decimals: what Excel/Sheets with the id_ID
+  // locale actually splits into columns. Fields are RFC 4180-quoted so names
+  // containing the delimiter, quotes, or newlines can't break rows.
   String _buildCsv() {
+    String esc(String s) {
+      if (s.contains(';') || s.contains('"') || s.contains('\n')) {
+        return '"${s.replaceAll('"', '""')}"';
+      }
+      return s;
+    }
+
+    String csvNum(dynamic v, {int decimals = 1}) => v == null
+        ? '-'
+        : (v as num).toDouble().toStringAsFixed(decimals).replaceAll('.', ',');
+
     final buf = StringBuffer();
     buf.writeln(
-        'Tanggal,Nama,NIK,JK,Sistolik,Diastolik,GulaDarah,AsamUrat,Kolesterol,BeratBadan,TinggiBadan,IRDScore,Kategori,Petugas');
-    String esc(String s) => s.replaceAll(',', ' ');
+        'Tanggal;Nama;NIK;JK;Sistolik;Diastolik;GulaDarah;AsamUrat;Kolesterol;BeratBadan;TinggiBadan;IRDScore;Kategori;Petugas');
     for (final r in _results) {
       buf.writeln([
         _rowDate(r),
         esc(_patientName(r)),
-        _patientNik(r),
+        esc(_patientNik(r)),
         esc((r['profile']?['gender'] ?? '-').toString()),
         _int(r['systolic']),
         _int(r['diastolic']),
-        _num(r['bloodSugar']),
-        _num(r['uricAcid']),
-        _num(r['cholesterol']),
-        _num(r['weight']),
-        _num(r['height']),
-        _num(r['irdScore'], decimals: 2),
-        _category(r),
+        csvNum(r['bloodSugar']),
+        csvNum(r['uricAcid']),
+        csvNum(r['cholesterol']),
+        csvNum(r['weight']),
+        csvNum(r['height']),
+        csvNum(r['irdScore'], decimals: 2),
+        _categoryLabel(_category(r)),
         esc(_screenerOf(r)),
-      ].join(','));
+      ].join(';'));
     }
     return buf.toString();
   }
+
+  static const _csvPreviewLines = 30;
 
   Future<void> _exportCsv() async {
     if (_results.isEmpty) {
@@ -197,13 +229,20 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
     final csv = _buildCsv();
     await Clipboard.setData(ClipboardData(text: csv));
     if (!mounted) return;
+    // Preview only the first rows — rendering thousands of lines in one
+    // SelectableText freezes the dialog. The clipboard holds the full CSV.
+    final lines = csv.trimRight().split('\n');
+    final hidden = lines.length - 1 - _csvPreviewLines; // minus header
+    final preview = hidden > 0
+        ? '${lines.take(_csvPreviewLines + 1).join('\n')}\n… $hidden baris lagi (CSV lengkap sudah tersalin)'
+        : csv;
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Salin CSV'),
         content: SingleChildScrollView(
           child: SelectableText(
-            csv,
+            preview,
             style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
           ),
         ),
@@ -224,62 +263,64 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
       _toast('Belum ada data untuk diexport');
       return;
     }
-    await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => (await _generatePdf()).save(),
-      name:
-          'Laporan_Skrining_${DateFormat('yyyyMMdd').format(_from)}_${DateFormat('yyyyMMdd').format(_to)}.pdf',
-    );
+    try {
+      await Printing.layoutPdf(
+        onLayout: (PdfPageFormat format) async => (await _generatePdf()).save(),
+        name:
+            'Laporan_Skrining_${DateFormat('yyyyMMdd').format(_from)}_${DateFormat('yyyyMMdd').format(_to)}.pdf',
+      );
+    } catch (_) {
+      _toast('Gagal membuat PDF. Coba lagi.');
+    }
+  }
+
+  /// Noto Sans comes from the network; offline we fall back to the built-in
+  /// Helvetica (fine for Indonesian text) instead of failing the export.
+  Future<pw.ThemeData?> _pdfTheme() async {
+    try {
+      return pw.ThemeData.withFont(
+        base: await PdfGoogleFonts.notoSansRegular(),
+        bold: await PdfGoogleFonts.notoSansBold(),
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<pw.Document> _generatePdf() async {
-    final doc = pw.Document(
-      theme: pw.ThemeData.withFont(
-        base: await PdfGoogleFonts.notoSansRegular(),
-        bold: await PdfGoogleFonts.notoSansBold(),
-      ),
-    );
+    final doc = pw.Document(theme: await _pdfTheme());
     final primaryColor = PdfColor.fromHex('144425');
     final greyColor = PdfColor.fromHex('6B7280');
     final lightGrey = PdfColor.fromHex('F3F4F6');
     final borderColor = PdfColor.fromHex('E5E7EB');
 
-    pw.Widget cell(String text, {bool bold = false}) => pw.Padding(
-          padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-          child: pw.Text(
-            text,
-            style: pw.TextStyle(
-              fontSize: 7,
-              fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-            ),
-          ),
-        );
-
-    final header = ['Tgl', 'Nama', 'NIK', 'TD', 'GDS', 'AU', 'Kol', 'BB', 'TB', 'IRD', 'Kategori'];
-
-    final rows = <pw.TableRow>[
-      pw.TableRow(
-        decoration: pw.BoxDecoration(color: lightGrey),
-        children: header.map((h) => cell(h, bold: true)).toList(),
-      ),
+    const headers = [
+      'Tgl', 'Nama', 'NIK', 'JK', 'TD', 'GDS', 'AU', 'Kol',
+      'BB', 'TB', 'IRD', 'Kategori', 'Petugas',
+    ];
+    final dataRows = [
       for (final r in _results)
-        pw.TableRow(children: [
-          cell(_rowDate(r)),
-          cell(_patientName(r)),
-          cell(_patientNik(r)),
-          cell('${_int(r['systolic'])}/${_int(r['diastolic'])}'),
-          cell(_num(r['bloodSugar'])),
-          cell(_num(r['uricAcid'])),
-          cell(_num(r['cholesterol'])),
-          cell(_num(r['weight'])),
-          cell(_num(r['height'])),
-          cell(_num(r['irdScore'], decimals: 2)),
-          cell(_category(r)),
-        ]),
+        [
+          _rowDate(r),
+          _patientName(r),
+          _patientNik(r),
+          (r['profile']?['gender'] ?? '-').toString(),
+          '${_int(r['systolic'])}/${_int(r['diastolic'])}',
+          _num(r['bloodSugar']),
+          _num(r['uricAcid']),
+          _num(r['cholesterol']),
+          _num(r['weight']),
+          _num(r['height']),
+          _num(r['irdScore'], decimals: 2),
+          _categoryLabel(_category(r)),
+          _screenerOf(r),
+        ],
     ];
 
     doc.addPage(
       pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
+        // Landscape: 13 columns don't fit readably on portrait A4.
+        pageFormat: PdfPageFormat.a4.landscape,
         margin: const pw.EdgeInsets.all(28),
         build: (pw.Context context) => [
           pw.Container(
@@ -303,15 +344,25 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
                 pw.Text(
                     'Periode: ${_dateFmt.format(_from)} – ${_dateFmt.format(_to)}',
                     style: const pw.TextStyle(fontSize: 9, color: PdfColors.white)),
-                pw.Text('Total: ${_results.length} skrining',
+                pw.Text(
+                    'Total: ${_results.length} skrining'
+                    '${_truncated ? ' (terpotong — data melebihi batas ekspor, persempit rentang tanggal)' : ''}',
                     style: const pw.TextStyle(fontSize: 9, color: PdfColors.white)),
               ],
             ),
           ),
           pw.SizedBox(height: 14),
-          pw.Table(
+          // TableHelper repeats the header row on every page.
+          pw.TableHelper.fromTextArray(
+            headers: headers,
+            data: dataRows,
             border: pw.TableBorder.all(color: borderColor, width: 0.5),
-            children: rows,
+            headerDecoration: pw.BoxDecoration(color: lightGrey),
+            headerStyle:
+                pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
+            cellStyle: const pw.TextStyle(fontSize: 7),
+            cellPadding:
+                const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
           ),
           pw.SizedBox(height: 16),
           pw.Divider(color: borderColor),
@@ -355,6 +406,7 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
           : Column(
               children: [
                 _buildFilters(),
+                if (_truncated) _buildTruncatedBanner(),
                 const Divider(height: 1),
                 Expanded(child: _buildList()),
               ],
@@ -445,6 +497,34 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
     );
   }
 
+  Widget _buildTruncatedBanner() {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(horizontal: ResponsiveSize.paddingMedium),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.statusAmber.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded,
+              color: AppColors.statusAmber, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Data melebihi batas ekspor — hanya ${_results.length} skrining ditampilkan. Persempit rentang tanggal.',
+              style: TextStyle(
+                fontSize: ResponsiveSize.fontSmall,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _dateButton(String label, DateTime value, VoidCallback onTap) {
     return OutlinedButton.icon(
       onPressed: onTap,
@@ -507,7 +587,7 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
       separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (_, i) {
         final r = _results[i];
-        final category = _category(r);
+        final category = _categoryLabel(_category(r));
         final categoryColor = _categoryColor(category);
         return Container(
           padding: EdgeInsets.all(ResponsiveSize.paddingMedium),

@@ -41,6 +41,21 @@ describe('IRD Calculation', () => {
     expect(male.irdScore).toBeLessThan(female.irdScore);
   });
 
+  it('should treat every male spelling the same (Pria/male/laki-laki)', () => {
+    const base = {
+      bloodSugar: 100, systolic: 120, diastolic: 80,
+      cholesterol: 200, uricAcid: 7.0, height: 170, weight: 70,
+    };
+    const pria = calculateIrd({ ...base, gender: 'Pria' });
+    for (const gender of ['pria', 'male', 'laki-laki', 'MALE']) {
+      expect(calculateIrd({ ...base, gender }).irdScore).toBe(pria.irdScore);
+    }
+    // and every non-male spelling gets the 6.0 denominator
+    const wanita = calculateIrd({ ...base, gender: 'Wanita' });
+    expect(wanita.irdScore).toBeGreaterThan(pria.irdScore);
+    expect(calculateIrd({ ...base, gender: 'female' }).irdScore).toBe(wanita.irdScore);
+  });
+
   it('should round score to 2 decimal places', () => {
     const result = calculateIrd({
       bloodSugar: 180, systolic: 130, diastolic: 85,

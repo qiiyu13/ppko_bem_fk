@@ -43,7 +43,8 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
     });
 
     try {
-      final profileId = ProfileService.instance.activeProfile?.id;
+      final profile = ProfileService.instance.activeProfile;
+      final profileId = profile?.id;
       if (profileId == null) {
         setState(() {
           _isLoading = false;
@@ -52,26 +53,43 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
         return;
       }
 
-      final response = await ApiService.get(
-        '/screenings',
-        queryParameters: {'profileId': profileId},
-      );
+      // The endpoint is paginated (default page size 20) — walk every page so
+      // "Tampilkan Semua" really shows the whole history.
+      final raw = <Map<String, dynamic>>[];
+      var page = 1;
+      while (true) {
+        final response = await ApiService.get(
+          '/screenings',
+          queryParameters: {'profileId': profileId, 'page': page, 'limit': 100},
+        );
+        final batch =
+            (response.data['data'] as List? ?? []).cast<Map<String, dynamic>>();
+        raw.addAll(batch);
+        final total =
+            ((response.data['meta'] as Map<String, dynamic>?)?['total'] as num?)
+                ?.toInt();
+        if (batch.isEmpty || total == null || raw.length >= total) break;
+        page++;
+      }
 
-      final data = response.data['data'] as List? ?? [];
       setState(() {
         _screeningData =
-            data.map((json) {
-                final map = json as Map<String, dynamic>;
+            raw.map((map) {
                 return BPScreeningData(
-                  date: DateTime.parse(map['screeningAt'] as String),
+                  // Stored as UTC; display in the device's zone.
+                  date: DateTime.parse(map['screeningAt'] as String).toLocal(),
                   systolic: (map['systolic'] as num).toInt(),
                   diastolic: (map['diastolic'] as num).toInt(),
                   weight: (map['weight'] as num? ?? 0).toDouble(),
                   height: (map['height'] as num? ?? 0).toDouble(),
-                  bloodSugar: (map['bloodSugar'] as num? ?? 0).toDouble(),
-                  uricAcid: (map['uricAcid'] as num? ?? 0).toDouble(),
-                  cholesterol: (map['cholesterol'] as num? ?? 0).toDouble(),
+                  bloodSugar: (map['bloodSugar'] as num?)?.toDouble(),
+                  uricAcid: (map['uricAcid'] as num?)?.toDouble(),
+                  cholesterol: (map['cholesterol'] as num?)?.toDouble(),
                   gender: widget.gender,
+                  storedIrdScore: (map['irdScore'] as num?)?.toDouble(),
+                  storedIrdCategory: map['irdCategory'] as String?,
+                  patientName: profile?.name,
+                  patientNik: profile?.nik,
                 );
               }).toList()
               // Newest first — never trust API ordering.
@@ -233,10 +251,18 @@ class BPScreeningData {
   final int diastolic;
   final double weight;
   final double height;
-  final double bloodSugar;
-  final double uricAcid;
-  final double cholesterol;
+  // Labs are nullable: a skipped test must show as "-", not as 0.
+  final double? bloodSugar;
+  final double? uricAcid;
+  final double? cholesterol;
   final String gender;
+  // Score/category as the backend computed them at screening time. Preferred
+  // over the local recomputation so patient and admin views never disagree
+  // (rounding, or the profile's gender being edited later).
+  final double? storedIrdScore;
+  final String? storedIrdCategory;
+  final String? patientName;
+  final String? patientNik;
 
   BPScreeningData({
     required this.date,
@@ -248,6 +274,10 @@ class BPScreeningData {
     required this.uricAcid,
     required this.cholesterol,
     required this.gender,
+    this.storedIrdScore,
+    this.storedIrdCategory,
+    this.patientName,
+    this.patientNik,
   });
 
   double get bmi {
@@ -269,12 +299,16 @@ class BPScreeningData {
     return g == 'pria' || g == 'male' || g == 'laki-laki';
   }
 
-  double get ird {
+  /// Stored backend value when available; local fallback only for rows that
+  /// predate the backend storing scores.
+  double get ird => storedIrdScore ?? _computedIrd;
+
+  double get _computedIrd {
     final auDenominator = isMale ? 7.0 : 6.0;
-    final gdsComponent = 0.3 * (bloodSugar / 200);
+    final gdsComponent = 0.3 * ((bloodSugar ?? 0) / 200);
     final bpComponent = 0.2 * ((systolic / 140 + diastolic / 90) / 2);
-    final kolComponent = 0.2 * (cholesterol / 240);
-    final auComponent = 0.15 * (uricAcid / auDenominator);
+    final kolComponent = 0.2 * ((cholesterol ?? 0) / 240);
+    final auComponent = 0.15 * ((uricAcid ?? 0) / auDenominator);
     final bmiComponent = 0.15 * (bmi / 25);
     return gdsComponent +
         bpComponent +
@@ -284,6 +318,8 @@ class BPScreeningData {
   }
 
   String get irdCategory {
+    final stored = storedIrdCategory;
+    if (stored != null && stored.isNotEmpty) return stored;
     if (ird < 0.75) return 'normal';
     if (ird <= 1.0) return 'attention';
     return 'high';
@@ -473,28 +509,26 @@ class _ExpandableScreeningCardWidgetState
                     ),
                   ),
                   const SizedBox(height: 4),
-                  _buildLabRow(
+                  _buildNullableLabRow(
                     'Gula Darah',
-                    '${widget.data.bloodSugar.toStringAsFixed(0)} mg/dL',
-                    _labColor(
-                      widget.data.bloodSugar,
-                      normal: 100,
-                      borderline: 126,
-                    ),
+                    widget.data.bloodSugar,
+                    decimals: 0,
+                    normal: 100,
+                    borderline: 126,
                   ),
-                  _buildLabRow(
+                  _buildNullableLabRow(
                     'Asam Urat',
-                    '${widget.data.uricAcid.toStringAsFixed(1)} mg/dL',
-                    _labColor(widget.data.uricAcid, normal: 6, borderline: 7),
+                    widget.data.uricAcid,
+                    decimals: 1,
+                    normal: 6,
+                    borderline: 7,
                   ),
-                  _buildLabRow(
+                  _buildNullableLabRow(
                     'Kolesterol',
-                    '${widget.data.cholesterol.toStringAsFixed(0)} mg/dL',
-                    _labColor(
-                      widget.data.cholesterol,
-                      normal: 200,
-                      borderline: 240,
-                    ),
+                    widget.data.cholesterol,
+                    decimals: 0,
+                    normal: 200,
+                    borderline: 240,
                   ),
                   const SizedBox(height: 10),
                   // IRD progress bar
@@ -622,6 +656,24 @@ class _ExpandableScreeningCardWidgetState
     return AppColors.statusRed;
   }
 
+  /// Skipped lab (null) renders as a neutral "-" instead of a green 0.
+  Widget _buildNullableLabRow(
+    String label,
+    double? value, {
+    required int decimals,
+    required double normal,
+    required double borderline,
+  }) {
+    if (value == null) {
+      return _buildLabRow(label, '-', AppColors.textSecondary);
+    }
+    return _buildLabRow(
+      label,
+      '${value.toStringAsFixed(decimals)} mg/dL',
+      _labColor(value, normal: normal, borderline: borderline),
+    );
+  }
+
   Widget _buildLabRow(String label, String value, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -697,22 +749,40 @@ class _ExpandableScreeningCardWidgetState
   }
 
   Future<void> _downloadReport() async {
-    await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async {
-        final doc = await _generatePdf();
-        return doc.save();
-      },
-      name: 'Laporan_Screening_${_formatDate(widget.data.date)}.pdf',
-    );
+    try {
+      await Printing.layoutPdf(
+        onLayout: (PdfPageFormat format) async {
+          final doc = await _generatePdf();
+          return doc.save();
+        },
+        name: 'Laporan_Screening_${_formatDate(widget.data.date)}.pdf',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal membuat PDF. Coba lagi.'),
+          backgroundColor: AppColors.statusRed,
+        ),
+      );
+    }
+  }
+
+  /// Noto Sans comes from the network; offline we fall back to the built-in
+  /// Helvetica (fine for Indonesian text) instead of failing the export.
+  Future<pw.ThemeData?> _pdfTheme() async {
+    try {
+      return pw.ThemeData.withFont(
+        base: await PdfGoogleFonts.notoSansRegular(),
+        bold: await PdfGoogleFonts.notoSansBold(),
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<pw.Document> _generatePdf() async {
-    final doc = pw.Document(
-      theme: pw.ThemeData.withFont(
-        base: await PdfGoogleFonts.notoSansRegular(),
-        bold: await PdfGoogleFonts.notoSansBold(),
-      ),
-    );
+    final doc = pw.Document(theme: await _pdfTheme());
     final d = widget.data;
 
     final primaryColor = PdfColor.fromHex('144425');
@@ -764,6 +834,15 @@ class _ExpandableScreeningCardWidgetState
                     ),
                   ),
                   pw.SizedBox(height: 4),
+                  if (d.patientName != null)
+                    pw.Text(
+                      'Nama: ${d.patientName}'
+                      '${d.patientNik != null ? '  ·  NIK: ${d.patientNik}' : ''}',
+                      style: const pw.TextStyle(
+                        fontSize: 10,
+                        color: PdfColors.white,
+                      ),
+                    ),
                   pw.Text(
                     'Tanggal Screening: ${_formatDate(d.date)}',
                     style: const pw.TextStyle(
@@ -865,39 +944,16 @@ class _ExpandableScreeningCardWidgetState
                     _pdfCell('Status', bold: true),
                   ],
                 ),
-                pw.TableRow(
-                  children: [
-                    _pdfCell('Gula Darah'),
-                    _pdfCell('${d.bloodSugar.toStringAsFixed(0)} mg/dL'),
-                    _pdfCell('< 100 mg/dL'),
-                    _pdfColorCell(
-                      _labStatusText(d.bloodSugar, 100, 126),
-                      _pdfLabColor(d.bloodSugar, 100, 126),
-                    ),
-                  ],
+                _pdfLabRow('Gula Darah', d.bloodSugar, 0, '< 100 mg/dL', 100, 126),
+                _pdfLabRow(
+                  'Asam Urat',
+                  d.uricAcid,
+                  1,
+                  '< ${auNormal.toStringAsFixed(0)} mg/dL',
+                  auNormal,
+                  auNormal + 1,
                 ),
-                pw.TableRow(
-                  children: [
-                    _pdfCell('Asam Urat'),
-                    _pdfCell('${d.uricAcid.toStringAsFixed(1)} mg/dL'),
-                    _pdfCell('< ${auNormal.toStringAsFixed(0)} mg/dL'),
-                    _pdfColorCell(
-                      _labStatusText(d.uricAcid, auNormal, auNormal + 1),
-                      _pdfLabColor(d.uricAcid, auNormal, auNormal + 1),
-                    ),
-                  ],
-                ),
-                pw.TableRow(
-                  children: [
-                    _pdfCell('Kolesterol'),
-                    _pdfCell('${d.cholesterol.toStringAsFixed(0)} mg/dL'),
-                    _pdfCell('< 200 mg/dL'),
-                    _pdfColorCell(
-                      _labStatusText(d.cholesterol, 200, 240),
-                      _pdfLabColor(d.cholesterol, 200, 240),
-                    ),
-                  ],
-                ),
+                _pdfLabRow('Kolesterol', d.cholesterol, 0, '< 200 mg/dL', 200, 240),
               ],
             ),
             pw.SizedBox(height: 20),
@@ -999,6 +1055,38 @@ class _ExpandableScreeningCardWidgetState
           fontWeight: pw.FontWeight.bold,
         ),
       ),
+    );
+  }
+
+  /// Skipped lab (null) renders as "-" instead of a green "Normal" 0.
+  pw.TableRow _pdfLabRow(
+    String name,
+    double? value,
+    int decimals,
+    String normalText,
+    double normal,
+    double borderline,
+  ) {
+    if (value == null) {
+      return pw.TableRow(
+        children: [
+          _pdfCell(name),
+          _pdfCell('-'),
+          _pdfCell(normalText),
+          _pdfColorCell('-', PdfColor.fromHex('6B7280')),
+        ],
+      );
+    }
+    return pw.TableRow(
+      children: [
+        _pdfCell(name),
+        _pdfCell('${value.toStringAsFixed(decimals)} mg/dL'),
+        _pdfCell(normalText),
+        _pdfColorCell(
+          _labStatusText(value, normal, borderline),
+          _pdfLabColor(value, normal, borderline),
+        ),
+      ],
     );
   }
 

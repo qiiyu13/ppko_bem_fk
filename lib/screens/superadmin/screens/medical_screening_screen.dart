@@ -233,7 +233,9 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
       'height': _parseDecimal(_heightController.text),
       'weight': _parseDecimal(_weightController.text),
       'notes': _notesController.text,
-      'screeningAt': DateTime.now().toIso8601String(),
+      // UTC with designator — a timezone-less local string would be
+      // re-interpreted in the server's zone and stored hours off.
+      'screeningAt': DateTime.now().toUtc().toIso8601String(),
     };
 
     try {

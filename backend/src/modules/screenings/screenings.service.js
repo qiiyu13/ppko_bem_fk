@@ -1,6 +1,8 @@
 const { broadcastToUsers, broadcastToAll, events } = require('../../websocket');
 const { calculateIrd } = require('../../utils/ird');
 const { parsePagination } = require('../../utils/pagination');
+const { parseClientDate } = require('../../utils/clientDate');
+const { regionScopeFilter } = require('../../utils/regionScope');
 const { createAndSend } = require('../notifications/notifications.service');
 
 const prisma = require('../../utils/prisma');
@@ -39,7 +41,7 @@ const createScreening = async (data, userId, role) => {
     gender,
   });
 
-  const screeningAt = data.screeningAt ? new Date(data.screeningAt) : new Date();
+  const screeningAt = data.screeningAt ? parseClientDate(data.screeningAt) : new Date();
 
   const result = await prisma.$transaction(async (tx) => {
     const screening = await tx.medicalScreening.create({
@@ -113,9 +115,11 @@ const createScreening = async (data, userId, role) => {
     console.error('WebSocket broadcast failed:', e.message);
   }
   try {
-    const categoryLabel = result.irdCategory === 'high' ? 'Risiko Tinggi'
-      : result.irdCategory === 'attention' ? 'Risiko Sedang'
-      : result.irdCategory === 'normal' ? 'Risiko Rendah'
+    // Same vocabulary as the app screens (Normal/Perhatian/Tinggi) so the
+    // notification, patient report, and admin report all say the same thing.
+    const categoryLabel = result.irdCategory === 'high' ? 'Tinggi'
+      : result.irdCategory === 'attention' ? 'Perhatian'
+      : result.irdCategory === 'normal' ? 'Normal'
       : result.irdCategory;
     await createAndSend(profile.userId, {
       title: 'Hasil Skrining Tersedia',
@@ -131,9 +135,14 @@ const getScreenings = async (profileId, query, requester) => {
   const { page, limit, skip } = parsePagination(query);
   const where = profileId ? { profileId } : {};
   // Patients may only read screenings of their own family profiles, regardless
-  // of which profileId they pass (or none). Admins see everything.
+  // of which profileId they pass (or none). Admins are confined to their region
+  // subtree like the rest of the admin module; superadmins see everything.
   if (requester.role === 'PATIENT') {
     where.profile = { userId: requester.id };
+  } else if (requester.role === 'ADMIN') {
+    const me = await prisma.user.findUnique({ where: { id: requester.id }, select: { regionId: true } });
+    // Region-less admin matches nothing, mirroring admin.service's 404 stance.
+    where.profile = { user: regionScopeFilter(me?.regionId ?? '__none__') };
   }
   const [data, total] = await Promise.all([
     prisma.medicalScreening.findMany({
@@ -149,16 +158,40 @@ const getScreenings = async (profileId, query, requester) => {
   return { data, total, page, limit };
 };
 
-const getStats = async () => {
-  const stats = await prisma.$queryRaw`
-    SELECT ird_category as "irdCategory", COUNT(*)::int as "count"
-    FROM (
-      SELECT DISTINCT ON (profile_id) ird_category
-      FROM medical_screenings
-      ORDER BY profile_id, screening_at DESC
-    ) t
-    GROUP BY ird_category
-  `;
+const getStats = async (requester = {}) => {
+  let regionId = null;
+  if (requester.role === 'ADMIN') {
+    const me = await prisma.user.findUnique({ where: { id: requester.id }, select: { regionId: true } });
+    regionId = me?.regionId;
+    if (!regionId) return { total: 0, categories: { high: 0, attention: 0, normal: 0 } };
+  }
+
+  // Latest screening per profile; for ADMIN, only profiles whose owner sits in
+  // the admin's region subtree (region itself, children, grandchildren).
+  const stats = regionId
+    ? await prisma.$queryRaw`
+        SELECT ird_category as "irdCategory", COUNT(*)::int as "count"
+        FROM (
+          SELECT DISTINCT ON (ms.profile_id) ms.ird_category
+          FROM medical_screenings ms
+          JOIN family_profiles fp ON fp.id = ms.profile_id
+          JOIN users u ON u.id = fp.user_id
+          JOIN regions r ON r.id = u.region_id
+          LEFT JOIN regions p ON p.id = r.parent_id
+          WHERE r.id = ${regionId} OR r.parent_id = ${regionId} OR p.parent_id = ${regionId}
+          ORDER BY ms.profile_id, ms.screening_at DESC
+        ) t
+        GROUP BY ird_category
+      `
+    : await prisma.$queryRaw`
+        SELECT ird_category as "irdCategory", COUNT(*)::int as "count"
+        FROM (
+          SELECT DISTINCT ON (profile_id) ird_category
+          FROM medical_screenings
+          ORDER BY profile_id, screening_at DESC
+        ) t
+        GROUP BY ird_category
+      `;
 
   const categories = { high: 0, attention: 0, normal: 0 };
   let total = 0;
@@ -178,25 +211,28 @@ const getStats = async () => {
 
 // Report listing for admins/superadmins: filter by screener + date range.
 // Returns the filtered set (unpaginated) so the client can export it, but
-// hard-capped to protect the server from unbounded result sets / OOM.
+// hard-capped to protect the server from unbounded result sets / OOM. The
+// caller is told when the cap kicked in so exports can say so.
 const REPORT_MAX_ROWS = 5000;
 const getScreeningReport = async ({ screenedBy, from, to }) => {
   const where = {};
   if (screenedBy) where.screenedBy = screenedBy;
   if (from || to) {
     where.screeningAt = {};
-    if (from) where.screeningAt.gte = new Date(from);
-    if (to) where.screeningAt.lte = new Date(to);
+    if (from) where.screeningAt.gte = parseClientDate(from);
+    if (to) where.screeningAt.lte = parseClientDate(to);
   }
-  return prisma.medicalScreening.findMany({
+  const rows = await prisma.medicalScreening.findMany({
     where,
     orderBy: { screeningAt: 'desc' },
-    take: REPORT_MAX_ROWS,
+    take: REPORT_MAX_ROWS + 1,
     include: {
       profile: { select: { name: true, nik: true, gender: true } },
       screener: { select: { id: true, responsibleName: true } },
     },
   });
+  const truncated = rows.length > REPORT_MAX_ROWS;
+  return { rows: truncated ? rows.slice(0, REPORT_MAX_ROWS) : rows, truncated };
 };
 
-module.exports = { createScreening, getScreenings, getStats, getScreeningReport };
+module.exports = { createScreening, getScreenings, getStats, getScreeningReport, REPORT_MAX_ROWS };

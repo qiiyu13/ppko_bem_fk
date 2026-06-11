@@ -24,7 +24,7 @@ const getScreenings = async (req, res, next) => {
 
 const getStats = async (req, res, next) => {
   try {
-    const stats = await screeningsService.getStats();
+    const stats = await screeningsService.getStats(req.user);
     return success(res, stats);
   } catch (err) {
     next(err);
@@ -38,8 +38,9 @@ const getScreeningReport = async (req, res, next) => {
     const screenedBy = req.user.role === 'SUPERADMIN'
       ? (req.query.screenedBy || undefined)
       : req.user.id;
-    const data = await screeningsService.getScreeningReport({ screenedBy, from, to });
-    return success(res, data);
+    const { rows, truncated } = await screeningsService.getScreeningReport({ screenedBy, from, to });
+    // `data` stays a plain array so app builds predating `meta` keep working.
+    return res.status(200).json({ success: true, data: rows, meta: { total: rows.length, truncated } });
   } catch (err) {
     next(err);
   }

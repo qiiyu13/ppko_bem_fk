@@ -1,6 +1,10 @@
+// Accept every male spelling the clients use ('Pria' from the app forms,
+// 'male'/'laki-laki' from older data) so males never get the female denominator.
+const MALE_VALUES = new Set(['pria', 'male', 'laki-laki']);
+
 const calculateIrdScore = ({ bloodSugar, systolic, diastolic, cholesterol, uricAcid, height, weight, gender }) => {
   const bmi = weight / ((height / 100) ** 2);
-  const auDenominator = gender.toLowerCase() === 'pria' ? 7.0 : 6.0;
+  const auDenominator = MALE_VALUES.has(String(gender || '').toLowerCase()) ? 7.0 : 6.0;
 
   const gdsComponent = 0.3 * (bloodSugar / 200);
   const bpComponent = 0.2 * ((systolic / 140 + diastolic / 90) / 2);
