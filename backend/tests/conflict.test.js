@@ -69,8 +69,13 @@ describe('Optimistic Locking / Conflict Detection', () => {
 
     expect(res.statusCode).toBe(409);
     expect(res.body.error.code).toBe('CONFLICT');
+    // The 409 body must NOT echo the full row: conflictDetection runs before the
+    // ownership check, so leaking record fields here would disclose other users'
+    // data. Only the id + server updatedAt are returned; the owner re-fetches via GET.
     expect(res.body.data).toBeDefined();
-    expect(res.body.data.name).toBe('Server Updated Name');
+    expect(res.body.data.id).toBe(profileId);
+    expect(res.body.data.updatedAt).toBeDefined();
+    expect(res.body.data.name).toBeUndefined();
   });
 
   test('PUT /profiles/:id with current updatedAt succeeds', async () => {

@@ -1,9 +1,21 @@
 const { Prisma } = require('@prisma/client');
 const prisma = require('../../utils/prisma');
+const { regionScopeFilter } = require('../../utils/regionScope');
 
-const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId }) => {
+// An ADMIN sees only their own region; the client-supplied regionId is ignored.
+// A region-less admin is misconfigured and resolves to a sentinel that matches
+// no region (fail closed). SUPERADMIN keeps the client-supplied regionId.
+const resolveScopedRegionId = async (actor, clientRegionId) => {
+  if (actor?.role !== 'ADMIN') return clientRegionId;
+  const me = await prisma.user.findUnique({ where: { id: actor.id }, select: { regionId: true } });
+  return me?.regionId || '__no_region__';
+};
+
+const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId }, actor = {}) => {
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const take = parseInt(limit);
+
+  regionId = await resolveScopedRegionId(actor, regionId);
 
   const userFilter = { role: 'PATIENT' };
 
@@ -133,9 +145,17 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
   return { data, total, totalHighRisk, totalAttention, totalNormal, page: parseInt(page), limit: take };
 };
 
-const getPatientDetail = async (id) => {
+const getPatientDetail = async (id, actor = {}) => {
+  // ADMIN may only open patients inside their own region subtree; outside =>
+  // 404 (no cross-region enumeration). SUPERADMIN is unrestricted.
+  const where = { id, role: 'PATIENT' };
+  if (actor?.role === 'ADMIN') {
+    const me = await prisma.user.findUnique({ where: { id: actor.id }, select: { regionId: true } });
+    if (!me?.regionId) throw Object.assign(new Error('Patient not found'), { statusCode: 404 });
+    Object.assign(where, regionScopeFilter(me.regionId));
+  }
   const user = await prisma.user.findFirst({
-    where: { id, role: 'PATIENT' },
+    where,
     select: {
       id: true,
       kkNumber: true,

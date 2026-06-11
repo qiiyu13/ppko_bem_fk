@@ -51,13 +51,19 @@ const conflictDetection = (modelName, idParam = 'id') => async (req, res, next) 
     const clientTime = new Date(clientUpdatedAt).toISOString();
 
     if (serverUpdatedAt !== clientTime) {
+      // Do NOT echo the full row here: conflictDetection runs before the
+      // controller's ownership check, so returning `record` would disclose any
+      // row (another user's profile, a user's password hash, etc.) to any
+      // authenticated caller who guesses an id and sends a mismatched
+      // updatedAt. Return only the server timestamp; an owner can re-fetch the
+      // current version through the normal (ownership-scoped) GET endpoint.
       return res.status(409).json({
         success: false,
         error: {
           code: 'CONFLICT',
           message: 'This record was modified by another user or device. Please review the current version.',
         },
-        data: record,
+        data: { id: record.id, updatedAt: record.updatedAt },
       });
     }
 
