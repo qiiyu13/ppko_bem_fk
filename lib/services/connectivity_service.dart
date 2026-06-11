@@ -36,7 +36,11 @@ class ConnectivityService {
 
   Future<bool> _isReachable() async {
     try {
-      final res = await _probeDio.get('${Env.serverBaseUrl}/health');
+      // Probe under the API prefix, not the server root: the backend serves
+      // /health at both / and /api/v1/, but a reverse proxy that only forwards
+      // /api/* would 404 the root path — and a non-200 probe flips the app
+      // into permanent offline mode (stale cache served, never recovers).
+      final res = await _probeDio.get('${Env.apiBaseUrl}/health');
       return res.statusCode == 200;
     } catch (_) {
       return false;

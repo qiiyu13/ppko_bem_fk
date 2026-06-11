@@ -77,6 +77,16 @@ class _HomeTabState extends State<HomeTab> {
     super.dispose();
   }
 
+  /// Pull-to-refresh is an explicit "give me fresh data": drop the in-memory
+  /// cache for the resources shown here (disk copies stay as the offline
+  /// fallback) so the GETs in [_loadData] hit the network instead of being
+  /// served a cached response for the rest of its TTL.
+  Future<void> _refresh() {
+    ApiService.cacheInterceptor.invalidateMemory('/metrics');
+    ApiService.cacheInterceptor.invalidateMemory('/appointments');
+    return _loadData();
+  }
+
   Future<void> _loadData() async {
     final hasExistingData = _metrics.isNotEmpty;
     if (!hasExistingData) {
@@ -412,7 +422,7 @@ class _HomeTabState extends State<HomeTab> {
     }
 
     if (_error != null && _metrics.isEmpty) {
-      return ErrorStateWidget(message: _error!, onRetry: _loadData);
+      return ErrorStateWidget(message: _error!, onRetry: _refresh);
     }
 
     final profile = ProfileService.instance.activeProfile;
@@ -426,7 +436,7 @@ class _HomeTabState extends State<HomeTab> {
         final screenWidth = constraints.maxWidth;
 
         return RefreshIndicator(
-          onRefresh: _loadData,
+          onRefresh: _refresh,
           color: AppColors.primary,
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(

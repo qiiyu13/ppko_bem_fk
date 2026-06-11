@@ -29,6 +29,12 @@ else
   $DC up -d --build backend
 fi
 
+# nginx.conf is bind-mounted, so a git pull can change it without compose
+# recreating the container. Reload so config changes always take effect.
+echo "==> reload nginx config"
+$DC exec -T nginx nginx -t && $DC exec -T nginx nginx -s reload \
+  || echo "    WARN: nginx reload failed — check config"
+
 echo "==> prune dangling images"
 docker image prune -f >/dev/null
 

@@ -354,7 +354,12 @@ class _MetricDetailScreenState extends State<MetricDetailScreen> {
               ),
               const SizedBox(height: 12),
               ElevatedButton(
-                onPressed: _loadHistory,
+                onPressed: () {
+                  // Explicit retry: bypass the in-memory cache so we don't
+                  // re-serve the same response that just disappointed the user.
+                  ApiService.cacheInterceptor.invalidateMemory('/metrics');
+                  _loadHistory();
+                },
                 child: const Text('Coba Lagi'),
               ),
             ],

@@ -54,7 +54,13 @@ class DioCacheInterceptor extends Interceptor {
     if (response.requestOptions.method.toUpperCase() != 'GET') {
       final segments = response.requestOptions.path.split('/')
         ..removeWhere((s) => s.isEmpty);
-      if (segments.isNotEmpty) invalidate('/${segments.first}');
+      if (segments.isNotEmpty) {
+        final root = '/${segments.first}';
+        invalidate(root);
+        for (final related in _relatedResources[root] ?? const <String>[]) {
+          invalidate(related);
+        }
+      }
       return handler.next(response);
     }
 
@@ -89,6 +95,15 @@ class DioCacheInterceptor extends Interceptor {
     handler.next(err);
   }
 
+  // Mutations that create or change data outside their own resource root:
+  // a POST /screenings also writes health_metric rows server-side, so cached
+  // /metrics reads must be dropped too. Without this, only the WebSocket
+  // data:update event would invalidate them, and a metric added via screening
+  // kept being served from this cache as "no data" for the full TTL.
+  static const Map<String, List<String>> _relatedResources = {
+    '/screenings': ['/metrics'],
+  };
+
   /// Invalidates cache entries matching the given path prefix (memory + disk).
   void invalidate(String pathPrefix) {
     final cleanPath = pathPrefix.startsWith('/') ? pathPrefix : '/$pathPrefix';
@@ -96,6 +111,16 @@ class DioCacheInterceptor extends Interceptor {
       return key.startsWith(cleanPath) || key.contains(cleanPath);
     });
     CacheService.invalidateHttpCache(cleanPath);
+  }
+
+  /// Drops in-memory entries for [pathPrefix] but keeps the disk copies.
+  /// For explicit user refreshes: the next online GET is forced to the
+  /// network, while the disk cache stays available as the offline fallback.
+  void invalidateMemory(String pathPrefix) {
+    final cleanPath = pathPrefix.startsWith('/') ? pathPrefix : '/$pathPrefix';
+    _cache.removeWhere((key, entry) {
+      return key.startsWith(cleanPath) || key.contains(cleanPath);
+    });
   }
 
   /// Clears the entire in-memory cache. Called on logout so stale data from the
