@@ -47,6 +47,8 @@ app.*.map.json
 .vercel
 .opencode/
 .gemini/
+.claude/
+.antigravitycli/
 graphify-out/
 
 # Android signing

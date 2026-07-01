@@ -221,9 +221,6 @@ JWT_SECRET="dev-secret-change-in-production"
 JWT_EXPIRES_IN="7d"
 CORS_ORIGIN="*"
 NODE_ENV=development
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-4o-mini
-DAILY_CHAT_LIMIT=50
 "@ | Out-File -FilePath .env -Encoding utf8
 ```
 
@@ -239,14 +236,9 @@ JWT_SECRET="dev-secret-change-in-production"
 JWT_EXPIRES_IN="7d"
 CORS_ORIGIN="*"
 NODE_ENV=development
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-4o-mini
-DAILY_CHAT_LIMIT=50
 ```
 
 3. Save as `backend\.env` (make sure "Save as type" is **All Files**, not Text Documents)
-
-> **Note:** `OPENAI_API_KEY` is left empty. The AI chat feature will be disabled, but everything else works fine. Add your key if you want the AI assistant to work.
 
 ---
 
@@ -315,7 +307,6 @@ npm run dev
 Expected output:
 
 ```
-WARNING: OPENAI_API_KEY is not set. AI chat assistant will be disabled.
 Token blacklist initialized with 0 active entries
 Server running on port 3000 [development]
 WebSocket available at ws://localhost:3000/ws
@@ -684,7 +675,7 @@ After running the seed script (`node prisma/seed.js`):
 |------|-----------|----------|-----------------|
 | **SUPERADMIN** | `3275000000000001` | `superadmin123` | Full system access, regions, user management |
 | **ADMIN** | `3275000000000002` | `admin123` | Patient management, screenings, articles, scheduling |
-| **PATIENT** | `3275000000000003` | `patient123` | Health tracking, chat, appointments, view articles |
+| **PATIENT** | `3275000000000003` | `patient123` | Health tracking, appointments, view articles |
 
 ---
 
