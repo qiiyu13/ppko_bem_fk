@@ -1,0 +1,29 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - production
+  pull_request:
+    branches:
+      - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Pull and deploy
+        run: |
+          ssh -o StrictHostKeyChecking=no admin@103.23.102.190 "
+            cd /home/fk/ppko_bem_fk/ && \
+            git pull --rebase && \
+            cd /home/admin/deployment-all && \
+            ansible-playbook -i ppko_bem_fk/hosts ppko_bem_fk/deploy.yml"

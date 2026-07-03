@@ -23,7 +23,12 @@ class CacheService {
   ''';
 
   static Future<void> init() async {
-    if (!kIsWeb && Platform.isLinux) {
+    // sqflite has no web implementation. Leaving _db null is safe: every
+    // method below is a null-aware no-op, so the web build runs cache-less
+    // and always hits the network.
+    if (kIsWeb) return;
+
+    if (Platform.isLinux) {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
     }

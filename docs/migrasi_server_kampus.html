@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4; margin: 22mm 18mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    color: #1f2933;
+    font-size: 11pt;
+    line-height: 1.6;
+    margin: 0;
+  }
+  h1 {
+    font-size: 20pt;
+    color: #0b6e4f;
+    margin: 0 0 4px;
+    border-bottom: 3px solid #0b6e4f;
+    padding-bottom: 8px;
+  }
+  .subtitle { color: #627d98; font-size: 10pt; margin-bottom: 28px; }
+  h2 {
+    font-size: 14pt;
+    color: #0b6e4f;
+    margin-top: 30px;
+    margin-bottom: 6px;
+    border-left: 5px solid #0b6e4f;
+    padding-left: 10px;
+  }
+  h3 { font-size: 12pt; color: #243b53; margin-top: 20px; margin-bottom: 4px; }
+  p { margin: 8px 0; text-align: justify; }
+  .lead { background: #e6f4ef; border-radius: 6px; padding: 12px 16px; }
+  .analogi {
+    background: #fff8e6;
+    border-left: 4px solid #f0b429;
+    padding: 10px 16px;
+    border-radius: 4px;
+    margin: 14px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 18px;
+    font-size: 10pt;
+  }
+  th {
+    background: #0b6e4f;
+    color: #fff;
+    text-align: left;
+    padding: 8px 10px;
+  }
+  td { padding: 7px 10px; border-bottom: 1px solid #d9e2ec; vertical-align: top; }
+  tr:nth-child(even) td { background: #f0f4f8; }
+  .note {
+    background: #fde8e8;
+    border-left: 4px solid #cf1124;
+    padding: 10px 16px;
+    border-radius: 4px;
+    margin: 14px 0;
+    font-size: 10.5pt;
+  }
+  code {
+    background: #f0f4f8;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: "Consolas", monospace;
+    font-size: 9.5pt;
+    color: #102a43;
+  }
+  .footer {
+    margin-top: 36px;
+    border-top: 1px solid #d9e2ec;
+    padding-top: 10px;
+    font-size: 9pt;
+    color: #829ab1;
+    text-align: center;
+  }
+  .part-tag {
+    display: inline-block;
+    background: #0b6e4f;
+    color: #fff;
+    font-size: 8.5pt;
+    padding: 2px 8px;
+    border-radius: 10px;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Penjelasan Sistem Backend Aplikasi Mediku</h1>
+<div class="subtitle">Dokumen penjelasan teknis untuk rencana migrasi ke server kampus &middot; Aplikasi Mediku (Media Informasi dan Diagnostik Kesehatanku)</div>
+
+<h2>Bagian 1 &mdash; Penjelasan Sederhana <span class="part-tag">untuk Bapak/Ibu Dosen</span></h2>
+
+<p>Aplikasi <strong>Mediku</strong> terdiri dari dua bagian:</p>
+<p><strong>1. Aplikasi di HP</strong> &mdash; yang dipakai pasien, admin, dan petugas kesehatan. Ini bagian yang terlihat di layar.</p>
+<p><strong>2. Backend (server)</strong> &mdash; "otak" di belakang layar. Inilah yang kita bahas. Backend tidak terlihat oleh pengguna, tetapi tugasnya menyimpan semua data (akun, data kesehatan, jadwal, artikel) dan melayani setiap permintaan dari aplikasi HP.</p>
+
+<div class="analogi">
+<strong>Analogi sederhana:</strong> jika aplikasi HP itu seperti <strong>kasir di depan toko</strong>, maka backend adalah <strong>gudang dan pembukuan di belakang</strong>. Pasien menekan tombol di HP &rarr; permintaan dikirim ke backend &rarr; backend mengambil atau menyimpan data &rarr; lalu mengirim balik hasilnya ke HP.
+</div>
+
+<div class="lead">
+<p>Saat ini backend <strong>sudah berjalan dan online</strong> di server sewaan (DigitalOcean), lengkap dengan alamat domain sendiri dan koneksi aman (HTTPS / gembok hijau). Yang kita inginkan sekarang adalah <strong>memindahkan sistem yang sudah berjalan ini ke server kampus</strong>, tanpa mengubah cara kerjanya.</p>
+</div>
+
+<p>Hal penting yang memudahkan: seluruh sistem ini sudah "dikemas rapi" menggunakan teknologi bernama <strong>Docker</strong>. Artinya sistem ini seperti <strong>peti kemas pindahan</strong> &mdash; bisa diangkat dari satu server ke server lain dan langsung berjalan sama persis, tanpa perlu memasang ulang satu per satu. Ini sangat memudahkan tim teknis kampus.</p>
+
+<h2>Bagian 2 &mdash; Spesifikasi Teknis <span class="part-tag">untuk Tim Teknis Kampus</span></h2>
+
+<h3>Arsitektur Sistem</h3>
+<p>Sistem berjalan dalam <strong>3 kontainer Docker</strong> yang diatur oleh Docker Compose:</p>
+
+<table>
+<tr><th>Kontainer</th><th>Fungsi</th><th>Port</th></tr>
+<tr><td><strong>nginx</strong></td><td>Pintu depan / reverse-proxy. Mengurus HTTPS (SSL), menyajikan file gambar, caching, dan meneruskan permintaan ke backend.</td><td>80 (HTTP) &amp; 443 (HTTPS) &mdash; menghadap internet</td></tr>
+<tr><td><strong>backend</strong></td><td>Server aplikasi (API). Memproses semua logika: login, data kesehatan, jadwal, dan lainnya.</td><td>3000 &mdash; internal saja, tidak langsung ke internet</td></tr>
+<tr><td><strong>postgres</strong></td><td>Database. Menyimpan seluruh data secara permanen.</td><td>5432 &mdash; internal saja</td></tr>
+</table>
+
+<p>Hanya nginx yang terbuka ke internet. Backend dan database tersembunyi di belakangnya, sehingga lebih aman.</p>
+
+<h3>Tumpukan Teknologi (Tech Stack)</h3>
+<table>
+<tr><th>Lapisan</th><th>Teknologi</th></tr>
+<tr><td>Bahasa &amp; Runtime</td><td>Node.js versi 20 (JavaScript di sisi server)</td></tr>
+<tr><td>Framework API</td><td>Express.js versi 5 (REST API)</td></tr>
+<tr><td>Database</td><td>PostgreSQL versi 16</td></tr>
+<tr><td>ORM (jembatan ke database)</td><td>Prisma</td></tr>
+<tr><td>Autentikasi / Login</td><td>JWT (token login) + bcrypt (pengaman / enkripsi password)</td></tr>
+<tr><td>Komunikasi real-time</td><td>WebSocket &mdash; mengirim update langsung ke aplikasi</td></tr>
+<tr><td>Notifikasi HP</td><td>Firebase Cloud Messaging (push notification)</td></tr>
+<tr><td>Upload gambar</td><td>Multer (menerima file) + Sharp (memperkecil / optimasi gambar)</td></tr>
+<tr><td>Keamanan</td><td>Helmet, CORS, Rate-limit (mencegah penyalahgunaan / serangan)</td></tr>
+<tr><td>Web server / proxy</td><td>Nginx</td></tr>
+<tr><td>Kemasan / Deployment</td><td>Docker + Docker Compose</td></tr>
+</table>
+
+<h3>Database</h3>
+<p>PostgreSQL berisi <strong>9 tabel utama</strong>: User (akun), FamilyProfile (profil anggota keluarga), HealthMetric (data ukur kesehatan), MedicalScreening (skrining medis), Appointment (jadwal janji temu), Article (artikel kesehatan), Region (data wilayah), Notification (notifikasi), dan TokenBlacklist (token login yang dicabut).</p>
+<p>Data tersimpan di <strong>volume Docker permanen</strong>, sehingga tidak hilang meskipun kontainer di-restart.</p>
+
+<h3>Kondisi Saat Ini</h3>
+<table>
+<tr><th>Aspek</th><th>Keterangan</th></tr>
+<tr><td>Server saat ini</td><td>DigitalOcean (sistem operasi Ubuntu Linux)</td></tr>
+<tr><td>Domain &amp; keamanan</td><td>Sudah memakai domain sendiri + sertifikat SSL (HTTPS aktif)</td></tr>
+<tr><td>Cara update</td><td>Lewat <code>git pull</code> + skrip otomatis <code>deploy.sh</code> yang membangun ulang kontainer</td></tr>
+</table>
+
+<div class="note">
+<strong>Catatan:</strong> Fitur <strong>AI assistant tidak digunakan</strong> (sudah dihapus dari sistem). Tidak diperlukan API atau koneksi pihak ketiga untuk fitur tersebut.
+</div>
+
+<h3>Catatan Migrasi ke Server Kampus</h3>
+<p>Karena seluruh sistem sudah berbasis Docker, proses pemindahan pada dasarnya: pasang Docker di server kampus &rarr; salin kode dan konfigurasi &rarr; jalankan. Sistem akan berjalan identik dengan yang sekarang. Yang perlu disiapkan pihak kampus pada umumnya adalah server Linux dengan Docker, akses port 80 &amp; 443 ke internet, serta sebuah domain/subdomain beserta sertifikat SSL-nya.</p>
+
+<div class="footer">
+Dokumen ini dibuat untuk keperluan koordinasi migrasi server &middot; Aplikasi Mediku
+</div>
+
+</body>
+</html>

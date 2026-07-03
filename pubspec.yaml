@@ -53,6 +53,10 @@ dependencies:
   connectivity_plus: ^5.0.1
   qr_flutter: ^4.1.0
   mobile_scanner: ^3.5.0
+  # Desktop fallback for QR scanning: mobile_scanner has no Linux/Windows
+  # implementation, so we decode picked images with pure-Dart zxing2.
+  zxing2: ^0.2.3
+  image: ^4.3.0
   web_socket_channel: ^3.0.1
   firebase_core: ^3.6.0
   firebase_auth: ^5.3.1

@@ -25,22 +25,28 @@ void showProfileQrDialog(BuildContext context, FamilyProfile profile) {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          QrImageView(
-            data: qrData,
-            version: QrVersions.auto,
-            size: 220,
-            backgroundColor: Colors.white,
-            errorCorrectionLevel: QrErrorCorrectLevel.H,
-            eyeStyle: const QrEyeStyle(
-              eyeShape: QrEyeShape.square,
-              color: Colors.black,
+          // QrImageView uses a LayoutBuilder internally, which cannot report
+          // intrinsic dimensions; AlertDialog measures its content with
+          // IntrinsicWidth, so the QR must live inside tight constraints.
+          SizedBox.square(
+            dimension: 220,
+            child: QrImageView(
+              data: qrData,
+              version: QrVersions.auto,
+              backgroundColor: Colors.white,
+              errorCorrectionLevel: QrErrorCorrectLevel.H,
+              eyeStyle: const QrEyeStyle(
+                eyeShape: QrEyeShape.square,
+                color: Colors.black,
+              ),
+              dataModuleStyle: const QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.square,
+                color: Colors.black,
+              ),
+              embeddedImage: const AssetImage('assets/icon/logo_only.png'),
+              embeddedImageStyle:
+                  const QrEmbeddedImageStyle(size: Size(44, 44)),
             ),
-            dataModuleStyle: const QrDataModuleStyle(
-              dataModuleShape: QrDataModuleShape.square,
-              color: Colors.black,
-            ),
-            embeddedImage: const AssetImage('assets/icon/logo_only.png'),
-            embeddedImageStyle: const QrEmbeddedImageStyle(size: Size(44, 44)),
           ),
           const SizedBox(height: 16),
           Text(
