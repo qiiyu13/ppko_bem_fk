@@ -23,7 +23,7 @@ jobs:
       - name: Pull and deploy
         run: |
           ssh -o StrictHostKeyChecking=no admin@103.23.102.190 "
-            cd /home/fk/ppko_bem_fk/ && \
+            cd /home/admin/ppko_bem_fk/ && \
             git pull --rebase && \
             cd /home/admin/deployment-all && \
             ansible-playbook -i ppko_bem_fk/hosts ppko_bem_fk/deploy.yml"
