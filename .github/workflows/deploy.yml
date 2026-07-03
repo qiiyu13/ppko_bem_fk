@@ -25,5 +25,5 @@ jobs:
           ssh -o StrictHostKeyChecking=no admin@103.23.102.190 "
             cd /home/admin/ppko_bem_fk/ && \
             git pull --rebase && \
-            cd /home/admin/deployment-all && \
-            ansible-playbook -i ppko_bem_fk/hosts ppko_bem_fk/deploy.yml"
+            cd /home/admin/deployment-nondsih && \
+            ansible-playbook -i fk_mediku_ppkobem/hosts fk_mediku_ppkobem/deploy.yml"
