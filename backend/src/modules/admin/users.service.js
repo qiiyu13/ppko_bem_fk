@@ -160,7 +160,7 @@ const deleteUser = async (id, actor = {}) => {
   const user = await prisma.user.findUnique({
     where: { id },
     include: {
-      familyProfiles: { select: { id: true } },
+      familyProfiles: { include: { links: true } },
     },
   });
   if (!user) throw Object.assign(new Error('User not found'), { code: 'P2025' });
@@ -176,14 +176,27 @@ const deleteUser = async (id, actor = {}) => {
     if (!inScope) throw Object.assign(new Error('User not found'), { code: 'P2025' });
   }
 
-  const profileIds = user.familyProfiles.map((p) => p.id);
+  // Profiles this user owns that other accounts are also linked to must not be
+  // cascade-deleted - that would strand the linked accounts' shared history.
+  // Ownership transfers to one of the linked accounts instead; profiles with
+  // no other links delete as before.
+  const sharedProfiles = user.familyProfiles.filter((p) => p.links.length > 0);
+  const soloProfileIds = user.familyProfiles.filter((p) => p.links.length === 0).map((p) => p.id);
 
   await prisma.$transaction(async (tx) => {
-    if (profileIds.length) {
-      await tx.medicalScreening.deleteMany({ where: { profileId: { in: profileIds } } });
-      await tx.healthMetric.deleteMany({ where: { profileId: { in: profileIds } } });
+    if (soloProfileIds.length) {
+      await tx.medicalScreening.deleteMany({ where: { profileId: { in: soloProfileIds } } });
+      await tx.healthMetric.deleteMany({ where: { profileId: { in: soloProfileIds } } });
+      await tx.familyProfile.deleteMany({ where: { id: { in: soloProfileIds } } });
     }
-    await tx.familyProfile.deleteMany({ where: { userId: id } });
+
+    for (const profile of sharedProfiles) {
+      const newOwnerId = profile.links[0].userId;
+      await tx.familyProfile.update({ where: { id: profile.id }, data: { userId: newOwnerId } });
+      await tx.profileLink.delete({ where: { profileId_userId: { profileId: profile.id, userId: newOwnerId } } });
+    }
+
+    await tx.profileLink.deleteMany({ where: { userId: id } });
 
     await tx.appointment.deleteMany({ where: { userId: id } });
 

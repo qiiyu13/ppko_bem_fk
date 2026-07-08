@@ -14,7 +14,7 @@ router.get('/:id', controller.getProfile);
 
 router.post('/', uploadAvatarMiddleware, [
   body('name').isString().notEmpty(),
-  body('nik').isString().notEmpty(),
+  body('nik').optional({ nullable: true }).isString().notEmpty(),
   body('gender').customSanitizer((v) => typeof v === 'string' ? v.toLowerCase() : v).isIn(['pria', 'wanita']),
   body('birthDate').isISO8601(),
   validate,

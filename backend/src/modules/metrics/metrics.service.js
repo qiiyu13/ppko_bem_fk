@@ -1,11 +1,10 @@
 const prisma = require('../../utils/prisma');
 const { parsePagination } = require('../../utils/pagination');
+const { getAccessibleProfile } = require('../../utils/profileAccess');
 
 const getMetrics = async (profileId, userId, query) => {
-  // Verify profile belongs to user
-  const profile = await prisma.familyProfile.findFirst({
-    where: { id: profileId, userId },
-  });
+  // Verify profile is accessible to user (owner or linked account)
+  const profile = await getAccessibleProfile(profileId, userId);
   if (!profile) throw Object.assign(new Error('Profile not found'), { statusCode: 404 });
 
   const { page, limit, skip } = parsePagination(query);
@@ -18,10 +17,8 @@ const getMetrics = async (profileId, userId, query) => {
 };
 
 const createMetric = async (data, userId) => {
-  // Verify profile belongs to user
-  const profile = await prisma.familyProfile.findFirst({
-    where: { id: data.profileId, userId },
-  });
+  // Verify profile is accessible to user (owner or linked account)
+  const profile = await getAccessibleProfile(data.profileId, userId);
   if (!profile) throw Object.assign(new Error('Profile not found'), { statusCode: 404 });
 
   return prisma.healthMetric.create({
@@ -38,9 +35,7 @@ const createMetric = async (data, userId) => {
 };
 
 const getHistory = async (profileId, type, userId, query = {}) => {
-  const profile = await prisma.familyProfile.findFirst({
-    where: { id: profileId, userId },
-  });
+  const profile = await getAccessibleProfile(profileId, userId);
   if (!profile) throw Object.assign(new Error('Profile not found'), { statusCode: 404 });
 
   const where = { profileId, type };
@@ -84,9 +79,7 @@ const getHistory = async (profileId, type, userId, query = {}) => {
 };
 
 const getLatest = async (profileId, userId) => {
-  const profile = await prisma.familyProfile.findFirst({
-    where: { id: profileId, userId },
-  });
+  const profile = await getAccessibleProfile(profileId, userId);
   if (!profile) throw Object.assign(new Error('Profile not found'), { statusCode: 404 });
 
   const metricTypes = ['blood_pressure', 'cholesterol', 'blood_sugar', 'uric_acid'];

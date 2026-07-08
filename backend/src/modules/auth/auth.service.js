@@ -56,9 +56,11 @@ const login = async ({ identifier, password }) => {
 
   if (!user) throw Object.assign(new Error('Invalid credentials'), { statusCode: 401 });
 
-  // KK login: patients only. Username login: admin/superadmin only.
+  // KK login: patients only. Username login: any role that has one set - most
+  // patients don't (self-register only collects kkNumber), but an
+  // admin-provisioned org account (e.g. Sekolah Lansia) can be a PATIENT with
+  // a username instead of a KK number.
   if (isKK && user.role !== 'PATIENT') throw Object.assign(new Error('Invalid credentials'), { statusCode: 401 });
-  if (!isKK && user.role === 'PATIENT') throw Object.assign(new Error('Invalid credentials'), { statusCode: 401 });
 
   const valid = await comparePassword(password, user.password);
   if (!valid) throw Object.assign(new Error('Invalid credentials'), { statusCode: 401 });

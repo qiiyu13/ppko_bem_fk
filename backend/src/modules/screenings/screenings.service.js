@@ -4,19 +4,17 @@ const { parsePagination } = require('../../utils/pagination');
 const { parseClientDate } = require('../../utils/clientDate');
 const { regionScopeFilter } = require('../../utils/regionScope');
 const { createAndSend } = require('../notifications/notifications.service');
+const { getAccessibleProfile } = require('../../utils/profileAccess');
 
 const prisma = require('../../utils/prisma');
 
 const createScreening = async (data, userId, role) => {
-  const profile = await prisma.familyProfile.findUnique({
-    where: { id: data.profileId },
-  });
+  // PATIENT role must own or be linked to the profile; ADMIN/SUPERADMIN can
+  // screen any profile regardless of ownership.
+  const profile = role === 'PATIENT'
+    ? await getAccessibleProfile(data.profileId, userId)
+    : await prisma.familyProfile.findFirst({ where: { id: data.profileId, mergedIntoId: null } });
   if (!profile) throw Object.assign(new Error('Profile not found'), { statusCode: 404 });
-
-  // Role comes from the verified JWT (req.user.role) — no DB read needed.
-  if (profile.userId !== userId && role === 'PATIENT') {
-    throw Object.assign(new Error('Not authorized to screen this profile'), { statusCode: 403 });
-  }
 
   const height = data.height || profile.height;
   const weight = data.weight || profile.weight;
@@ -138,7 +136,7 @@ const getScreenings = async (profileId, query, requester) => {
   // of which profileId they pass (or none). Admins are confined to their region
   // subtree like the rest of the admin module; superadmins see everything.
   if (requester.role === 'PATIENT') {
-    where.profile = { userId: requester.id };
+    where.profile = { OR: [{ userId: requester.id }, { links: { some: { userId: requester.id } } }] };
   } else if (requester.role === 'ADMIN') {
     const me = await prisma.user.findUnique({ where: { id: requester.id }, select: { regionId: true } });
     // Region-less admin matches nothing, mirroring admin.service's 404 stance.
