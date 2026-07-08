@@ -26,6 +26,4 @@ jobs:
             cd /home/admin/ppko_bem_fk/ && \
             git pull --rebase && \
             cd /home/admin/deployment-nondsih && \
-            ansible-playbook -i fk_mediku_ppkobem/hosts fk_mediku_ppkobem/deploy.yml && \
-            cd /home/admin/ppko_bem_fk/ && \
-            docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build backend"
+            ansible-playbook -i fk_mediku_ppkobem/hosts fk_mediku_ppkobem/deploy.yml"
