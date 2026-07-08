@@ -26,4 +26,5 @@ jobs:
             cd /home/admin/ppko_bem_fk/ && \
             git pull --rebase && \
             cd /home/admin/deployment-nondsih && \
-            ansible-playbook -i fk_mediku_ppkobem/hosts fk_mediku_ppkobem/deploy.yml"
+            ansible-playbook -i fk_mediku_ppkobem/hosts fk_mediku_ppkobem/deploy.yml && \
+            ssh -o StrictHostKeyChecking=no admin@10.2.16.46 'docker restart fk_medikuappunnesid_bem-backend-1'"
