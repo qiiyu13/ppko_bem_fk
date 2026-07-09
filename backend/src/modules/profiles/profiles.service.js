@@ -23,7 +23,7 @@ const createProfile = async (data, userId) => {
       name: data.name,
       nik: data.nik,
       gender: data.gender,
-      birthDate: new Date(data.birthDate),
+      birthDate: data.birthDate ? new Date(data.birthDate) : null,
       height: data.height ? parseFloat(data.height) : null,
       weight: data.weight ? parseFloat(data.weight) : null,
       avatarPath: data.avatarPath || null,
@@ -110,7 +110,7 @@ const updateProfile = async (id, data, userId, existing) => {
   if (data.name !== undefined) updateData.name = data.name;
   if (data.nik !== undefined) updateData.nik = data.nik;
   if (data.gender !== undefined) updateData.gender = data.gender;
-  if (data.birthDate !== undefined) updateData.birthDate = new Date(data.birthDate);
+  if (data.birthDate !== undefined) updateData.birthDate = data.birthDate ? new Date(data.birthDate) : null;
   if (data.height !== undefined) updateData.height = data.height ? parseFloat(data.height) : null;
   if (data.weight !== undefined) updateData.weight = data.weight ? parseFloat(data.weight) : null;
   if (data.avatarPath !== undefined) updateData.avatarPath = data.avatarPath || null;

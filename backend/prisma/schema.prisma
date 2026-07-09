@@ -47,7 +47,7 @@ model FamilyProfile {
   name         String
   nik          String?   @unique
   gender       String
-  birthDate    DateTime  @map("birth_date")
+  birthDate    DateTime? @map("birth_date")
   height       Float?
   weight       Float?
   avatarPath   String?   @map("avatar_path")
