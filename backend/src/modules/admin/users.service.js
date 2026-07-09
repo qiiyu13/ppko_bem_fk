@@ -84,16 +84,27 @@ const createUser = async (data, actor = {}) => {
     const existing = await prisma.user.findUnique({ where: { username: data.username } });
     if (existing) throw Object.assign(new Error('Username already taken'), { code: 'P2002' });
   } else {
-    if (!data.kkNumber) throw Object.assign(new Error('KK number is required for patients'), { statusCode: 400 });
-    const existing = await prisma.user.findUnique({ where: { kkNumber: data.kkNumber } });
-    if (existing) throw Object.assign(new Error('KK number already registered'), { code: 'P2002' });
+    // A patient account is normally identified by kkNumber (self-registered family).
+    // An admin-provisioned org account (e.g. Sekolah Lansia, registers profiles on
+    // behalf of people who won't self-register) is a PATIENT keyed by username instead.
+    if (!data.kkNumber && !data.username) {
+      throw Object.assign(new Error('KK number or username is required for patients'), { statusCode: 400 });
+    }
+    if (data.kkNumber) {
+      const existing = await prisma.user.findUnique({ where: { kkNumber: data.kkNumber } });
+      if (existing) throw Object.assign(new Error('KK number already registered'), { code: 'P2002' });
+    }
+    if (data.username) {
+      const existing = await prisma.user.findUnique({ where: { username: data.username } });
+      if (existing) throw Object.assign(new Error('Username already taken'), { code: 'P2002' });
+    }
   }
 
   const hashedPassword = await hashPassword(data.password);
   return prisma.user.create({
     data: {
-      kkNumber: isAdminRole ? null : data.kkNumber,
-      username: isAdminRole ? data.username : null,
+      kkNumber: isAdminRole ? null : (data.kkNumber || null),
+      username: isAdminRole ? data.username : (data.username || null),
       responsibleName: data.responsibleName,
       position: data.position || null,
       password: hashedPassword,
