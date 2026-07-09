@@ -50,7 +50,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _nikController = TextEditingController(text: widget.profile.nik);
+    _nikController = TextEditingController(text: widget.profile.nik ?? '');
     _nameController = TextEditingController(text: widget.profile.name);
     _addressController = TextEditingController(
       text: widget.profile.address ?? '',

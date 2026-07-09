@@ -3,10 +3,10 @@ import '../config/env.dart';
 
 class FamilyProfile {
   final String id;
-  final String nik;
+  final String? nik;
   final String name;
   final String gender;
-  final DateTime birthDate;
+  final DateTime? birthDate;
   final String? bloodType;
   final String? address;
   final String? phone;
@@ -16,10 +16,10 @@ class FamilyProfile {
 
   FamilyProfile({
     required this.id,
-    required this.nik,
+    this.nik,
     required this.name,
     required this.gender,
-    required this.birthDate,
+    this.birthDate,
     this.bloodType,
     this.address,
     this.phone,
@@ -35,7 +35,7 @@ class FamilyProfile {
       'nik': nik,
       'name': name,
       'gender': gender,
-      'birth_date': birthDate.toIso8601String(),
+      'birth_date': birthDate?.toIso8601String(),
       'blood_type': bloodType,
       'address': address,
       'phone': phone,
@@ -48,10 +48,10 @@ class FamilyProfile {
   factory FamilyProfile.fromMap(Map<String, dynamic> map) {
     return FamilyProfile(
       id: map['id'] as String,
-      nik: map['nik'] as String,
+      nik: map['nik'] as String?,
       name: map['name'] as String,
       gender: _normalizeGender(map['gender'] as String),
-      birthDate: DateTime.parse(map['birth_date'] as String),
+      birthDate: map['birth_date'] != null ? DateTime.parse(map['birth_date'] as String) : null,
       bloodType: map['blood_type'] as String?,
       address: map['address'] as String?,
       phone: map['phone'] as String?,
@@ -64,10 +64,10 @@ class FamilyProfile {
   factory FamilyProfile.fromApi(Map<String, dynamic> map) {
     return FamilyProfile(
       id: map['id'] as String,
-      nik: map['nik'] as String,
+      nik: map['nik'] as String?,
       name: map['name'] as String,
       gender: _normalizeGender(map['gender'] as String),
-      birthDate: DateTime.parse(map['birthDate'] as String),
+      birthDate: map['birthDate'] != null ? DateTime.parse(map['birthDate'] as String) : null,
       bloodType: map['bloodType'] as String?,
       address: map['address'] as String?,
       phone: map['phone'] as String?,
@@ -82,19 +82,20 @@ class FamilyProfile {
   factory FamilyProfile.fromJson(String source) =>
       FamilyProfile.fromMap(json.decode(source) as Map<String, dynamic>);
 
-  int get age {
+  int? get age {
+    if (birthDate == null) return null;
     final now = DateTime.now();
-    int age = now.year - birthDate.year;
-    if (now.month < birthDate.month ||
-        (now.month == birthDate.month && now.day < birthDate.day)) {
+    int age = now.year - birthDate!.year;
+    if (now.month < birthDate!.month ||
+        (now.month == birthDate!.month && now.day < birthDate!.day)) {
       age--;
     }
     return age;
   }
 
   String get formattedNik {
-    if (nik.length != 16) return nik;
-    return '${nik.substring(0, 6)} **** **** ${nik.substring(12)}';
+    if (nik == null || nik!.length != 16) return nik ?? '-';
+    return '${nik!.substring(0, 6)} **** **** ${nik!.substring(12)}';
   }
 
   String? get avatarUrl {

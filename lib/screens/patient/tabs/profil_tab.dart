@@ -342,7 +342,7 @@ class ProfilTab extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${profile.age} tahun • ${profile.gender}${profile.bloodType != null ? ' • ${profile.bloodType}' : ''}',
+                        '${profile.age != null ? '${profile.age} tahun • ' : ''}${profile.gender}${profile.bloodType != null ? ' • ${profile.bloodType}' : ''}',
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary.withValues(alpha: 0.7),
