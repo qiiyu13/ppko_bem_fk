@@ -59,3 +59,9 @@ android/key.properties
 # SSH keys (never commit)
 /mediku
 /mediku.pub
+
+# Exported PII (QR cards, NIK lists) — never commit
+/docs/SekolahLansia_QR/
+/docs/nama_nik_export.csv
+/docs/nama_nik_export.pdf
+/docs/Whatsapp Scan*.pdf

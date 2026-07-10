@@ -1,12 +1,14 @@
 # Accessing the production database
 
-Prod postgres has **no exposed port** — `docker-compose.prod.yml`'s `postgres`
-service has no `ports:` mapping, so it's only reachable inside the docker
-network by the `backend` container. Neither the public internet nor the
-office L2TP VPN can reach `5432` directly (confirmed: VPN gets you onto the
-host LAN, `psql -h 10.2.16.46` still gets "connection refused").
+Prod postgres **is reachable over the L2TP VPN** once a route to the host
+LAN subnet exists — `psql -h 10.2.16.46 -U ppkobemfk -d ppkobemfk` works
+directly (confirmed 2026-07-10). Earlier notes in this doc claimed VPN
+couldn't reach `5432` at all ("connection refused") — that was wrong; the
+real issue was a missing route (`ppp0` only gets a `/32` route to the VPN
+peer, not the `10.2.16.0/24` subnet, so anything beyond the peer showed
+"Network is unreachable" until a route was added manually, see §3).
 
-There are two real ways in.
+There are three real ways in.
 
 ## 1. Through the app API (preferred)
 
@@ -45,20 +47,26 @@ named by the ansible/compose project prefix, e.g.
 Requires: the GitHub Actions deploy SSH key (or an equivalent key with
 access to `admin@103.23.102.190`).
 
-## 3. L2TP VPN (does NOT reach postgres — documented for completeness)
+## 3. L2TP VPN + direct `psql` (works, but wider blast radius than §2)
 
 Config already exists on this machine (`/etc/ipsec.conf`, `/etc/xl2tpd/`)
-pointing at `103.23.102.138`. Bringing it up gets you a `ppp0` interface on
-the `10.2.16.x` LAN, which is useful for reaching other internal-only
-services on that network — but **not** postgres, since it isn't listening
-on the host's IP at all (see above). Don't use this path for DB access;
-listed here only so it isn't rediscovered as a dead end again.
+pointing at `103.23.102.138`. Bringing it up gets you a `ppp0` interface,
+but only a `/32` route to the VPN peer — you need to add a route to the
+rest of the LAN subnet before `10.2.16.46` is reachable:
 
 ```bash
 sudo systemctl restart xl2tpd
 sudo xl2tpd-control connect-lac vpn
-ip addr show ppp0   # confirm it's up
+ip addr show ppp0                        # confirm it's up
+sudo ip route add 10.2.16.0/24 dev ppp0  # without this: "Network is unreachable"
+PGPASSWORD='...' psql -h 10.2.16.46 -U ppkobemfk -d ppkobemfk
 ```
+
+Prefer §2 (`docker exec` over SSH) when possible — this path talks straight
+to postgres from your machine, no jump host in between, so it's a wider
+blast radius (your laptop is now a trusted DB client on shared infra).
+Useful mainly when you need a native `psql`/GUI client instead of a shell
+session.
 
 ## Credentials
 
