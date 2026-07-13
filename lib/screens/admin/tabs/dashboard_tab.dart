@@ -598,7 +598,9 @@ class _DashboardTabState extends State<DashboardTab> {
   Widget _buildPatientCard(Map<String, dynamic> patient) {
     final riskLevel = _getRiskCategory(patient) ?? 'normal';
     final riskColor = PatientUtils.riskColor(riskLevel);
-    final name = (patient['name'] as String?) ?? '-';
+    final matchedProfile = patient['matchedProfile'] as Map<String, dynamic>?;
+    final accountName = (patient['name'] as String?) ?? '-';
+    final name = (matchedProfile?['name'] as String?) ?? accountName;
     final initial = name.isNotEmpty && name != '-'
         ? name.replaceFirst(RegExp(r'^Keluarga\s+', caseSensitive: false), '')[0]
             .toUpperCase()
@@ -607,6 +609,7 @@ class _DashboardTabState extends State<DashboardTab> {
     final kkTail = kk.length > 3 ? kk.substring(kk.length - 3) : kk;
     final lastScreened = _formatScreeningDate(patient);
     final subtitle = [
+      if (matchedProfile != null) accountName,
       if (kkTail.isNotEmpty) 'KK …$kkTail',
       if (lastScreened.isNotEmpty) lastScreened,
     ].join(' · ');
@@ -620,7 +623,10 @@ class _DashboardTabState extends State<DashboardTab> {
         Navigator.push(
           context,
           ParallaxPageRoute(
-            page: AdminFamilyDetailScreen(family: patient),
+            page: AdminFamilyDetailScreen(
+              family: patient,
+              highlightProfileId: matchedProfile?['id'] as String?,
+            ),
           ),
         );
       },

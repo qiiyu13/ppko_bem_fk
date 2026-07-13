@@ -14,11 +14,13 @@ import 'package:mediku/utils/page_transitions.dart';
 class AdminFamilyDetailScreen extends StatefulWidget {
   final Map<String, dynamic> family;
   final bool readOnly;
+  final String? highlightProfileId;
 
   const AdminFamilyDetailScreen({
     super.key,
     required this.family,
     this.readOnly = false,
+    this.highlightProfileId,
   });
 
   @override
@@ -30,6 +32,8 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
   bool _isLoading = true;
   bool _hasError = false;
   Map<String, dynamic>? _data;
+  final Map<String, GlobalKey> _profileKeys = {};
+  String? _pulsingProfileId;
 
   @override
   void initState() {
@@ -51,6 +55,7 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
         _data = data;
         _isLoading = false;
       });
+      _scrollToHighlight();
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -58,6 +63,27 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
         _hasError = true;
       });
     }
+  }
+
+  void _scrollToHighlight() {
+    final target = widget.highlightProfileId;
+    if (target == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final key = _profileKeys[target];
+      final ctx = key?.currentContext;
+      if (ctx == null || !mounted) return;
+      await Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.3,
+      );
+      if (!mounted) return;
+      setState(() => _pulsingProfileId = target);
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) setState(() => _pulsingProfileId = null);
+      });
+    });
   }
 
   Future<void> _callPhone(String phone) async {
@@ -165,7 +191,7 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
                       child: Column(
                         children: [
                           for (var i = 0; i < profiles.length; i++) ...[
-                            _buildProfileTile(profiles[i], name),
+                            _buildProfileTile(profiles[i], name, key: _keyFor(profiles[i]['id'] as String?)),
                             if (i != profiles.length - 1)
                               Container(
                                   height: 1, color: AppColors.divider),
@@ -291,8 +317,14 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
     );
   }
 
-  Widget _buildProfileTile(Map<String, dynamic> profile, String familyName) {
+  GlobalKey _keyFor(String? profileId) {
+    if (profileId == null) return GlobalKey();
+    return _profileKeys.putIfAbsent(profileId, () => GlobalKey());
+  }
+
+  Widget _buildProfileTile(Map<String, dynamic> profile, String familyName, {Key? key}) {
     final name = (profile['name'] as String?) ?? '-';
+    final isPulsing = _pulsingProfileId != null && _pulsingProfileId == profile['id'];
     final nik = (profile['nik'] as String?) ?? '';
     final nikTail = nik.length > 3 ? nik.substring(nik.length - 3) : nik;
     final gender = (profile['gender'] as String?) ?? '';
@@ -310,7 +342,11 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
       if (age != null) '$age th',
     ].join(' · ');
 
-    return InkWell(
+    return AnimatedContainer(
+      key: key,
+      duration: const Duration(milliseconds: 300),
+      color: isPulsing ? AppColors.primarySurface : Colors.transparent,
+      child: InkWell(
       onTap: () async {
         if (widget.readOnly) {
           final proceed = await showDialog<bool>(
@@ -407,6 +443,7 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

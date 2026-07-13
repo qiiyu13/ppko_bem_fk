@@ -127,9 +127,20 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
   ]);
 
   // Flatten latest IRD per patient
+  const searchLower = search ? search.toLowerCase() : null;
   const data = users.map((user) => {
     const allScreenings = user.familyProfiles.flatMap((p) => p.screenings);
     const latest = allScreenings.sort((a, b) => new Date(b.screeningAt) - new Date(a.screeningAt))[0];
+
+    // When the account itself doesn't name-match the search, but a family
+    // member does, surface that member's name so admins searching by a
+    // profile name don't land on an opaque account row (e.g. an org account
+    // with 100+ members) and have to scroll to find who they searched for.
+    let matchedProfile = null;
+    if (searchLower && !user.responsibleName?.toLowerCase().includes(searchLower)) {
+      const hit = user.familyProfiles.find((p) => p.name?.toLowerCase().includes(searchLower));
+      if (hit) matchedProfile = { id: hit.id, name: hit.name };
+    }
 
     return {
       id: user.id,
@@ -139,6 +150,7 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
       avatarPath: user.avatarPath || null,
       createdAt: user.createdAt,
       latestIrd: latest || null,
+      matchedProfile,
     };
   });
 
