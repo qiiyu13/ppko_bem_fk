@@ -148,6 +148,14 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
 
   String _int(dynamic v) => v == null ? '-' : (v as num).toInt().toString();
 
+  /// BMI = kg / m². Null when height/weight missing so exports show '-'.
+  double? _bmi(Map<String, dynamic> r) {
+    final w = (r['weight'] as num?)?.toDouble();
+    final h = (r['height'] as num?)?.toDouble();
+    if (w == null || h == null || h <= 0) return null;
+    return w / ((h / 100) * (h / 100));
+  }
+
   String _rowDate(Map<String, dynamic> r) {
     final raw = r['screeningAt'];
     if (raw == null) return '-';
@@ -197,7 +205,7 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
 
     final buf = StringBuffer();
     buf.writeln(
-        'Tanggal;Nama;NIK;JK;Sistolik;Diastolik;GulaDarah;AsamUrat;Kolesterol;BeratBadan;TinggiBadan;IRDScore;Kategori;Petugas');
+        'Tanggal;Nama;NIK;JK;Sistolik;Diastolik;GulaDarah;AsamUrat;Kolesterol;BeratBadan;TinggiBadan;BMI;IRDScore;Kategori;Petugas');
     for (final r in _results) {
       buf.writeln([
         _rowDate(r),
@@ -211,6 +219,7 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
         csvNum(r['cholesterol']),
         csvNum(r['weight']),
         csvNum(r['height']),
+        csvNum(_bmi(r)),
         csvNum(r['irdScore'], decimals: 2),
         _categoryLabel(_category(r)),
         esc(_screenerOf(r)),
@@ -296,7 +305,7 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
 
     const headers = [
       'Tgl', 'Nama', 'NIK', 'JK', 'TD', 'GDS', 'AU', 'Kol',
-      'BB', 'TB', 'IRD', 'Kategori', 'Petugas',
+      'BB', 'TB', 'BMI', 'IRD', 'Kategori', 'Petugas',
     ];
     final dataRows = [
       for (final r in _results)
@@ -311,6 +320,7 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
           _num(r['cholesterol']),
           _num(r['weight']),
           _num(r['height']),
+          _num(_bmi(r)),
           _num(r['irdScore'], decimals: 2),
           _categoryLabel(_category(r)),
           _screenerOf(r),

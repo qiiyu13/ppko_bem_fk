@@ -601,12 +601,32 @@ class _DashboardTabState extends State<DashboardTab> {
     }
   }
 
+  void _openFamily(Map<String, dynamic> patient, String? highlightProfileId) {
+    Navigator.push(
+      context,
+      ParallaxPageRoute(
+        page: AdminFamilyDetailScreen(
+          family: patient,
+          highlightProfileId: highlightProfileId,
+        ),
+      ),
+    );
+  }
+
   Widget _buildPatientCard(Map<String, dynamic> patient) {
     final riskLevel = _getRiskCategory(patient) ?? 'normal';
     final riskColor = PatientUtils.riskColor(riskLevel);
     final matchedProfile = patient['matchedProfile'] as Map<String, dynamic>?;
+    // Fall back to matchedProfile (older API) when matchedProfiles absent.
+    final matchedProfiles =
+        (patient['matchedProfiles'] as List<dynamic>?)
+                ?.cast<Map<String, dynamic>>() ??
+            (matchedProfile != null ? [matchedProfile] : <Map<String, dynamic>>[]);
+    final multiMatch = matchedProfiles.length > 1;
     final accountName = (patient['name'] as String?) ?? '-';
-    final name = (matchedProfile?['name'] as String?) ?? accountName;
+    // Single match surfaces the member; multiple matches keep the account as
+    // the header and list each matched member as a sub-row below.
+    final name = multiMatch ? accountName : (matchedProfile?['name'] as String?) ?? accountName;
     final initial = name.isNotEmpty && name != '-'
         ? name.replaceFirst(RegExp(r'^Keluarga\s+', caseSensitive: false), '')[0]
             .toUpperCase()
@@ -615,7 +635,8 @@ class _DashboardTabState extends State<DashboardTab> {
     final kkTail = kk.length > 3 ? kk.substring(kk.length - 3) : kk;
     final lastScreened = _formatScreeningDate(patient);
     final subtitle = [
-      if (matchedProfile != null) accountName,
+      if (multiMatch) '${matchedProfiles.length} anggota cocok'
+      else if (matchedProfile != null) accountName,
       if (kkTail.isNotEmpty) 'KK …$kkTail',
       if (lastScreened.isNotEmpty) lastScreened,
     ].join(' · ');
@@ -624,18 +645,9 @@ class _DashboardTabState extends State<DashboardTab> {
         ? '${Env.serverBaseUrl}$avatarPath'
         : null;
 
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          ParallaxPageRoute(
-            page: AdminFamilyDetailScreen(
-              family: patient,
-              highlightProfileId: matchedProfile?['id'] as String?,
-            ),
-          ),
-        );
-      },
+    final header = InkWell(
+      onTap: () =>
+          _openFamily(patient, multiMatch ? null : matchedProfile?['id'] as String?),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: Row(
@@ -684,6 +696,45 @@ class _DashboardTabState extends State<DashboardTab> {
               color: AppColors.textSecondary,
               size: ResponsiveSize.iconSmall,
             ),
+          ],
+        ),
+      ),
+    );
+
+    if (!multiMatch) return header;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        header,
+        for (final m in matchedProfiles) _buildMatchedSubRow(patient, m),
+      ],
+    );
+  }
+
+  Widget _buildMatchedSubRow(
+      Map<String, dynamic> patient, Map<String, dynamic> profile) {
+    final pname = (profile['name'] as String?) ?? '-';
+    return InkWell(
+      onTap: () => _openFamily(patient, profile['id'] as String?),
+      child: Padding(
+        padding: const EdgeInsets.only(left: 60, right: 12, top: 8, bottom: 8),
+        child: Row(
+          children: [
+            const Icon(Icons.subdirectory_arrow_right,
+                size: 16, color: AppColors.textSecondary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                pname,
+                style: TextStyle(
+                  fontSize: ResponsiveSize.fontSmall,
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right,
+                color: AppColors.textSecondary, size: ResponsiveSize.iconSmall),
           ],
         ),
       ),

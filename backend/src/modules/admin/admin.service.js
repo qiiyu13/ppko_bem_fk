@@ -136,11 +136,16 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
     // member does, surface that member's name so admins searching by a
     // profile name don't land on an opaque account row (e.g. an org account
     // with 100+ members) and have to scroll to find who they searched for.
-    let matchedProfile = null;
+    // All members whose name matches (not just the first) so an org account
+    // with several matches surfaces each one, not one arbitrary hit.
+    let matchedProfiles = [];
     if (searchLower && !user.responsibleName?.toLowerCase().includes(searchLower)) {
-      const hit = user.familyProfiles.find((p) => p.name?.toLowerCase().includes(searchLower));
-      if (hit) matchedProfile = { id: hit.id, name: hit.name };
+      matchedProfiles = user.familyProfiles
+        .filter((p) => p.name?.toLowerCase().includes(searchLower))
+        .map((p) => ({ id: p.id, name: p.name }));
     }
+    // matchedProfile kept for older app builds (first match).
+    const matchedProfile = matchedProfiles[0] || null;
 
     return {
       id: user.id,
@@ -151,6 +156,7 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
       createdAt: user.createdAt,
       latestIrd: latest || null,
       matchedProfile,
+      matchedProfiles,
     };
   });
 
