@@ -9,6 +9,7 @@ import '../../utils/responsive_size.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/error_state_widget.dart';
 import 'admin_patient_detail_screen.dart';
+import '../superadmin/screens/medical_screening_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
 class AdminFamilyDetailScreen extends StatefulWidget {
@@ -86,6 +87,28 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
     });
   }
 
+  // Open the screening input form. Pre-selects the searched member when known
+  // (or the sole member); otherwise the form falls back to its own picker.
+  Future<void> _openScreening(List<Map<String, dynamic>> profiles) async {
+    Map<String, dynamic>? target;
+    if (widget.highlightProfileId != null) {
+      for (final p in profiles) {
+        if (p['id'] == widget.highlightProfileId) {
+          target = p;
+          break;
+        }
+      }
+    }
+    target ??= profiles.length == 1 ? profiles.first : null;
+    await Navigator.push(
+      context,
+      ParallaxPageRoute(
+        page: MedicalScreeningScreen(initialPatient: target),
+      ),
+    );
+    if (mounted) _fetch(); // refresh risk badges after a new screening
+  }
+
   Future<void> _callPhone(String phone) async {
     final uri = Uri(scheme: 'tel', path: phone);
     if (!await launchUrl(uri)) {
@@ -137,6 +160,17 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: (_isLoading || _hasError)
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'admin_family_screening_fab',
+              tooltip: 'Input skrining pasien',
+              onPressed: () => _openScreening(profiles),
+              backgroundColor: AppColors.primary,
+              icon: const Icon(Icons.edit, color: Colors.white),
+              label: const Text('Input Skrining',
+                  style: TextStyle(color: Colors.white)),
+            ),
       appBar: AppBar(
         backgroundColor: AppColors.card,
         foregroundColor: AppColors.textPrimary,

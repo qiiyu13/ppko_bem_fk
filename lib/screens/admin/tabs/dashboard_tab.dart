@@ -15,7 +15,6 @@ import '../../../widgets/error_state_widget.dart';
 import '../admin_family_detail_screen.dart';
 import '../qr_scanner_screen.dart';
 import '../../superadmin/screens/screening_report_screen.dart';
-import '../../superadmin/screens/medical_screening_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 import 'package:mediku/config/env.dart';
 import 'package:mediku/widgets/app_avatar.dart';
@@ -627,18 +626,13 @@ class _DashboardTabState extends State<DashboardTab> {
 
     return InkWell(
       onTap: () {
-        // A name-matched profile opens the screening input form directly for
-        // that person; an account row (no match) opens the family detail so
-        // the admin can pick a member.
         Navigator.push(
           context,
           ParallaxPageRoute(
-            page: matchedProfile != null
-                ? MedicalScreeningScreen(initialPatient: matchedProfile)
-                : AdminFamilyDetailScreen(
-                    family: patient,
-                    highlightProfileId: matchedProfile?['id'] as String?,
-                  ),
+            page: AdminFamilyDetailScreen(
+              family: patient,
+              highlightProfileId: matchedProfile?['id'] as String?,
+            ),
           ),
         );
       },
