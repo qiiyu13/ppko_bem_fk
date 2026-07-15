@@ -29,6 +29,8 @@ router.post('/', authenticate, authorize('ADMIN', 'SUPERADMIN'), [
   body('height').optional({ values: 'null' }).isFloat({ min: 30, max: 300 }),
   body('weight').optional({ values: 'null' }).isFloat({ min: 1, max: 500 }),
   body('gender').optional({ values: 'null' }).custom((v) => GENDER_VALUES.includes(String(v).toLowerCase())),
+  // Only used to backfill birthDate for profiles that don't have one yet.
+  body('age').optional({ values: 'null' }).isInt({ min: 0, max: 130 }),
   body('notes').optional({ values: 'null' }).isString().isLength({ max: 2000 }),
   body('screeningAt').optional({ values: 'null' }).isISO8601(),
   validate,

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../constants/app_colors.dart';
@@ -25,6 +26,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
   final TextEditingController _uricAcidController = TextEditingController();
   final TextEditingController _cholesterolController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _ageController = TextEditingController();
 
   final FocusNode _systolicFocus = FocusNode();
   final FocusNode _diastolicFocus = FocusNode();
@@ -34,6 +36,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
   final FocusNode _uricAcidFocus = FocusNode();
   final FocusNode _cholesterolFocus = FocusNode();
   final FocusNode _notesFocus = FocusNode();
+  final FocusNode _ageFocus = FocusNode();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -51,9 +54,8 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     super.initState();
     if (widget.initialPatient != null) {
       _selectedProfile = widget.initialPatient;
-    } else {
-      _fetchFamilies();
     }
+    _fetchFamilies();
   }
 
   @override
@@ -67,6 +69,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     _uricAcidController.dispose();
     _cholesterolController.dispose();
     _notesController.dispose();
+    _ageController.dispose();
     _systolicFocus.dispose();
     _diastolicFocus.dispose();
     _weightFocus.dispose();
@@ -75,6 +78,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     _uricAcidFocus.dispose();
     _cholesterolFocus.dispose();
     _notesFocus.dispose();
+    _ageFocus.dispose();
     super.dispose();
   }
 
@@ -88,6 +92,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
       _uricAcidController,
       _cholesterolController,
       _notesController,
+      _ageController,
     ].any((c) => c.text.trim().isNotEmpty);
   }
 
@@ -238,6 +243,13 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
       'screeningAt': DateTime.now().toUtc().toIso8601String(),
     };
 
+    // Age is only collected (and sent) for profiles without a birthDate; the
+    // server backfills birthDate from it. Never sent when age already known.
+    if (_ageFromBirthDate(_selectedProfile!['birthDate']) == null) {
+      final age = int.tryParse(_ageController.text.trim());
+      if (age != null) body['age'] = age;
+    }
+
     try {
       await ApiService.post('/screenings', data: body);
       if (mounted) {
@@ -252,10 +264,21 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
+        // Surface the server's real error (401/400/500 + message) so a token
+        // expiry or validation reject isn't hidden behind a generic connection
+        // message. Falls back to the connection hint when there's no response.
+        String msg = 'Gagal menyimpan data screening. Periksa koneksi lalu coba lagi.';
+        if (e is DioException && e.response != null) {
+          final data = e.response!.data;
+          final serverMsg = (data is Map && data['error'] is Map)
+              ? data['error']['message']
+              : null;
+          msg = serverMsg ??
+              'Gagal menyimpan data screening (${e.response!.statusCode}).';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Gagal menyimpan data screening. Periksa koneksi lalu coba lagi.'),
+          SnackBar(
+            content: Text(msg),
             backgroundColor: AppColors.statusRed,
           ),
         );
@@ -288,16 +311,24 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     return 'Pilih Keluarga';
   }
 
+  void _resetToFamilySelection() {
+    setState(() {
+      _selectedProfile = null;
+      _clearFormFields();
+    });
+  }
+
   Future<void> _onBackPressed() async {
     if (_selectedProfile != null) {
       if (_isFormDirty) {
         final ok = await _confirmDiscard();
         if (!ok) return;
       }
-      setState(() {
-        _selectedProfile = null;
-        _clearFormFields();
-      });
+      if (widget.initialPatient != null) {
+        if (mounted) Navigator.pop(context);
+        return;
+      }
+      _resetToFamilySelection();
       return;
     }
     if (_selectedFamily != null) {
@@ -319,6 +350,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     _uricAcidController.clear();
     _cholesterolController.clear();
     _notesController.clear();
+    _ageController.clear();
   }
 
   @override
@@ -801,6 +833,30 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                   ),
                 ),
                 SizedBox(height: ResponsiveSize.spacingXLarge),
+                // Age input only for profiles without a birthDate; the server
+                // backfills birthDate from it. Hidden once age is known.
+                if (age == null) ...[
+                  _buildFormSection('Usia'),
+                  _buildField(
+                    label: 'Usia',
+                    hint: 'cth. 65',
+                    suffix: 'th',
+                    controller: _ageController,
+                    focusNode: _ageFocus,
+                    nextFocus: _systolicFocus,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    validator: (v) {
+                      final t = v?.trim() ?? '';
+                      if (t.isEmpty) return null; // optional
+                      final n = int.tryParse(t);
+                      if (n == null) return 'Harus berupa angka';
+                      if (n < 0 || n > 130) return 'Usia tidak valid';
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: ResponsiveSize.spacingLarge),
+                ],
                 Text(
                   'Data Medical Screening',
                   style: TextStyle(

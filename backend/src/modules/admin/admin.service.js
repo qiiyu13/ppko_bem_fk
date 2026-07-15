@@ -114,6 +114,11 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
           select: {
             id: true,
             name: true,
+            // Included so a name-matched profile (matchedProfile below) carries
+            // enough to open the screening form directly from the dashboard.
+            nik: true,
+            gender: true,
+            birthDate: true,
             screenings: {
               orderBy: { screeningAt: 'desc' },
               take: 1,
@@ -139,7 +144,7 @@ const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId
     let matchedProfile = null;
     if (searchLower && !user.responsibleName?.toLowerCase().includes(searchLower)) {
       const hit = user.familyProfiles.find((p) => p.name?.toLowerCase().includes(searchLower));
-      if (hit) matchedProfile = { id: hit.id, name: hit.name };
+      if (hit) matchedProfile = { id: hit.id, name: hit.name, nik: hit.nik, gender: hit.gender, birthDate: hit.birthDate };
     }
 
     return {

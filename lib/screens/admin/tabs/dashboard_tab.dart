@@ -15,6 +15,7 @@ import '../../../widgets/error_state_widget.dart';
 import '../admin_family_detail_screen.dart';
 import '../qr_scanner_screen.dart';
 import '../../superadmin/screens/screening_report_screen.dart';
+import '../../superadmin/screens/medical_screening_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 import 'package:mediku/config/env.dart';
 import 'package:mediku/widgets/app_avatar.dart';
@@ -43,6 +44,7 @@ class _DashboardTabState extends State<DashboardTab> {
   int _currentPage = 1;
   int _totalPages = 1;
   Timer? _searchDebounce;
+  int _requestId = 0;
   String? _userName;
   String? _userAvatarUrl;
 
@@ -84,6 +86,7 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   Future<void> _fetchPatients({bool loadMore = false}) async {
+    final reqId = ++_requestId;
     if (loadMore) {
       setState(() => _isLoadingMore = true);
     } else {
@@ -115,7 +118,7 @@ class _DashboardTabState extends State<DashboardTab> {
         final List<dynamic> data = response.data['data'] ?? [];
         final meta = response.data['meta'];
 
-        if (!mounted) return;
+        if (!mounted || reqId != _requestId) return;
         setState(() {
           _patients.addAll(data.cast<Map<String, dynamic>>());
           _totalPages = meta?['totalPages'] ?? 1;
@@ -125,7 +128,7 @@ class _DashboardTabState extends State<DashboardTab> {
         final List<dynamic> data = response.data['data'] ?? [];
         final meta = response.data['meta'];
 
-        if (!mounted) return;
+        if (!mounted || reqId != _requestId) return;
 
         final total = meta?['total'] as int? ?? data.length;
         final high = meta?['totalHighRisk'] as int? ?? 0;
@@ -142,7 +145,7 @@ class _DashboardTabState extends State<DashboardTab> {
         });
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || reqId != _requestId) return;
       if (!loadMore) {
         setState(() {
           _patients = [];
@@ -154,7 +157,7 @@ class _DashboardTabState extends State<DashboardTab> {
         );
       }
     } finally {
-      if (mounted) {
+      if (mounted && reqId == _requestId) {
         setState(() {
           _isLoading = false;
           _isLoadingMore = false;
@@ -187,6 +190,9 @@ class _DashboardTabState extends State<DashboardTab> {
       value: SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: Colors.transparent,
       ),
+      child: GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: FloatingActionButton.extended(
@@ -319,8 +325,9 @@ class _DashboardTabState extends State<DashboardTab> {
         ),
         ),
       ),
+      ),
     );
-  }  // AnnotatedRegion closes Scaffold above
+  }  // AnnotatedRegion closes GestureDetector closes Scaffold above
 
   Widget _buildFilterChip(String key, String label, int count, Color color) {
     final isSelected = _selectedFilter == key;
@@ -620,13 +627,18 @@ class _DashboardTabState extends State<DashboardTab> {
 
     return InkWell(
       onTap: () {
+        // A name-matched profile opens the screening input form directly for
+        // that person; an account row (no match) opens the family detail so
+        // the admin can pick a member.
         Navigator.push(
           context,
           ParallaxPageRoute(
-            page: AdminFamilyDetailScreen(
-              family: patient,
-              highlightProfileId: matchedProfile?['id'] as String?,
-            ),
+            page: matchedProfile != null
+                ? MedicalScreeningScreen(initialPatient: matchedProfile)
+                : AdminFamilyDetailScreen(
+                    family: patient,
+                    highlightProfileId: matchedProfile?['id'] as String?,
+                  ),
           ),
         );
       },

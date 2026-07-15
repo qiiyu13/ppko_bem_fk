@@ -8,6 +8,16 @@ const { getAccessibleProfile } = require('../../utils/profileAccess');
 
 const prisma = require('../../utils/prisma');
 
+// Derive a birthDate from a screener-entered age, but never for a profile that
+// already has one (guards real DOB against being overwritten by an estimate).
+// Approx DOB is Jan 1 of the birth year; the exact day is unknown from age alone.
+const backfillBirthDate = (profile, age, now = new Date()) => {
+  if (profile.birthDate || age == null) return null;
+  const n = parseInt(age);
+  if (Number.isNaN(n) || n < 0 || n > 130) return null;
+  return new Date(Date.UTC(now.getFullYear() - n, 0, 1));
+};
+
 const createScreening = async (data, userId, role) => {
   // PATIENT role must own or be linked to the profile; ADMIN/SUPERADMIN can
   // screen any profile regardless of ownership.
@@ -41,7 +51,12 @@ const createScreening = async (data, userId, role) => {
 
   const screeningAt = data.screeningAt ? parseClientDate(data.screeningAt) : new Date();
 
+  const birthDateFromAge = backfillBirthDate(profile, data.age);
+
   const result = await prisma.$transaction(async (tx) => {
+    if (birthDateFromAge) {
+      await tx.familyProfile.update({ where: { id: data.profileId }, data: { birthDate: birthDateFromAge } });
+    }
     const screening = await tx.medicalScreening.create({
       data: {
         profileId: data.profileId,
@@ -233,4 +248,18 @@ const getScreeningReport = async ({ screenedBy, from, to }) => {
   return { rows: truncated ? rows.slice(0, REPORT_MAX_ROWS) : rows, truncated };
 };
 
-module.exports = { createScreening, getScreenings, getStats, getScreeningReport, REPORT_MAX_ROWS };
+module.exports = { createScreening, getScreenings, getStats, getScreeningReport, REPORT_MAX_ROWS, backfillBirthDate };
+
+// Self-check: run `node screenings.service.js` (no DB needed).
+if (require.main === module) {
+  const assert = require('assert');
+  const now = new Date('2026-07-15T00:00:00Z');
+  // No existing birthDate → estimate Jan 1 of birth year.
+  assert.strictEqual(backfillBirthDate({ birthDate: null }, 65, now).toISOString(), '1961-01-01T00:00:00.000Z');
+  // Existing birthDate is never overwritten.
+  assert.strictEqual(backfillBirthDate({ birthDate: new Date('1990-05-01') }, 65, now), null);
+  // Missing/invalid age → nothing.
+  assert.strictEqual(backfillBirthDate({ birthDate: null }, null, now), null);
+  assert.strictEqual(backfillBirthDate({ birthDate: null }, 200, now), null);
+  console.log('backfillBirthDate self-check OK');
+}
