@@ -114,30 +114,26 @@ class ProfileService {
     String? address,
     String? phone,
     File? avatar,
+    Map<String, dynamic>? healthVariables,
   }) async {
+    final base = <String, dynamic>{
+      'nik': nik,
+      'name': name,
+      'gender': gender,
+      'birthDate': birthDate.toIso8601String(),
+      'bloodType': bloodType,
+      'address': address,
+      'phone': phone,
+      ...?healthVariables,
+    };
     FormData formData;
     if (avatar != null) {
       formData = FormData.fromMap({
-        'nik': nik,
-        'name': name,
-        'gender': gender,
-        'birthDate': birthDate.toIso8601String(),
-        'bloodType': bloodType,
-        'address': address,
-        'phone': phone,
+        ...base,
         'avatar': await MultipartFile.fromFile(avatar.path),
       });
     } else {
-      final map = <String, dynamic>{
-        'nik': nik,
-        'name': name,
-        'gender': gender,
-        'birthDate': birthDate.toIso8601String(),
-        'bloodType': bloodType,
-        'address': address,
-        'phone': phone,
-      };
-      formData = FormData.fromMap(map);
+      formData = FormData.fromMap(base);
     }
 
     try {
@@ -168,17 +164,23 @@ class ProfileService {
         bloodType: bloodType,
         address: address,
         phone: phone,
+        education: healthVariables?['education'] as String?,
+        occupation: healthVariables?['occupation'] as String?,
+        maritalStatus: healthVariables?['maritalStatus'] as String?,
+        income: (healthVariables?['income'] as num?)?.toDouble(),
+        familyDiseaseHistory: healthVariables?['familyDiseaseHistory'] as String?,
+        smokingStatus: healthVariables?['smokingStatus'] as String?,
+        physicalActivity: healthVariables?['physicalActivity'] as String?,
+        fruitConsumption: healthVariables?['fruitConsumption'] as String?,
+        vegetableConsumption: healthVariables?['vegetableConsumption'] as String?,
+        sweetFoodConsumption: healthVariables?['sweetFoodConsumption'] as String?,
+        sweetDrinkConsumption: healthVariables?['sweetDrinkConsumption'] as String?,
+        fattyFoodConsumption: healthVariables?['fattyFoodConsumption'] as String?,
+        fastFoodConsumption: healthVariables?['fastFoodConsumption'] as String?,
+        sleepDuration: (healthVariables?['sleepDuration'] as num?)?.toDouble(),
+        medicationRoutine: healthVariables?['medicationRoutine'] as String?,
       );
-      final queueData = <String, dynamic>{
-        'nik': nik,
-        'name': name,
-        'gender': gender,
-        'birthDate': birthDate.toIso8601String(),
-        'bloodType': bloodType,
-        'address': address,
-        'phone': phone,
-      };
-      await CacheService.queueSync('/profiles', 'POST', queueData);
+      await CacheService.queueSync('/profiles', 'POST', base);
       _profiles.add(profile);
       _profilesController.add(List.unmodifiable(_profiles));
       if (_profiles.length == 1) {
@@ -192,7 +194,7 @@ class ProfileService {
   Future<void> updateProfile(FamilyProfile profile, {File? avatar}) async {
     try {
       FormData formData;
-      final map = profile.toMap();
+      final map = profile.toApiMap();
       map['updatedAt'] = profile.updatedAt.toIso8601String();
       if (avatar != null) {
         formData = FormData.fromMap({
@@ -223,7 +225,7 @@ class ProfileService {
         _profilesController.add(List.unmodifiable(_profiles));
       }
       await CacheService.queueSync('/profiles/${profile.id}', 'PUT', {
-        ...profile.toMap(),
+        ...profile.toApiMap(),
         'updatedAt': profile.updatedAt.toIso8601String(),
       });
     }

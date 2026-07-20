@@ -8,6 +8,7 @@ const validate = require('../../middleware/validate');
 // Genders the IRD calculation understands; anything else would silently get
 // the female uric-acid denominator.
 const GENDER_VALUES = ['pria', 'wanita', 'male', 'female', 'laki-laki'];
+const { SCREENING_OPTION_FIELDS } = require('../../utils/healthOptions');
 
 router.get('/', authenticate, controller.getScreenings);
 router.get('/stats', authenticate, authorize('ADMIN', 'SUPERADMIN'), controller.getStats);
@@ -33,6 +34,15 @@ router.post('/', authenticate, authorize('ADMIN', 'SUPERADMIN'), [
   body('age').optional({ values: 'null' }).isInt({ min: 0, max: 130 }),
   body('notes').optional({ values: 'null' }).isString().isLength({ max: 2000 }),
   body('screeningAt').optional({ values: 'null' }).isISO8601(),
+  // Antropometri tambahan + nadi
+  body('waistCircumference').optional({ values: 'null' }).isFloat({ min: 10, max: 300 }),
+  body('abdominalCircumference').optional({ values: 'null' }).isFloat({ min: 10, max: 300 }),
+  body('hipCircumference').optional({ values: 'null' }).isFloat({ min: 10, max: 300 }),
+  body('pulse').optional({ values: 'null' }).isInt({ min: 20, max: 250 }),
+  // Snapshot perilaku; falls back to the profile's current values when null
+  ...Object.entries(SCREENING_OPTION_FIELDS).map(([field, values]) =>
+    body(field).optional({ values: 'null' }).isIn(values)),
+  body('sleepDuration').optional({ values: 'null' }).isFloat({ min: 0, max: 24 }),
   validate,
 ], controller.createScreening);
 

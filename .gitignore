@@ -62,6 +62,7 @@ android/key.properties
 
 # Exported PII (QR cards, NIK lists) — never commit
 /docs/SekolahLansia_QR/
+/docs/SekolahLansiaActive_QR/
 /docs/nama_nik_export.csv
 /docs/nama_nik_export.pdf
 /docs/Whatsapp Scan*.pdf

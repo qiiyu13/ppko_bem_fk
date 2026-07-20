@@ -5,6 +5,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_theme.dart';
+import '../../constants/screening_options.dart';
 import '../../utils/asset_helper.dart';
 import '../../utils/date_utils.dart';
 import '../../utils/responsive_size.dart';
@@ -14,6 +15,20 @@ import '../../services/api_service.dart';
 import '../../services/profile_service.dart';
 
 const int _kRecentReportsLimit = 5;
+
+// camelCase keys of the perilaku snapshot on a screening row.
+const _behaviorKeys = [
+  'smokingStatus',
+  'physicalActivity',
+  'fruitConsumption',
+  'vegetableConsumption',
+  'sweetFoodConsumption',
+  'sweetDrinkConsumption',
+  'fattyFoodConsumption',
+  'fastFoodConsumption',
+  'sleepDuration',
+  'medicationRoutine',
+];
 
 class LaporanSayaScreen extends StatefulWidget {
   final String gender;
@@ -90,6 +105,17 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
                   storedIrdCategory: map['irdCategory'] as String?,
                   patientName: profile?.name,
                   patientNik: profile?.nik,
+                  waistCircumference:
+                      (map['waistCircumference'] as num?)?.toDouble(),
+                  abdominalCircumference:
+                      (map['abdominalCircumference'] as num?)?.toDouble(),
+                  hipCircumference:
+                      (map['hipCircumference'] as num?)?.toDouble(),
+                  pulse: (map['pulse'] as num?)?.toInt(),
+                  behavior: {
+                    for (final k in _behaviorKeys)
+                      if (map[k] != null) k: map[k],
+                  },
                 );
               }).toList()
               // Newest first — never trust API ordering.
@@ -263,6 +289,12 @@ class BPScreeningData {
   final String? storedIrdCategory;
   final String? patientName;
   final String? patientNik;
+  // Newer measurements + perilaku snapshot — null on rows that predate them
+  final double? waistCircumference;
+  final double? abdominalCircumference;
+  final double? hipCircumference;
+  final int? pulse;
+  final Map<String, dynamic> behavior;
 
   BPScreeningData({
     required this.date,
@@ -278,7 +310,20 @@ class BPScreeningData {
     this.storedIrdCategory,
     this.patientName,
     this.patientNik,
+    this.waistCircumference,
+    this.abdominalCircumference,
+    this.hipCircumference,
+    this.pulse,
+    this.behavior = const {},
   });
+
+  /// Rasio lingkar pinggang-panggul; null unless both ends were measured.
+  double? get waistHipRatio {
+    final w = waistCircumference;
+    final h = hipCircumference;
+    if (w == null || h == null || h <= 0) return null;
+    return w / h;
+  }
 
   double get bmi {
     final heightInMeters = height / 100;
@@ -364,6 +409,38 @@ class _ExpandableScreeningCardWidgetState
   }
 
   String _formatDate(DateTime date) => IndonesianDate.format(date);
+
+  /// (label, value) rows for the perilaku snapshot — empty when the row
+  /// predates these variables.
+  List<(String, String)> _behaviorRows() {
+    final b = widget.data.behavior;
+    final rows = <(String, String)>[];
+    void add(String key, String title, List<OptionItem> opts) {
+      final v = b[key];
+      if (v is String) rows.add((title, ScreeningOptions.labelFor(opts, v)));
+    }
+
+    add('smokingStatus', 'Merokok', ScreeningOptions.smokingStatus);
+    add('physicalActivity', 'Aktivitas fisik', ScreeningOptions.physicalActivity);
+    add('fruitConsumption', 'Konsumsi buah', ScreeningOptions.fruitConsumption);
+    add('vegetableConsumption', 'Konsumsi sayur', ScreeningOptions.vegetableConsumption);
+    add('sweetFoodConsumption', 'Makanan manis', ScreeningOptions.sweetFoodConsumption);
+    add('sweetDrinkConsumption', 'Minuman manis', ScreeningOptions.sweetDrinkConsumption);
+    add('fattyFoodConsumption', 'Makanan berlemak', ScreeningOptions.fattyFoodConsumption);
+    add('fastFoodConsumption', 'Makanan cepat saji', ScreeningOptions.fastFoodConsumption);
+    final sd = b['sleepDuration'];
+    if (sd is num) {
+      rows.add(('Durasi tidur', '${sd % 1 == 0 ? sd.toInt() : sd} jam'));
+    }
+    add('medicationRoutine', 'Rutin minum obat', ScreeningOptions.medicationRoutine);
+    return rows;
+  }
+
+  static const _sectionLabelStyle = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textSecondary,
+  );
 
   Color _getIRDStatusColor(String category) {
     switch (category) {
@@ -530,6 +607,45 @@ class _ExpandableScreeningCardWidgetState
                     normal: 200,
                     borderline: 240,
                   ),
+                  // Newer measurements — hidden entirely on old rows
+                  if (widget.data.pulse != null ||
+                      widget.data.waistCircumference != null ||
+                      widget.data.abdominalCircumference != null ||
+                      widget.data.hipCircumference != null) ...[
+                    const SizedBox(height: 10),
+                    const Text('Pengukuran Lain', style: _sectionLabelStyle),
+                    const SizedBox(height: 4),
+                    if (widget.data.pulse != null)
+                      _buildLabRow('Denyut Nadi',
+                          '${widget.data.pulse} x/menit', AppColors.textSecondary),
+                    if (widget.data.waistCircumference != null)
+                      _buildLabRow(
+                          'Lingkar Pinggang',
+                          '${widget.data.waistCircumference!.toStringAsFixed(1)} cm',
+                          AppColors.textSecondary),
+                    if (widget.data.abdominalCircumference != null)
+                      _buildLabRow(
+                          'Lingkar Perut',
+                          '${widget.data.abdominalCircumference!.toStringAsFixed(1)} cm',
+                          AppColors.textSecondary),
+                    if (widget.data.hipCircumference != null)
+                      _buildLabRow(
+                          'Lingkar Panggul',
+                          '${widget.data.hipCircumference!.toStringAsFixed(1)} cm',
+                          AppColors.textSecondary),
+                    if (widget.data.waistHipRatio != null)
+                      _buildLabRow(
+                          'Rasio Pinggang-Panggul',
+                          widget.data.waistHipRatio!.toStringAsFixed(2),
+                          AppColors.textSecondary),
+                  ],
+                  if (_behaviorRows().isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    const Text('Gaya Hidup', style: _sectionLabelStyle),
+                    const SizedBox(height: 4),
+                    for (final (title, value) in _behaviorRows())
+                      _buildLabRow(title, value, AppColors.textSecondary),
+                  ],
                   const SizedBox(height: 10),
                   // IRD progress bar
                   _buildIRDBar(),
@@ -807,15 +923,18 @@ class _ExpandableScreeningCardWidgetState
     }
 
     final auNormal = d.isMale ? 7.0 : 6.0;
+    final behaviorRows = _behaviorRows();
+    final hasAnthropometry = d.waistCircumference != null ||
+        d.abdominalCircumference != null ||
+        d.hipCircumference != null;
 
     doc.addPage(
-      pw.Page(
+      // MultiPage: the new sections can push content past one A4 page.
+      pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
-        build: (pw.Context context) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Container(
+        build: (pw.Context context) => [
+          pw.Container(
               width: double.infinity,
               padding: const pw.EdgeInsets.all(16),
               decoration: pw.BoxDecoration(
@@ -914,8 +1033,70 @@ class _ExpandableScreeningCardWidgetState
                     _pdfCell(d.bmiCategory),
                   ],
                 ),
+                if (d.pulse != null)
+                  pw.TableRow(
+                    children: [
+                      _pdfCell('Denyut Nadi'),
+                      _pdfCell('${d.pulse}'),
+                      _pdfCell('x/menit'),
+                    ],
+                  ),
               ],
             ),
+            if (hasAnthropometry) ...[
+              pw.SizedBox(height: 20),
+              pw.Text(
+                'ANTROPOMETRI',
+                style: pw.TextStyle(
+                  fontSize: 12,
+                  fontWeight: pw.FontWeight.bold,
+                  color: primaryColor,
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Table(
+                border: pw.TableBorder.all(color: borderColor, width: 0.5),
+                columnWidths: const {
+                  0: pw.FlexColumnWidth(2),
+                  1: pw.FlexColumnWidth(1.5),
+                  2: pw.FlexColumnWidth(1),
+                },
+                children: [
+                  pw.TableRow(
+                    decoration: pw.BoxDecoration(color: lightGrey),
+                    children: [
+                      _pdfCell('Parameter', bold: true),
+                      _pdfCell('Nilai', bold: true),
+                      _pdfCell('Satuan', bold: true),
+                    ],
+                  ),
+                  if (d.waistCircumference != null)
+                    pw.TableRow(children: [
+                      _pdfCell('Lingkar Pinggang'),
+                      _pdfCell(d.waistCircumference!.toStringAsFixed(1)),
+                      _pdfCell('cm'),
+                    ]),
+                  if (d.abdominalCircumference != null)
+                    pw.TableRow(children: [
+                      _pdfCell('Lingkar Perut'),
+                      _pdfCell(d.abdominalCircumference!.toStringAsFixed(1)),
+                      _pdfCell('cm'),
+                    ]),
+                  if (d.hipCircumference != null)
+                    pw.TableRow(children: [
+                      _pdfCell('Lingkar Panggul'),
+                      _pdfCell(d.hipCircumference!.toStringAsFixed(1)),
+                      _pdfCell('cm'),
+                    ]),
+                  if (d.waistHipRatio != null)
+                    pw.TableRow(children: [
+                      _pdfCell('Rasio Pinggang-Panggul'),
+                      _pdfCell(d.waistHipRatio!.toStringAsFixed(2)),
+                      _pdfCell('—'),
+                    ]),
+                ],
+              ),
+            ],
             pw.SizedBox(height: 20),
             pw.Text(
               'HASIL LABORATORIUM',
@@ -956,6 +1137,39 @@ class _ExpandableScreeningCardWidgetState
                 _pdfLabRow('Kolesterol', d.cholesterol, 0, '< 200 mg/dL', 200, 240),
               ],
             ),
+            if (behaviorRows.isNotEmpty) ...[
+              pw.SizedBox(height: 20),
+              pw.Text(
+                'GAYA HIDUP',
+                style: pw.TextStyle(
+                  fontSize: 12,
+                  fontWeight: pw.FontWeight.bold,
+                  color: primaryColor,
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Table(
+                border: pw.TableBorder.all(color: borderColor, width: 0.5),
+                columnWidths: const {
+                  0: pw.FlexColumnWidth(1.5),
+                  1: pw.FlexColumnWidth(2.5),
+                },
+                children: [
+                  pw.TableRow(
+                    decoration: pw.BoxDecoration(color: lightGrey),
+                    children: [
+                      _pdfCell('Perilaku', bold: true),
+                      _pdfCell('Keterangan', bold: true),
+                    ],
+                  ),
+                  for (final (title, value) in behaviorRows)
+                    pw.TableRow(children: [
+                      _pdfCell(title),
+                      _pdfCell(value),
+                    ]),
+                ],
+              ),
+            ],
             pw.SizedBox(height: 20),
             pw.Text(
               'INDEX RISIKO DIABETES (IRD)',
@@ -1017,7 +1231,7 @@ class _ExpandableScreeningCardWidgetState
                 ],
               ),
             ),
-            pw.Spacer(),
+            pw.SizedBox(height: 24),
             pw.Divider(color: borderColor),
             pw.Text(
               'PPKO BEM FK — Laporan ini dibuat secara otomatis oleh sistem.',
@@ -1025,7 +1239,6 @@ class _ExpandableScreeningCardWidgetState
             ),
           ],
         ),
-      ),
     );
 
     return doc;

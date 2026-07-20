@@ -6,6 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../../../constants/app_colors.dart';
+import '../../../constants/screening_options.dart';
 import '../../../services/admin_service.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/screening_service.dart';
@@ -205,7 +206,7 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
 
     final buf = StringBuffer();
     buf.writeln(
-        'Tanggal;Nama;NIK;JK;Sistolik;Diastolik;GulaDarah;AsamUrat;Kolesterol;BeratBadan;TinggiBadan;BMI;IRDScore;Kategori;Petugas');
+        'Tanggal;Nama;NIK;JK;Sistolik(mmHg);Diastolik(mmHg);GulaDarah(mg/dl);AsamUrat(mg/dl);Kolesterol(mg/dl);BeratBadan(kg);TinggiBadan(cm);BMI(kg/m2);IRDScore;Kategori;Petugas');
     for (final r in _results) {
       buf.writeln([
         _rowDate(r),
@@ -296,94 +297,327 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
     }
   }
 
+  /// Latest screening per profile — one page per person, so someone screened
+  /// twice in the range appears once (their most recent row).
+  List<Map<String, dynamic>> _latestPerPerson() {
+    final byProfile = <String, Map<String, dynamic>>{};
+    for (final r in _results) {
+      final pid = (r['profileId'] ?? r['profile']?['nik'] ?? '').toString();
+      final at = DateTime.tryParse(r['screeningAt']?.toString() ?? '');
+      final prev = byProfile[pid];
+      final prevAt =
+          prev == null ? null : DateTime.tryParse(prev['screeningAt']?.toString() ?? '');
+      if (prev == null ||
+          (at != null && (prevAt == null || at.isAfter(prevAt)))) {
+        byProfile[pid] = r;
+      }
+    }
+    final list = byProfile.values.toList();
+    list.sort((a, b) => _patientName(a).compareTo(_patientName(b)));
+    return list;
+  }
+
+  int? _profileAge(Map<String, dynamic> r) {
+    final raw = r['profile']?['birthDate'];
+    final dt = raw == null ? null : DateTime.tryParse(raw.toString());
+    if (dt == null) return null;
+    final now = DateTime.now();
+    var age = now.year - dt.year;
+    if (now.month < dt.month || (now.month == dt.month && now.day < dt.day)) {
+      age--;
+    }
+    return age >= 0 ? age : null;
+  }
+
+  String _bmiCategoryLabel(double? bmi) {
+    if (bmi == null) return '-';
+    if (bmi < 18.5) return 'Kurus';
+    if (bmi < 25) return 'Normal';
+    if (bmi < 30) return 'Gemuk';
+    return 'Obesitas';
+  }
+
+  String _incomeText(dynamic v) {
+    if (v == null) return '-';
+    return 'Rp ${NumberFormat('#,###', 'id_ID').format((v as num).toDouble())}';
+  }
+
+  /// (label, value) rows for the perilaku snapshot of one screening row.
+  List<(String, String)> _behaviorRows(Map<String, dynamic> r) {
+    final rows = <(String, String)>[];
+    void add(String key, String title, List<OptionItem> opts) {
+      final v = r[key];
+      if (v is String) rows.add((title, ScreeningOptions.labelFor(opts, v)));
+    }
+
+    add('smokingStatus', 'Merokok', ScreeningOptions.smokingStatus);
+    add('physicalActivity', 'Aktivitas fisik', ScreeningOptions.physicalActivity);
+    add('fruitConsumption', 'Konsumsi buah', ScreeningOptions.fruitConsumption);
+    add('vegetableConsumption', 'Konsumsi sayur', ScreeningOptions.vegetableConsumption);
+    add('sweetFoodConsumption', 'Makanan manis', ScreeningOptions.sweetFoodConsumption);
+    add('sweetDrinkConsumption', 'Minuman manis', ScreeningOptions.sweetDrinkConsumption);
+    add('fattyFoodConsumption', 'Makanan berlemak', ScreeningOptions.fattyFoodConsumption);
+    add('fastFoodConsumption', 'Makanan cepat saji', ScreeningOptions.fastFoodConsumption);
+    final sd = r['sleepDuration'];
+    if (sd is num) rows.add(('Durasi tidur', '${sd % 1 == 0 ? sd.toInt() : sd} jam'));
+    add('medicationRoutine', 'Rutin minum obat', ScreeningOptions.medicationRoutine);
+    return rows;
+  }
+
+  // ---- black & white per-person PDF ----
+  static final _pdfGrey = PdfColor.fromHex('6B7280');
+  static final _pdfLightGrey = PdfColor.fromHex('F3F4F6');
+  static final _pdfBorder = PdfColor.fromHex('D1D5DB');
+
   Future<pw.Document> _generatePdf() async {
     final doc = pw.Document(theme: await _pdfTheme());
-    final primaryColor = PdfColor.fromHex('144425');
-    final greyColor = PdfColor.fromHex('6B7280');
-    final lightGrey = PdfColor.fromHex('F3F4F6');
-    final borderColor = PdfColor.fromHex('E5E7EB');
+    final persons = _latestPerPerson();
 
-    const headers = [
-      'Tgl', 'Nama', 'NIK', 'JK', 'TD', 'GDS', 'AU', 'Kol',
-      'BB', 'TB', 'BMI', 'IRD', 'Kategori', 'Petugas',
-    ];
-    final dataRows = [
-      for (final r in _results)
-        [
-          _rowDate(r),
-          _patientName(r),
-          _patientNik(r),
-          (r['profile']?['gender'] ?? '-').toString(),
-          '${_int(r['systolic'])}/${_int(r['diastolic'])}',
-          _num(r['bloodSugar']),
-          _num(r['uricAcid']),
-          _num(r['cholesterol']),
-          _num(r['weight']),
-          _num(r['height']),
-          _num(_bmi(r)),
-          _num(r['irdScore'], decimals: 2),
-          _categoryLabel(_category(r)),
-          _screenerOf(r),
-        ],
-    ];
+    var nNormal = 0, nAttention = 0, nHigh = 0;
+    for (final r in persons) {
+      switch (_category(r).toLowerCase()) {
+        case 'high':
+          nHigh++;
+        case 'attention':
+          nAttention++;
+        case 'normal':
+          nNormal++;
+      }
+    }
 
     doc.addPage(
       pw.MultiPage(
-        // Landscape: 13 columns don't fit readably on portrait A4.
-        pageFormat: PdfPageFormat.a4.landscape,
-        margin: const pw.EdgeInsets.all(28),
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        footer: (ctx) => pw.Padding(
+          padding: const pw.EdgeInsets.only(top: 8),
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'PPKO BEM FK — dibuat otomatis ${_dateFmt.format(DateTime.now())}',
+                style: pw.TextStyle(fontSize: 8, color: _pdfGrey),
+              ),
+              pw.Text('Hal. ${ctx.pageNumber}/${ctx.pagesCount}',
+                  style: pw.TextStyle(fontSize: 8, color: _pdfGrey)),
+            ],
+          ),
+        ),
         build: (pw.Context context) => [
-          pw.Container(
-            width: double.infinity,
-            padding: const pw.EdgeInsets.all(14),
-            decoration: pw.BoxDecoration(
-              color: primaryColor,
-              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-            ),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text('LAPORAN SKRINING KESEHATAN',
-                    style: pw.TextStyle(
-                        fontSize: 15,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.white)),
-                pw.SizedBox(height: 4),
-                pw.Text('Petugas: ${_selectedScopeLabel()}',
-                    style: const pw.TextStyle(fontSize: 9, color: PdfColors.white)),
-                pw.Text(
-                    'Periode: ${_dateFmt.format(_from)} – ${_dateFmt.format(_to)}',
-                    style: const pw.TextStyle(fontSize: 9, color: PdfColors.white)),
-                pw.Text(
-                    'Total: ${_results.length} skrining'
-                    '${_truncated ? ' (terpotong — data melebihi batas ekspor, persempit rentang tanggal)' : ''}',
-                    style: const pw.TextStyle(fontSize: 9, color: PdfColors.white)),
-              ],
-            ),
-          ),
-          pw.SizedBox(height: 14),
-          // TableHelper repeats the header row on every page.
-          pw.TableHelper.fromTextArray(
-            headers: headers,
-            data: dataRows,
-            border: pw.TableBorder.all(color: borderColor, width: 0.5),
-            headerDecoration: pw.BoxDecoration(color: lightGrey),
-            headerStyle:
-                pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
-            cellStyle: const pw.TextStyle(fontSize: 7),
-            cellPadding:
-                const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-          ),
-          pw.SizedBox(height: 16),
-          pw.Divider(color: borderColor),
-          pw.Text(
-            'PPKO BEM FK — Laporan dibuat otomatis pada ${_dateFmt.format(DateTime.now())}.',
-            style: pw.TextStyle(fontSize: 8, color: greyColor),
-          ),
+          _pdfCover(persons.length, nNormal, nAttention, nHigh),
+          for (var i = 0; i < persons.length; i++) ...[
+            pw.NewPage(),
+            _pdfPersonPage(persons[i]),
+          ],
         ],
       ),
     );
     return doc;
+  }
+
+  pw.Widget _pdfCover(int total, int nNormal, int nAttention, int nHigh) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'LAPORAN SKRINING KESEHATAN',
+          style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
+        ),
+        pw.SizedBox(height: 4),
+        pw.Text('PPKO BEM FK', style: pw.TextStyle(fontSize: 10, color: _pdfGrey)),
+        pw.SizedBox(height: 12),
+        pw.Divider(thickness: 1, color: PdfColors.black),
+        pw.SizedBox(height: 16),
+        _pdfKvTable([
+          ('Petugas', _selectedScopeLabel()),
+          ('Periode', '${_dateFmt.format(_from)} – ${_dateFmt.format(_to)}'),
+          ('Total Orang', '$total orang'),
+          if (_truncated)
+            ('Catatan', 'Data terpotong — melebihi batas ekspor, persempit rentang tanggal'),
+        ]),
+        pw.SizedBox(height: 28),
+        _pdfSectionTitle('RINGKASAN KATEGORI RISIKO'),
+        pw.SizedBox(height: 8),
+        pw.Row(children: [
+          _pdfStatBox('Normal', nNormal),
+          pw.SizedBox(width: 8),
+          _pdfStatBox('Perhatian', nAttention),
+          pw.SizedBox(width: 8),
+          _pdfStatBox('Tinggi', nHigh),
+        ]),
+      ],
+    );
+  }
+
+  pw.Widget _pdfStatBox(String label, int count) {
+    return pw.Expanded(
+      child: pw.Container(
+        padding: const pw.EdgeInsets.symmetric(vertical: 14),
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(color: PdfColors.black, width: 1),
+          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+        ),
+        child: pw.Column(children: [
+          pw.Text('$count',
+              style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 2),
+          pw.Text(label, style: pw.TextStyle(fontSize: 9, color: _pdfGrey)),
+        ]),
+      ),
+    );
+  }
+
+  pw.Widget _pdfPersonPage(Map<String, dynamic> r) {
+    final profile = r['profile'] as Map<String, dynamic>? ?? {};
+    final age = _profileAge(r);
+    final bmi = _bmi(r);
+    final waist = (r['waistCircumference'] as num?)?.toDouble();
+    final hip = (r['hipCircumference'] as num?)?.toDouble();
+    final ratio = (waist != null && hip != null && hip > 0) ? waist / hip : null;
+    final behaviorRows = _behaviorRows(r);
+
+    final identitas = <(String, String)>[
+      ('Jenis Kelamin', (profile['gender'] ?? '-').toString()),
+      if (age != null) ('Usia', '$age tahun'),
+      ('Pendidikan', ScreeningOptions.labelFor(ScreeningOptions.education, profile['education'] as String?)),
+      ('Pekerjaan', ScreeningOptions.labelFor(ScreeningOptions.occupation, profile['occupation'] as String?)),
+      ('Status Perkawinan', ScreeningOptions.labelFor(ScreeningOptions.maritalStatus, profile['maritalStatus'] as String?)),
+      ('Pendapatan', _incomeText(profile['income'])),
+      ('Riwayat Keluarga (DM/HT/Stroke/Jantung)', ScreeningOptions.labelFor(ScreeningOptions.familyDiseaseHistory, profile['familyDiseaseHistory'] as String?)),
+    ];
+
+    final antropometri = <(String, String)>[
+      ('Berat Badan', '${_num(r['weight'])} kg'),
+      ('Tinggi Badan', '${_num(r['height'])} cm'),
+      ('IMT', '${_num(bmi)} (${_bmiCategoryLabel(bmi)})'),
+      ('Lingkar Pinggang', waist == null ? '-' : '${waist.toStringAsFixed(1)} cm'),
+      ('Lingkar Perut', _num(r['abdominalCircumference']) == '-' ? '-' : '${_num(r['abdominalCircumference'])} cm'),
+      ('Lingkar Panggul', hip == null ? '-' : '${hip.toStringAsFixed(1)} cm'),
+      ('Rasio Pinggang-Panggul', ratio == null ? '-' : ratio.toStringAsFixed(2)),
+    ];
+
+    final klinis = <(String, String)>[
+      ('Tekanan Darah', '${_int(r['systolic'])}/${_int(r['diastolic'])} mmHg'),
+      ('Denyut Nadi', r['pulse'] == null ? '-' : '${_int(r['pulse'])} x/menit'),
+      ('Gula Darah', _num(r['bloodSugar']) == '-' ? '-' : '${_num(r['bloodSugar'])} mg/dL'),
+      ('Kolesterol', _num(r['cholesterol']) == '-' ? '-' : '${_num(r['cholesterol'])} mg/dL'),
+      ('Asam Urat', _num(r['uricAcid']) == '-' ? '-' : '${_num(r['uricAcid'])} mg/dL'),
+    ];
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        // Identity header
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Expanded(
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(_patientName(r).toUpperCase(),
+                      style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+                  pw.SizedBox(height: 2),
+                  pw.Text('NIK: ${_patientNik(r)}',
+                      style: pw.TextStyle(fontSize: 9, color: _pdfGrey)),
+                ],
+              ),
+            ),
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                pw.Text(_rowDate(r),
+                    style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                pw.Text('Petugas: ${_screenerOf(r)}',
+                    style: pw.TextStyle(fontSize: 9, color: _pdfGrey)),
+              ],
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 8),
+        pw.Divider(thickness: 1, color: PdfColors.black),
+        pw.SizedBox(height: 12),
+        _pdfSectionTitle('IDENTITAS & DEMOGRAFI'),
+        _pdfKvTable(identitas),
+        pw.SizedBox(height: 12),
+        _pdfSectionTitle('ANTROPOMETRI'),
+        _pdfKvTable(antropometri),
+        pw.SizedBox(height: 12),
+        _pdfSectionTitle('HASIL KLINIS'),
+        _pdfKvTable(klinis),
+        if (behaviorRows.isNotEmpty) ...[
+          pw.SizedBox(height: 12),
+          _pdfSectionTitle('PERILAKU & GAYA HIDUP'),
+          _pdfKvTable(behaviorRows),
+        ],
+        pw.SizedBox(height: 16),
+        // Result box — category as bold text only; no color in B/W print
+        pw.Container(
+          width: double.infinity,
+          padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(color: PdfColors.black, width: 1.2),
+          ),
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('SKOR IRD', style: pw.TextStyle(fontSize: 8, color: _pdfGrey)),
+                  pw.Text(_num(r['irdScore'], decimals: 2),
+                      style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
+                ],
+              ),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Text('KATEGORI RISIKO', style: pw.TextStyle(fontSize: 8, color: _pdfGrey)),
+                  pw.Text(
+                    _categoryLabel(_category(r)).toUpperCase(),
+                    style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _pdfSectionTitle(String title) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 6),
+      child: pw.Text(
+        title,
+        style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, letterSpacing: 0.5),
+      ),
+    );
+  }
+
+  /// Two-column label/value table — the workhorse of the per-person page.
+  pw.Widget _pdfKvTable(List<(String, String)> rows) {
+    return pw.Table(
+      border: pw.TableBorder.all(color: _pdfBorder, width: 0.5),
+      columnWidths: const {0: pw.FlexColumnWidth(2), 1: pw.FlexColumnWidth(3)},
+      children: [
+        for (final (label, value) in rows)
+          pw.TableRow(children: [
+            pw.Container(
+              color: _pdfLightGrey,
+              padding: const pw.EdgeInsets.all(6),
+              child: pw.Text(label, style: pw.TextStyle(fontSize: 9, color: _pdfGrey)),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(6),
+              child: pw.Text(value,
+                  style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+            ),
+          ]),
+      ],
+    );
   }
 
   void _toast(String msg) {

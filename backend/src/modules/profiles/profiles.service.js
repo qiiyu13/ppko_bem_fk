@@ -3,6 +3,16 @@ const { accessibleWhere, getAccessibleProfile } = require('../../utils/profileAc
 
 const prisma = require('../../utils/prisma');
 
+// String health variables stored as-is (validated against healthOptions at
+// the route); the two numeric ones need parsing.
+const HEALTH_STRING_FIELDS = [
+  'education', 'occupation', 'maritalStatus', 'familyDiseaseHistory',
+  'smokingStatus', 'physicalActivity', 'fruitConsumption', 'vegetableConsumption',
+  'sweetFoodConsumption', 'sweetDrinkConsumption', 'fattyFoodConsumption',
+  'fastFoodConsumption', 'medicationRoutine',
+];
+const HEALTH_NUMERIC_FIELDS = ['income', 'sleepDuration'];
+
 const getProfiles = async (userId) => {
   return prisma.familyProfile.findMany({
     where: accessibleWhere(userId),
@@ -29,6 +39,8 @@ const createProfile = async (data, userId) => {
       avatarPath: data.avatarPath || null,
       bloodType: data.bloodType || null,
       phone: data.phone || null,
+      ...Object.fromEntries(HEALTH_STRING_FIELDS.map((f) => [f, data[f] || null])),
+      ...Object.fromEntries(HEALTH_NUMERIC_FIELDS.map((f) => [f, data[f] != null ? parseFloat(data[f]) : null])),
     },
   });
   try { broadcastToUsers([userId], events.DATA_UPDATE, { type: 'profiles', action: 'create', id: result.id }); } catch (e) { console.error('WebSocket broadcast failed:', e.message); }
@@ -116,6 +128,12 @@ const updateProfile = async (id, data, userId, existing) => {
   if (data.avatarPath !== undefined) updateData.avatarPath = data.avatarPath || null;
   if (data.bloodType !== undefined) updateData.bloodType = data.bloodType || null;
   if (data.phone !== undefined) updateData.phone = data.phone || null;
+  for (const f of HEALTH_STRING_FIELDS) {
+    if (data[f] !== undefined) updateData[f] = data[f] || null;
+  }
+  for (const f of HEALTH_NUMERIC_FIELDS) {
+    if (data[f] !== undefined) updateData[f] = data[f] != null ? parseFloat(data[f]) : null;
+  }
 
   if (data.nik && data.nik !== current.nik) {
     const match = await prisma.familyProfile.findFirst({

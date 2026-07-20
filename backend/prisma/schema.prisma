@@ -54,6 +54,26 @@ model FamilyProfile {
   bloodType    String?   @map("blood_type")
   phone        String?
   mergedIntoId String?   @map("merged_into_id")
+
+  // Demografi (values are lowercase keys, validated at the API layer)
+  education            String?
+  occupation           String?
+  maritalStatus        String?   @map("marital_status")
+  income               Float?
+  familyDiseaseHistory String?   @map("family_disease_history")
+
+  // Gaya hidup — current values; screenings snapshot their own copy
+  smokingStatus         String?  @map("smoking_status")
+  physicalActivity      String?  @map("physical_activity")
+  fruitConsumption      String?  @map("fruit_consumption")
+  vegetableConsumption  String?  @map("vegetable_consumption")
+  sweetFoodConsumption  String?  @map("sweet_food_consumption")
+  sweetDrinkConsumption String?  @map("sweet_drink_consumption")
+  fattyFoodConsumption  String?  @map("fatty_food_consumption")
+  fastFoodConsumption   String?  @map("fast_food_consumption")
+  sleepDuration         Float?   @map("sleep_duration")
+  medicationRoutine     String?  @map("medication_routine")
+
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
@@ -117,6 +137,25 @@ model MedicalScreening {
   uricAcid    Float?   @map("uric_acid")
   height      Float?
   weight      Float?
+
+  // Antropometri tambahan + nadi (waist-hip ratio is computed, never stored)
+  waistCircumference     Float?  @map("waist_circumference")
+  abdominalCircumference Float?  @map("abdominal_circumference")
+  hipCircumference       Float?  @map("hip_circumference")
+  pulse                  Int?
+
+  // Snapshot perilaku saat screening (defaults live on FamilyProfile)
+  smokingStatus         String?  @map("smoking_status")
+  physicalActivity      String?  @map("physical_activity")
+  fruitConsumption      String?  @map("fruit_consumption")
+  vegetableConsumption  String?  @map("vegetable_consumption")
+  sweetFoodConsumption  String?  @map("sweet_food_consumption")
+  sweetDrinkConsumption String?  @map("sweet_drink_consumption")
+  fattyFoodConsumption  String?  @map("fatty_food_consumption")
+  fastFoodConsumption   String?  @map("fast_food_consumption")
+  sleepDuration         Float?   @map("sleep_duration")
+  medicationRoutine     String?  @map("medication_routine")
+
   irdScore    Float    @map("ird_score")
   irdCategory String   @map("ird_category")
   notes       String?

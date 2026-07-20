@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/api_service.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../widgets/health_variables_section.dart';
 import '../../admin/qr_scanner_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
@@ -27,6 +28,10 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
   final TextEditingController _cholesterolController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
+  final TextEditingController _waistController = TextEditingController();
+  final TextEditingController _abdominalController = TextEditingController();
+  final TextEditingController _hipController = TextEditingController();
+  final TextEditingController _pulseController = TextEditingController();
 
   final FocusNode _systolicFocus = FocusNode();
   final FocusNode _diastolicFocus = FocusNode();
@@ -37,6 +42,13 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
   final FocusNode _cholesterolFocus = FocusNode();
   final FocusNode _notesFocus = FocusNode();
   final FocusNode _ageFocus = FocusNode();
+  final FocusNode _waistFocus = FocusNode();
+  final FocusNode _abdominalFocus = FocusNode();
+  final FocusNode _hipFocus = FocusNode();
+  final FocusNode _pulseFocus = FocusNode();
+
+  // Perilaku snapshot — prefilled from the profile's current values
+  final HealthVariableValues _behavior = HealthVariableValues();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -54,6 +66,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     super.initState();
     if (widget.initialPatient != null) {
       _selectedProfile = widget.initialPatient;
+      _behavior.loadBehaviorFrom(widget.initialPatient!);
     }
     _fetchFamilies();
   }
@@ -79,6 +92,15 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     _cholesterolFocus.dispose();
     _notesFocus.dispose();
     _ageFocus.dispose();
+    _waistController.dispose();
+    _abdominalController.dispose();
+    _hipController.dispose();
+    _pulseController.dispose();
+    _waistFocus.dispose();
+    _abdominalFocus.dispose();
+    _hipFocus.dispose();
+    _pulseFocus.dispose();
+    _behavior.dispose();
     super.dispose();
   }
 
@@ -93,6 +115,10 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
       _cholesterolController,
       _notesController,
       _ageController,
+      _waistController,
+      _abdominalController,
+      _hipController,
+      _pulseController,
     ].any((c) => c.text.trim().isNotEmpty);
   }
 
@@ -213,6 +239,21 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
   double? _parseDecimal(String? s) =>
       double.tryParse((s ?? '').trim().replaceAll(',', '.'));
 
+  // New measurement fields are optional: empty is fine, garbage is not.
+  String? _validateOptionalDouble(String? v) {
+    final t = v?.trim() ?? '';
+    if (t.isEmpty) return null;
+    if (_parseDecimal(t) == null) return 'Harus berupa angka';
+    return null;
+  }
+
+  String? _validateOptionalInt(String? v) {
+    final t = v?.trim() ?? '';
+    if (t.isEmpty) return null;
+    if (int.tryParse(t) == null) return 'Harus berupa angka';
+    return null;
+  }
+
   Future<void> _submitScreening() async {
     if (_selectedProfile == null || _isSubmitting) return;
 
@@ -237,6 +278,11 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
       'uricAcid': _parseDecimal(_uricAcidController.text),
       'height': _parseDecimal(_heightController.text),
       'weight': _parseDecimal(_weightController.text),
+      'waistCircumference': _parseDecimal(_waistController.text),
+      'abdominalCircumference': _parseDecimal(_abdominalController.text),
+      'hipCircumference': _parseDecimal(_hipController.text),
+      'pulse': int.tryParse(_pulseController.text.trim()),
+      ..._behavior.toBehaviorApiMap(),
       'notes': _notesController.text,
       // UTC with designator — a timezone-less local string would be
       // re-interpreted in the server's zone and stored hours off.
@@ -351,6 +397,10 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     _cholesterolController.clear();
     _notesController.clear();
     _ageController.clear();
+    _waistController.clear();
+    _abdominalController.clear();
+    _hipController.clear();
+    _pulseController.clear();
   }
 
   @override
@@ -403,6 +453,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
           onScanResult: (data) {
             setState(() {
               _selectedProfile = data;
+              _behavior.loadBehaviorFrom(data);
             });
           },
         ),
@@ -686,6 +737,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
         onTap: () {
           setState(() {
             _selectedProfile = profile;
+            _behavior.loadBehaviorFrom(profile);
           });
         },
         child: Padding(
@@ -958,7 +1010,95 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                   suffix: 'mg/dL',
                   controller: _cholesterolController,
                   focusNode: _cholesterolFocus,
+                  nextFocus: _waistFocus,
+                ),
+                SizedBox(height: ResponsiveSize.spacingMedium),
+                _buildFormSection('Lingkar Badan (Opsional)'),
+                _buildField(
+                  label: 'Lingkar Pinggang',
+                  hint: 'mis. 80',
+                  suffix: 'cm',
+                  controller: _waistController,
+                  focusNode: _waistFocus,
+                  nextFocus: _abdominalFocus,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
+                  ],
+                  validator: _validateOptionalDouble,
+                ),
+                SizedBox(height: ResponsiveSize.spacingMedium),
+                _buildField(
+                  label: 'Lingkar Perut',
+                  hint: 'mis. 85',
+                  suffix: 'cm',
+                  controller: _abdominalController,
+                  focusNode: _abdominalFocus,
+                  nextFocus: _hipFocus,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
+                  ],
+                  validator: _validateOptionalDouble,
+                ),
+                SizedBox(height: ResponsiveSize.spacingMedium),
+                _buildField(
+                  label: 'Lingkar Panggul',
+                  hint: 'mis. 95',
+                  suffix: 'cm',
+                  controller: _hipController,
+                  focusNode: _hipFocus,
+                  nextFocus: _pulseFocus,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
+                  ],
+                  validator: _validateOptionalDouble,
+                ),
+                // Rasio pinggang-panggul — auto-computed, never typed
+                AnimatedBuilder(
+                  animation:
+                      Listenable.merge([_waistController, _hipController]),
+                  builder: (_, _) {
+                    final w = _parseDecimal(_waistController.text);
+                    final h = _parseDecimal(_hipController.text);
+                    if (w == null || h == null || h <= 0) {
+                      return const SizedBox.shrink();
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        'Rasio pinggang-panggul: ${(w / h).toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: ResponsiveSize.fontMedium,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                SizedBox(height: ResponsiveSize.spacingMedium),
+                _buildFormSection('Denyut Nadi (Opsional)'),
+                _buildField(
+                  label: 'Denyut Nadi',
+                  hint: 'mis. 72',
+                  suffix: 'x/menit',
+                  controller: _pulseController,
+                  focusNode: _pulseFocus,
                   nextFocus: _notesFocus,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  validator: _validateOptionalInt,
+                ),
+                SizedBox(height: ResponsiveSize.spacingMedium),
+                _buildFormSection('Perilaku & Gaya Hidup'),
+                BehaviorSection(
+                  values: _behavior,
+                  onChanged: () => setState(() {}),
                 ),
                 SizedBox(height: ResponsiveSize.spacingMedium),
                 _buildFormSection('Catatan'),

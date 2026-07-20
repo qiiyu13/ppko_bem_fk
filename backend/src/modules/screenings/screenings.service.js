@@ -7,6 +7,19 @@ const { createAndSend } = require('../notifications/notifications.service');
 const { getAccessibleProfile } = require('../../utils/profileAccess');
 
 const prisma = require('../../utils/prisma');
+const { SCREENING_OPTION_FIELDS } = require('../../utils/healthOptions');
+
+// Perilaku snapshot fields: value sent by the form wins, otherwise fall back
+// to the profile's current value (same pattern as height/weight).
+const BEHAVIOR_FIELDS = [...Object.keys(SCREENING_OPTION_FIELDS), 'sleepDuration'];
+
+// Profile fields the screening list/report responses embed — the per-person
+// report page needs the demografi alongside the screening measurements.
+const PROFILE_REPORT_SELECT = {
+  name: true, nik: true, gender: true, birthDate: true,
+  education: true, occupation: true, maritalStatus: true,
+  income: true, familyDiseaseHistory: true,
+};
 
 // Derive a birthDate from a screener-entered age, but never for a profile that
 // already has one (guards real DOB against being overwritten by an estimate).
@@ -68,6 +81,16 @@ const createScreening = async (data, userId, role) => {
         uricAcid: data.uricAcid != null ? parseFloat(data.uricAcid) : null,
         height: parseFloat(height),
         weight: parseFloat(weight),
+        waistCircumference: data.waistCircumference != null ? parseFloat(data.waistCircumference) : null,
+        abdominalCircumference: data.abdominalCircumference != null ? parseFloat(data.abdominalCircumference) : null,
+        hipCircumference: data.hipCircumference != null ? parseFloat(data.hipCircumference) : null,
+        pulse: data.pulse != null ? parseInt(data.pulse) : null,
+        ...Object.fromEntries(BEHAVIOR_FIELDS.map((f) => [
+          f,
+          data[f] != null && data[f] !== ''
+            ? (f === 'sleepDuration' ? parseFloat(data[f]) : data[f])
+            : (profile[f] ?? null),
+        ])),
         irdScore: irdResult.irdScore,
         irdCategory: irdResult.irdCategory,
         notes: data.notes || null,
@@ -162,7 +185,7 @@ const getScreenings = async (profileId, query, requester) => {
       where, skip, take: limit,
       orderBy: { screeningAt: 'desc' },
       include: {
-        profile: { select: { name: true, nik: true, gender: true } },
+        profile: { select: PROFILE_REPORT_SELECT },
         screener: { select: { responsibleName: true } },
       },
     }),
@@ -240,7 +263,7 @@ const getScreeningReport = async ({ screenedBy, from, to }) => {
     orderBy: { screeningAt: 'desc' },
     take: REPORT_MAX_ROWS + 1,
     include: {
-      profile: { select: { name: true, nik: true, gender: true } },
+      profile: { select: PROFILE_REPORT_SELECT },
       screener: { select: { id: true, responsibleName: true } },
     },
   });

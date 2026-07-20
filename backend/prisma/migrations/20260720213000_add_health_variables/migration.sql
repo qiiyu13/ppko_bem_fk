@@ -1,0 +1,32 @@
+-- AlterTable
+ALTER TABLE "family_profiles" ADD COLUMN     "education" TEXT,
+ADD COLUMN     "family_disease_history" TEXT,
+ADD COLUMN     "fast_food_consumption" TEXT,
+ADD COLUMN     "fatty_food_consumption" TEXT,
+ADD COLUMN     "fruit_consumption" TEXT,
+ADD COLUMN     "income" DOUBLE PRECISION,
+ADD COLUMN     "marital_status" TEXT,
+ADD COLUMN     "medication_routine" TEXT,
+ADD COLUMN     "occupation" TEXT,
+ADD COLUMN     "physical_activity" TEXT,
+ADD COLUMN     "sleep_duration" DOUBLE PRECISION,
+ADD COLUMN     "smoking_status" TEXT,
+ADD COLUMN     "sweet_drink_consumption" TEXT,
+ADD COLUMN     "sweet_food_consumption" TEXT,
+ADD COLUMN     "vegetable_consumption" TEXT;
+
+-- AlterTable
+ALTER TABLE "medical_screenings" ADD COLUMN     "abdominal_circumference" DOUBLE PRECISION,
+ADD COLUMN     "fast_food_consumption" TEXT,
+ADD COLUMN     "fatty_food_consumption" TEXT,
+ADD COLUMN     "fruit_consumption" TEXT,
+ADD COLUMN     "hip_circumference" DOUBLE PRECISION,
+ADD COLUMN     "medication_routine" TEXT,
+ADD COLUMN     "physical_activity" TEXT,
+ADD COLUMN     "pulse" INTEGER,
+ADD COLUMN     "sleep_duration" DOUBLE PRECISION,
+ADD COLUMN     "smoking_status" TEXT,
+ADD COLUMN     "sweet_drink_consumption" TEXT,
+ADD COLUMN     "sweet_food_consumption" TEXT,
+ADD COLUMN     "vegetable_consumption" TEXT,
+ADD COLUMN     "waist_circumference" DOUBLE PRECISION;

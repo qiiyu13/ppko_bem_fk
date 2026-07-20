@@ -192,6 +192,17 @@ const getPatientDetail = async (id, actor = {}) => {
           bloodType: true,
           phone: true,
           avatarPath: true,
+          // Perilaku defaults — the screening form prefills from these
+          smokingStatus: true,
+          physicalActivity: true,
+          fruitConsumption: true,
+          vegetableConsumption: true,
+          sweetFoodConsumption: true,
+          sweetDrinkConsumption: true,
+          fattyFoodConsumption: true,
+          fastFoodConsumption: true,
+          sleepDuration: true,
+          medicationRoutine: true,
           metrics: {
             orderBy: { recordedAt: 'desc' },
             take: 50,

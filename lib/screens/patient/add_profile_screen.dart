@@ -4,6 +4,7 @@ import '../../constants/app_colors.dart';
 import '../../services/profile_service.dart';
 import '../../utils/avatar_picker.dart';
 import '../../widgets/app_avatar.dart';
+import '../../widgets/health_variables_section.dart';
 import '../../widgets/profile_form_field.dart';
 
 class AddProfileScreen extends StatefulWidget {
@@ -25,6 +26,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
   DateTime? _selectedBirthDate;
   File? _avatarFile;
   bool _isLoading = false;
+  final _healthValues = HealthVariableValues();
 
   Future<void> _pickImage() async {
     final cropped = await AvatarPicker.pickAndCrop();
@@ -39,6 +41,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
     _nameController.dispose();
     _addressController.dispose();
     _phoneController.dispose();
+    _healthValues.dispose();
     super.dispose();
   }
 
@@ -193,6 +196,11 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
               keyboardType: TextInputType.phone,
             ),
 
+            HealthVariablesSection(
+              values: _healthValues,
+              onChanged: () => setState(() {}),
+            ),
+
             const SizedBox(height: 32),
 
             SizedBox(
@@ -279,6 +287,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
             : _addressController.text,
         phone: _phoneController.text.isEmpty ? null : _phoneController.text,
         avatar: _avatarFile,
+        healthVariables: _healthValues.toApiMap(),
       );
 
       if (mounted) {

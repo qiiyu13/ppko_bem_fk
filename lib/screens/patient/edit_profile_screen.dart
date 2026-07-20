@@ -5,6 +5,7 @@ import '../../models/family_profile.dart';
 import '../../services/profile_service.dart';
 import '../../utils/avatar_picker.dart';
 import '../../widgets/app_avatar.dart';
+import '../../widgets/health_variables_section.dart';
 import '../../widgets/profile_form_field.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -28,6 +29,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   DateTime? _selectedBirthDate;
   File? _avatarFile;
   bool _isLoading = false;
+  late final HealthVariableValues _healthValues;
 
   static const List<String> _bloodTypes = [
     'A+',
@@ -60,6 +62,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _selectedGender = g == 'wanita' ? 'Wanita' : 'Pria';
     _selectedBloodType = widget.profile.bloodType;
     _selectedBirthDate = widget.profile.birthDate;
+    _healthValues = HealthVariableValues(profile: widget.profile);
   }
 
   @override
@@ -68,6 +71,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameController.dispose();
     _addressController.dispose();
     _phoneController.dispose();
+    _healthValues.dispose();
     super.dispose();
   }
 
@@ -276,6 +280,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 keyboardType: TextInputType.phone,
               ),
 
+              HealthVariablesSection(
+                values: _healthValues,
+                onChanged: () => setState(() {}),
+              ),
+
               const SizedBox(height: 32),
 
               // Submit Button
@@ -402,6 +411,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ? null
             : _addressController.text,
         phone: _phoneController.text.isEmpty ? null : _phoneController.text,
+        education: _healthValues.education,
+        occupation: _healthValues.occupation,
+        maritalStatus: _healthValues.maritalStatus,
+        income: _healthValues.income,
+        familyDiseaseHistory: _healthValues.familyDiseaseHistory,
+        smokingStatus: _healthValues.smokingStatus,
+        physicalActivity: _healthValues.physicalActivity,
+        fruitConsumption: _healthValues.fruitConsumption,
+        vegetableConsumption: _healthValues.vegetableConsumption,
+        sweetFoodConsumption: _healthValues.sweetFoodConsumption,
+        sweetDrinkConsumption: _healthValues.sweetDrinkConsumption,
+        fattyFoodConsumption: _healthValues.fattyFoodConsumption,
+        fastFoodConsumption: _healthValues.fastFoodConsumption,
+        sleepDuration: _healthValues.sleepDuration,
+        medicationRoutine: _healthValues.medicationRoutine,
       );
 
       await ProfileService.instance.updateProfile(
