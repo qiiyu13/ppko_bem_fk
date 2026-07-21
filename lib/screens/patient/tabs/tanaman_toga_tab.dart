@@ -7,6 +7,7 @@ import '../../../services/article_service.dart';
 import '../../../services/websocket_service.dart';
 import '../../../widgets/article_image.dart';
 import '../../../widgets/empty_state_widget.dart';
+import '../../../widgets/error_state_widget.dart';
 import '../tanaman_article_detail_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
@@ -61,14 +62,12 @@ class _TanamanTogaTabState extends State<TanamanTogaTab> {
         _error = null;
       });
     } catch (e) {
-      // Fallback to mock data if API fails
-      final mockArticles = TanamanArticle.getMockArticles()
-          .where((a) => a.isPublished && !a.isDeleted && a.imagePath.isNotEmpty)
-          .toList();
+      // Keep previously loaded articles (stale + banner); never show mock data.
       setState(() {
-        _articles = mockArticles;
         _isLoading = false;
-        _error = 'Gagal memuat artikel dari server. Menampilkan data lokal.';
+        _error = _articles.isNotEmpty
+            ? 'Gagal memuat artikel terbaru. Menampilkan data tersimpan.'
+            : 'Gagal memuat artikel. Periksa koneksi Anda.';
       });
     }
   }
@@ -91,7 +90,7 @@ class _TanamanTogaTabState extends State<TanamanTogaTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (_error != null)
+            if (_error != null && _articles.isNotEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -125,13 +124,25 @@ class _TanamanTogaTabState extends State<TanamanTogaTab> {
                 color: AppColors.primary,
                 child: _articles.isEmpty
                     ? ListView(
-                        children: const [
-                          SizedBox(height: 100),
-                          EmptyStateWidget(
-                            icon: Icons.article_outlined,
-                            title: 'Berita segera datang',
-                            subtitle: 'Artikel kesehatan akan muncul di sini',
-                          ),
+                        children: [
+                          const SizedBox(height: 100),
+                          if (_error != null)
+                            ErrorStateWidget(
+                              message: _error!,
+                              onRetry: () {
+                                setState(() {
+                                  _isLoading = true;
+                                  _error = null;
+                                });
+                                _refresh();
+                              },
+                            )
+                          else
+                            const EmptyStateWidget(
+                              icon: Icons.article_outlined,
+                              title: 'Berita segera datang',
+                              subtitle: 'Artikel kesehatan akan muncul di sini',
+                            ),
                         ],
                       )
                     : ListView.separated(

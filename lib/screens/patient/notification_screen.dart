@@ -7,6 +7,7 @@ import '../../services/appointment_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/profile_service.dart';
 import '../../utils/page_transitions.dart';
+import '../../widgets/app_snackbar.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../superadmin/screens/appointment_detail_screen.dart';
 import '../admin/admin_patient_detail_screen.dart';
@@ -139,9 +140,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   void _showError(String message) {
     if (!mounted) return;
     setState(() => _isLoading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: AppColors.statusRed),
-    );
+    showAppSnackBar(context, message, error: true);
   }
 
   @override

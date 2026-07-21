@@ -37,7 +37,9 @@ class ProfileFormField extends StatelessWidget {
           maxLines: maxLines ?? 1,
           readOnly: readOnly,
           validator: validator,
-          inputFormatters: keyboardType == TextInputType.number
+          inputFormatters:
+              keyboardType == TextInputType.number ||
+                  keyboardType == TextInputType.phone
               ? [FilteringTextInputFormatter.digitsOnly]
               : null,
           decoration: InputDecoration(

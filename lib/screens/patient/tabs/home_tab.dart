@@ -6,6 +6,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_theme.dart';
 import '../../../utils/asset_helper.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../widgets/app_snackbar.dart';
 import '../../../widgets/error_state_widget.dart';
 import '../../../screens/patient/laporan_saya_screen.dart';
 import '../../../screens/patient/metrics/metric_detail_screen.dart';
@@ -160,10 +161,10 @@ class _HomeTabState extends State<HomeTab> {
       if (hasExistingData) {
         // Keep showing existing data, but tell the user the refresh failed.
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Gagal memperbarui data. Periksa koneksi Anda.'),
-          ),
+        showAppSnackBar(
+          context,
+          'Gagal memperbarui data. Periksa koneksi Anda.',
+          error: true,
         );
       } else {
         setState(() {
@@ -522,8 +523,9 @@ class _HomeTabState extends State<HomeTab> {
                                               activeProfile?.name ?? 'Pengguna',
                                               overflow: TextOverflow.ellipsis,
                                               maxLines: 1,
-                                              style: const TextStyle(
-                                                fontSize: 20,
+                                              style: TextStyle(
+                                                fontSize:
+                                                    ResponsiveSize.fontXLarge,
                                                 fontWeight: FontWeight.w600,
                                                 color: AppColors.textPrimary,
                                               ),
@@ -594,8 +596,8 @@ class _HomeTabState extends State<HomeTab> {
                                           _nextAppointment?['title']
                                                   as String? ??
                                               'Janji Temu',
-                                          style: const TextStyle(
-                                            fontSize: 20,
+                                          style: TextStyle(
+                                            fontSize: ResponsiveSize.fontXLarge,
                                             fontWeight: FontWeight.bold,
                                             color: AppColors.textPrimary,
                                           ),

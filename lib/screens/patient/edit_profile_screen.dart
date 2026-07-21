@@ -5,6 +5,7 @@ import '../../models/family_profile.dart';
 import '../../services/profile_service.dart';
 import '../../utils/avatar_picker.dart';
 import '../../widgets/app_avatar.dart';
+import '../../widgets/app_snackbar.dart';
 import '../../widgets/health_variables_section.dart';
 import '../../widgets/profile_form_field.dart';
 
@@ -27,8 +28,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late String _selectedGender;
   String? _selectedBloodType;
   DateTime? _selectedBirthDate;
+  String? _birthDateError;
   File? _avatarFile;
   bool _isLoading = false;
+  bool _healthDirty = false;
   late final HealthVariableValues _healthValues;
 
   static const List<String> _bloodTypes = [
@@ -65,6 +68,49 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _healthValues = HealthVariableValues(profile: widget.profile);
   }
 
+  bool get _isDirty =>
+      _nameController.text != widget.profile.name ||
+      _addressController.text != (widget.profile.address ?? '') ||
+      _phoneController.text != (widget.profile.phone ?? '') ||
+      _selectedGender !=
+          (widget.profile.gender.toLowerCase() == 'wanita'
+              ? 'Wanita'
+              : 'Pria') ||
+      _selectedBloodType != widget.profile.bloodType ||
+      _selectedBirthDate != widget.profile.birthDate ||
+      _avatarFile != null ||
+      _healthDirty;
+
+  Future<void> _confirmDiscard() async {
+    if (!_isDirty) {
+      Navigator.pop(context);
+      return;
+    }
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Buang Perubahan?'),
+        content: const Text(
+          'Perubahan profil belum disimpan dan akan hilang jika keluar.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Lanjut Mengedit'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Buang',
+              style: TextStyle(color: AppColors.statusRed),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (discard == true && mounted) Navigator.pop(context);
+  }
+
   @override
   void dispose() {
     _nikController.dispose();
@@ -77,250 +123,273 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _confirmDiscard();
+      },
+      child: Scaffold(
         backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            onPressed: _confirmDiscard,
+          ),
+          title: const Text('Edit Profil'),
         ),
-        title: const Text('Edit Profil'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Informasi Pribadi',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Ubah data profil ${widget.profile.name}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              Center(
-                child: GestureDetector(
-                  onTap: _pickImage,
-                  child: _avatarFile != null
-                      ? ClipOval(
-                          child: Image.file(
-                            _avatarFile!,
-                            width: 90,
-                            height: 90,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : AppAvatar(
-                          imageUrl: widget.profile.avatarUrl,
-                          fallback: Icon(
-                            _selectedGender == 'Wanita'
-                                ? Icons.female
-                                : Icons.male,
-                            size: 40,
-                            color: AppColors.textOnPrimary,
-                          ),
-                          size: 90,
-                          backgroundColor: AppColors.primary.withValues(
-                            alpha: 0.15,
-                          ),
-                          borderColor: AppColors.primary,
-                          borderWidth: 2,
-                        ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Center(
-                child: TextButton.icon(
-                  onPressed: _pickImage,
-                  icon: const Icon(
-                    Icons.camera_alt,
-                    size: 18,
-                    color: AppColors.primary,
-                  ),
-                  label: Text(
-                    _avatarFile != null ? 'Ganti Foto' : 'Tambah Foto',
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Informasi Pribadi',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-
-              // NIK (read-only)
-              ProfileFormField(
-                controller: _nikController,
-                label: 'NIK *',
-                hint: 'Masukkan 16 digit NIK',
-                keyboardType: TextInputType.number,
-                maxLength: 16,
-                readOnly: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'NIK wajib diisi';
-                  if (value.length != 16) return 'NIK harus 16 digit';
-                  return null;
-                },
-              ),
-
-              // Name
-              ProfileFormField(
-                controller: _nameController,
-                label: 'Nama Lengkap *',
-                hint: 'Masukkan nama lengkap',
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Nama wajib diisi';
-                  }
-                  return null;
-                },
-              ),
-
-              // Gender
-              const ProfileFieldLabel('Jenis Kelamin'),
-              Row(
-                children: [
-                  Expanded(child: _buildGenderOption('Pria', Icons.male)),
-                  const SizedBox(width: 12),
-                  Expanded(child: _buildGenderOption('Wanita', Icons.female)),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Birth Date
-              const ProfileFieldLabel('Tanggal Lahir *'),
-              InkWell(
-                onTap: _selectBirthDate,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.card,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.surface),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        _selectedBirthDate != null
-                            ? '${_selectedBirthDate!.day}/${_selectedBirthDate!.month}/${_selectedBirthDate!.year}'
-                            : 'Pilih tanggal lahir',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: _selectedBirthDate != null
-                              ? AppColors.textPrimary
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 4),
+                Text(
+                  'Ubah data profil ${widget.profile.name}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
-              // Blood Type
-              const ProfileFieldLabel('Golongan Darah (Opsional)'),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _bloodTypes.map((type) {
-                  final isSelected = _selectedBloodType == type;
-                  return ChoiceChip(
-                    label: Text(type),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        _selectedBloodType = selected ? type : null;
-                      });
-                    },
-                    selectedColor: AppColors.primary,
-                    labelStyle: TextStyle(
-                      color: isSelected
-                          ? AppColors.textOnPrimary
-                          : AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 20),
-
-              // Address
-              ProfileFormField(
-                controller: _addressController,
-                label: 'Alamat (Opsional)',
-                hint: 'Masukkan alamat lengkap',
-                maxLines: 3,
-              ),
-
-              // Phone
-              ProfileFormField(
-                controller: _phoneController,
-                label: 'Nomor Telepon (Opsional)',
-                hint: 'Contoh: 081234567890',
-                keyboardType: TextInputType.phone,
-              ),
-
-              HealthVariablesSection(
-                values: _healthValues,
-                onChanged: () => setState(() {}),
-              ),
-
-              const SizedBox(height: 32),
-
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submitForm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.textOnPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+                Center(
+                  child: GestureDetector(
+                    onTap: _pickImage,
+                    child: _avatarFile != null
+                        ? ClipOval(
+                            child: Image.file(
+                              _avatarFile!,
+                              width: 90,
+                              height: 90,
+                              fit: BoxFit.cover,
                             ),
+                          )
+                        : AppAvatar(
+                            imageUrl: widget.profile.avatarUrl,
+                            fallback: Icon(
+                              _selectedGender == 'Wanita'
+                                  ? Icons.female
+                                  : Icons.male,
+                              size: 40,
+                              color: AppColors.textOnPrimary,
+                            ),
+                            size: 90,
+                            backgroundColor: AppColors.primary.withValues(
+                              alpha: 0.15,
+                            ),
+                            borderColor: AppColors.primary,
+                            borderWidth: 2,
                           ),
-                        )
-                      : const Text(
-                          'Simpan Perubahan',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: _pickImage,
+                    icon: const Icon(
+                      Icons.camera_alt,
+                      size: 18,
+                      color: AppColors.primary,
+                    ),
+                    label: Text(
+                      _avatarFile != null ? 'Ganti Foto' : 'Tambah Foto',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // NIK (read-only)
+                ProfileFormField(
+                  controller: _nikController,
+                  label: 'NIK *',
+                  hint: 'Masukkan 16 digit NIK',
+                  keyboardType: TextInputType.number,
+                  maxLength: 16,
+                  readOnly: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'NIK wajib diisi';
+                    }
+                    if (value.length != 16) return 'NIK harus 16 digit';
+                    return null;
+                  },
+                ),
+
+                // Name
+                ProfileFormField(
+                  controller: _nameController,
+                  label: 'Nama Lengkap *',
+                  hint: 'Masukkan nama lengkap',
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Nama wajib diisi';
+                    }
+                    return null;
+                  },
+                ),
+
+                // Gender
+                const ProfileFieldLabel('Jenis Kelamin'),
+                Row(
+                  children: [
+                    Expanded(child: _buildGenderOption('Pria', Icons.male)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildGenderOption('Wanita', Icons.female)),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Birth Date
+                const ProfileFieldLabel('Tanggal Lahir *'),
+                InkWell(
+                  onTap: _selectBirthDate,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.card,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _birthDateError != null
+                            ? AppColors.statusRed
+                            : AppColors.surface,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          _selectedBirthDate != null
+                              ? '${_selectedBirthDate!.day}/${_selectedBirthDate!.month}/${_selectedBirthDate!.year}'
+                              : 'Pilih tanggal lahir',
                           style: TextStyle(
                             fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            color: _selectedBirthDate != null
+                                ? AppColors.textPrimary
+                                : AppColors.textSecondary,
                           ),
                         ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                if (_birthDateError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, left: 4),
+                    child: Text(
+                      _birthDateError!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.statusRed,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 20),
+
+                // Blood Type
+                const ProfileFieldLabel('Golongan Darah (Opsional)'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _bloodTypes.map((type) {
+                    final isSelected = _selectedBloodType == type;
+                    return ChoiceChip(
+                      label: Text(type),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          _selectedBloodType = selected ? type : null;
+                        });
+                      },
+                      selectedColor: AppColors.primary,
+                      labelStyle: TextStyle(
+                        color: isSelected
+                            ? AppColors.textOnPrimary
+                            : AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+
+                // Address
+                ProfileFormField(
+                  controller: _addressController,
+                  label: 'Alamat (Opsional)',
+                  hint: 'Masukkan alamat lengkap',
+                  maxLines: 3,
+                ),
+
+                // Phone
+                ProfileFormField(
+                  controller: _phoneController,
+                  label: 'Nomor Telepon (Opsional)',
+                  hint: 'Contoh: 081234567890',
+                  keyboardType: TextInputType.phone,
+                ),
+
+                HealthVariablesSection(
+                  values: _healthValues,
+                  onChanged: () => setState(() => _healthDirty = true),
+                ),
+
+                const SizedBox(height: 32),
+
+                // Submit Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _submitForm,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.textOnPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : const Text(
+                            'Simpan Perubahan',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -386,18 +455,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (picked != null) {
       setState(() {
         _selectedBirthDate = picked;
+        _birthDateError = null;
       });
     }
   }
 
   Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
+    final valid = _formKey.currentState!.validate();
     if (_selectedBirthDate == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Pilih tanggal lahir')));
+      setState(() => _birthDateError = 'Tanggal lahir wajib diisi');
       return;
     }
+    if (!valid) return;
 
     setState(() => _isLoading = true);
 
@@ -434,17 +503,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profil berhasil diperbarui')),
-        );
+        showAppSnackBar(context, 'Profil berhasil diperbarui', success: true);
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Gagal menyimpan perubahan. Periksa koneksi Anda.'),
-          ),
+        showAppSnackBar(
+          context,
+          'Gagal menyimpan perubahan. Periksa koneksi Anda.',
+          error: true,
         );
       }
     } finally {

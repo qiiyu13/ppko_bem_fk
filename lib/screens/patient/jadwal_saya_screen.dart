@@ -6,6 +6,7 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_theme.dart';
 import '../../services/api_service.dart';
 import '../../services/appointment_service.dart';
+import '../../widgets/app_snackbar.dart';
 import '../../widgets/error_state_widget.dart';
 import '../../services/profile_service.dart';
 import '../../services/websocket_service.dart';
@@ -384,9 +385,7 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
     if (uri == null) return;
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak dapat membuka Google Maps')),
-      );
+      showAppSnackBar(context, 'Tidak dapat membuka Google Maps', error: true);
     }
   }
 
@@ -434,9 +433,9 @@ class _JadwalSayaScreenState extends State<JadwalSayaScreen>
                 const SizedBox(height: 2),
                 Text(
                   date.day.toString(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.primary,
-                    fontSize: 24,
+                    fontSize: ResponsiveSize.fontXXLarge,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

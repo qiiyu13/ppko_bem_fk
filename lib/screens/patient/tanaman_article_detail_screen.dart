@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import '../../constants/app_colors.dart';
 import '../../models/tanaman_article.dart';
+import '../../utils/responsive_size.dart';
 import '../../widgets/article_image.dart';
 
 class TanamanArticleDetailScreen extends StatefulWidget {
@@ -49,6 +50,7 @@ class _TanamanArticleDetailScreenState
 
   @override
   Widget build(BuildContext context) {
+    ResponsiveSize.init(context);
     final article = widget.article;
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -107,8 +109,8 @@ class _TanamanArticleDetailScreenState
                   // Title
                   Text(
                     article.title,
-                    style: const TextStyle(
-                      fontSize: 24,
+                    style: TextStyle(
+                      fontSize: ResponsiveSize.fontXXLarge,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                       height: 1.3,

@@ -26,6 +26,11 @@ class ProfileService {
   FamilyProfile? get activeProfile => _activeProfile;
   List<FamilyProfile> get profiles => List.unmodifiable(_profiles);
 
+  /// True when the last network load failed (UI shows cached data or error).
+  bool lastLoadFailed = false;
+
+  Future<void> reload() => _loadProfiles();
+
   StreamSubscription<Map<String, dynamic>>? _dataUpdateSubscription;
 
   Future<void> initialize() async {
@@ -33,7 +38,9 @@ class ProfileService {
       await _loadProfiles();
     } catch (e) {
       final cached = await CacheService.getProfiles();
-      _profiles = cached.map((row) => FamilyProfile.fromJson(row['data'] as String)).toList();
+      _profiles = cached
+          .map((row) => FamilyProfile.fromJson(row['data'] as String))
+          .toList();
       _profilesController.add(List.unmodifiable(_profiles));
       if (_activeProfile == null && _profiles.isNotEmpty) {
         _activeProfile = _profiles.first;
@@ -42,11 +49,13 @@ class ProfileService {
     }
 
     _dataUpdateSubscription?.cancel();
-    _dataUpdateSubscription = WebSocketService.instance.dataUpdateStream.listen((event) {
-      if (event['type'] == 'profiles') {
-        _loadProfiles();
-      }
-    });
+    _dataUpdateSubscription = WebSocketService.instance.dataUpdateStream.listen(
+      (event) {
+        if (event['type'] == 'profiles') {
+          _loadProfiles();
+        }
+      },
+    );
   }
 
   Future<bool> isLoggedIn() async {
@@ -74,7 +83,10 @@ class ProfileService {
     try {
       final response = await ApiService.get('/profiles');
       final data = response.data['data'] as List;
-      _profiles = data.map((json) => FamilyProfile.fromApi(json as Map<String, dynamic>)).toList();
+      _profiles = data
+          .map((json) => FamilyProfile.fromApi(json as Map<String, dynamic>))
+          .toList();
+      lastLoadFailed = false;
       _profilesController.add(List.unmodifiable(_profiles));
 
       for (final profile in _profiles) {
@@ -90,8 +102,11 @@ class ProfileService {
         _activeProfileController.add(_activeProfile);
       }
     } catch (e) {
+      lastLoadFailed = true;
       final cached = await CacheService.getProfiles();
-      _profiles = cached.map((row) => FamilyProfile.fromJson(row['data'] as String)).toList();
+      _profiles = cached
+          .map((row) => FamilyProfile.fromJson(row['data'] as String))
+          .toList();
       _profilesController.add(List.unmodifiable(_profiles));
     }
   }
@@ -138,7 +153,9 @@ class ProfileService {
 
     try {
       final response = await ApiService.post('/profiles', data: formData);
-      final profile = FamilyProfile.fromApi(response.data['data'] as Map<String, dynamic>);
+      final profile = FamilyProfile.fromApi(
+        response.data['data'] as Map<String, dynamic>,
+      );
       _profiles.add(profile);
       _profilesController.add(List.unmodifiable(_profiles));
       if (_profiles.length == 1) {
@@ -150,9 +167,12 @@ class ProfileService {
     } on DioException catch (e) {
       if (e.response != null) {
         final msg = e.response?.data is Map
-            ? (e.response!.data['error']?['message'] ?? e.response!.data['message'])
+            ? (e.response!.data['error']?['message'] ??
+                  e.response!.data['message'])
             : null;
-        throw Exception(msg ?? 'Gagal membuat profil (${e.response?.statusCode})');
+        throw Exception(
+          msg ?? 'Gagal membuat profil (${e.response?.statusCode})',
+        );
       }
       final tempId = const Uuid().v4();
       final profile = FamilyProfile(
@@ -168,14 +188,19 @@ class ProfileService {
         occupation: healthVariables?['occupation'] as String?,
         maritalStatus: healthVariables?['maritalStatus'] as String?,
         income: (healthVariables?['income'] as num?)?.toDouble(),
-        familyDiseaseHistory: healthVariables?['familyDiseaseHistory'] as String?,
+        familyDiseaseHistory:
+            healthVariables?['familyDiseaseHistory'] as String?,
         smokingStatus: healthVariables?['smokingStatus'] as String?,
         physicalActivity: healthVariables?['physicalActivity'] as String?,
         fruitConsumption: healthVariables?['fruitConsumption'] as String?,
-        vegetableConsumption: healthVariables?['vegetableConsumption'] as String?,
-        sweetFoodConsumption: healthVariables?['sweetFoodConsumption'] as String?,
-        sweetDrinkConsumption: healthVariables?['sweetDrinkConsumption'] as String?,
-        fattyFoodConsumption: healthVariables?['fattyFoodConsumption'] as String?,
+        vegetableConsumption:
+            healthVariables?['vegetableConsumption'] as String?,
+        sweetFoodConsumption:
+            healthVariables?['sweetFoodConsumption'] as String?,
+        sweetDrinkConsumption:
+            healthVariables?['sweetDrinkConsumption'] as String?,
+        fattyFoodConsumption:
+            healthVariables?['fattyFoodConsumption'] as String?,
         fastFoodConsumption: healthVariables?['fastFoodConsumption'] as String?,
         sleepDuration: (healthVariables?['sleepDuration'] as num?)?.toDouble(),
         medicationRoutine: healthVariables?['medicationRoutine'] as String?,
@@ -204,8 +229,13 @@ class ProfileService {
       } else {
         formData = FormData.fromMap(map);
       }
-      final response = await ApiService.put('/profiles/${profile.id}', data: formData);
-      final saved = FamilyProfile.fromApi(response.data['data'] as Map<String, dynamic>);
+      final response = await ApiService.put(
+        '/profiles/${profile.id}',
+        data: formData,
+      );
+      final saved = FamilyProfile.fromApi(
+        response.data['data'] as Map<String, dynamic>,
+      );
       final index = _profiles.indexWhere((p) => p.id == saved.id);
       if (index != -1) {
         _profiles[index] = saved;
@@ -233,9 +263,10 @@ class ProfileService {
 
   Future<void> deleteProfile(String id, DateTime updatedAt) async {
     try {
-      await ApiService.delete('/profiles/$id', data: {
-        'updatedAt': updatedAt.toIso8601String(),
-      });
+      await ApiService.delete(
+        '/profiles/$id',
+        data: {'updatedAt': updatedAt.toIso8601String()},
+      );
     } on SyncConflictException {
       rethrow;
     } catch (_) {

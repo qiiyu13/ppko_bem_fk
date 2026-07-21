@@ -9,6 +9,7 @@ import '../../constants/screening_options.dart';
 import '../../utils/asset_helper.dart';
 import '../../utils/date_utils.dart';
 import '../../utils/responsive_size.dart';
+import '../../widgets/app_snackbar.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/error_state_widget.dart';
 import '../../services/api_service.dart';
@@ -77,8 +78,8 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
           '/screenings',
           queryParameters: {'profileId': profileId, 'page': page, 'limit': 100},
         );
-        final batch =
-            (response.data['data'] as List? ?? []).cast<Map<String, dynamic>>();
+        final batch = (response.data['data'] as List? ?? [])
+            .cast<Map<String, dynamic>>();
         raw.addAll(batch);
         final total =
             ((response.data['meta'] as Map<String, dynamic>?)?['total'] as num?)
@@ -106,12 +107,12 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
                   patientName: profile?.name,
                   patientNik: profile?.nik,
                   birthDate: profile?.birthDate,
-                  waistCircumference:
-                      (map['waistCircumference'] as num?)?.toDouble(),
+                  waistCircumference: (map['waistCircumference'] as num?)
+                      ?.toDouble(),
                   abdominalCircumference:
                       (map['abdominalCircumference'] as num?)?.toDouble(),
-                  hipCircumference:
-                      (map['hipCircumference'] as num?)?.toDouble(),
+                  hipCircumference: (map['hipCircumference'] as num?)
+                      ?.toDouble(),
                   pulse: (map['pulse'] as num?)?.toInt(),
                   behavior: {
                     for (final k in _behaviorKeys)
@@ -435,18 +436,46 @@ class _ExpandableScreeningCardWidgetState
     }
 
     add('smokingStatus', 'Merokok', ScreeningOptions.smokingStatus);
-    add('physicalActivity', 'Aktivitas fisik', ScreeningOptions.physicalActivity);
+    add(
+      'physicalActivity',
+      'Aktivitas fisik',
+      ScreeningOptions.physicalActivity,
+    );
     add('fruitConsumption', 'Konsumsi buah', ScreeningOptions.fruitConsumption);
-    add('vegetableConsumption', 'Konsumsi sayur', ScreeningOptions.vegetableConsumption);
-    add('sweetFoodConsumption', 'Makanan manis', ScreeningOptions.sweetFoodConsumption);
-    add('sweetDrinkConsumption', 'Minuman manis', ScreeningOptions.sweetDrinkConsumption);
-    add('fattyFoodConsumption', 'Makanan berlemak', ScreeningOptions.fattyFoodConsumption);
-    add('fastFoodConsumption', 'Makanan cepat saji', ScreeningOptions.fastFoodConsumption);
+    add(
+      'vegetableConsumption',
+      'Konsumsi sayur',
+      ScreeningOptions.vegetableConsumption,
+    );
+    add(
+      'sweetFoodConsumption',
+      'Makanan manis',
+      ScreeningOptions.sweetFoodConsumption,
+    );
+    add(
+      'sweetDrinkConsumption',
+      'Minuman manis',
+      ScreeningOptions.sweetDrinkConsumption,
+    );
+    add(
+      'fattyFoodConsumption',
+      'Makanan berlemak',
+      ScreeningOptions.fattyFoodConsumption,
+    );
+    add(
+      'fastFoodConsumption',
+      'Makanan cepat saji',
+      ScreeningOptions.fastFoodConsumption,
+    );
     final sd = b['sleepDuration'];
     if (sd is num) {
       rows.add(('Durasi tidur', '${sd % 1 == 0 ? sd.toInt() : sd} jam'));
     }
-    add('medicationRoutine', 'Rutin minum obat', ScreeningOptions.medicationRoutine);
+    add(
+      'medicationRoutine',
+      'Rutin minum obat',
+      ScreeningOptions.medicationRoutine,
+    );
     return rows;
   }
 
@@ -630,28 +659,35 @@ class _ExpandableScreeningCardWidgetState
                     const Text('Pengukuran Lain', style: _sectionLabelStyle),
                     const SizedBox(height: 4),
                     if (widget.data.pulse != null)
-                      _buildLabRow('Denyut Nadi',
-                          '${widget.data.pulse} x/menit', AppColors.textSecondary),
+                      _buildLabRow(
+                        'Denyut Nadi',
+                        '${widget.data.pulse} x/menit',
+                        AppColors.textSecondary,
+                      ),
                     if (widget.data.waistCircumference != null)
                       _buildLabRow(
-                          'Lingkar Pinggang',
-                          '${widget.data.waistCircumference!.toStringAsFixed(1)} cm',
-                          AppColors.textSecondary),
+                        'Lingkar Pinggang',
+                        '${widget.data.waistCircumference!.toStringAsFixed(1)} cm',
+                        AppColors.textSecondary,
+                      ),
                     if (widget.data.abdominalCircumference != null)
                       _buildLabRow(
-                          'Lingkar Perut',
-                          '${widget.data.abdominalCircumference!.toStringAsFixed(1)} cm',
-                          AppColors.textSecondary),
+                        'Lingkar Perut',
+                        '${widget.data.abdominalCircumference!.toStringAsFixed(1)} cm',
+                        AppColors.textSecondary,
+                      ),
                     if (widget.data.hipCircumference != null)
                       _buildLabRow(
-                          'Lingkar Panggul',
-                          '${widget.data.hipCircumference!.toStringAsFixed(1)} cm',
-                          AppColors.textSecondary),
+                        'Lingkar Panggul',
+                        '${widget.data.hipCircumference!.toStringAsFixed(1)} cm',
+                        AppColors.textSecondary,
+                      ),
                     if (widget.data.waistHipRatio != null)
                       _buildLabRow(
-                          'Rasio Pinggang-Panggul',
-                          widget.data.waistHipRatio!.toStringAsFixed(2),
-                          AppColors.textSecondary),
+                        'Rasio Pinggang-Panggul',
+                        widget.data.waistHipRatio!.toStringAsFixed(2),
+                        AppColors.textSecondary,
+                      ),
                   ],
                   if (_behaviorRows().isNotEmpty) ...[
                     const SizedBox(height: 10),
@@ -889,12 +925,7 @@ class _ExpandableScreeningCardWidgetState
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gagal membuat PDF. Coba lagi.'),
-          backgroundColor: AppColors.statusRed,
-        ),
-      );
+      showAppSnackBar(context, 'Gagal membuat PDF. Coba lagi.', error: true);
     }
   }
 
@@ -937,14 +968,28 @@ class _ExpandableScreeningCardWidgetState
       ('Berat Badan', '${d.weight.toStringAsFixed(1)} kg'),
       ('Tinggi Badan', '${d.height.toStringAsFixed(0)} cm'),
       ('IMT', '${d.bmi.toStringAsFixed(1)} (${d.bmiCategory})'),
-      ('Lingkar Pinggang',
-          d.waistCircumference == null ? '-' : '${d.waistCircumference!.toStringAsFixed(1)} cm'),
-      ('Lingkar Perut',
-          d.abdominalCircumference == null ? '-' : '${d.abdominalCircumference!.toStringAsFixed(1)} cm'),
-      ('Lingkar Panggul',
-          d.hipCircumference == null ? '-' : '${d.hipCircumference!.toStringAsFixed(1)} cm'),
-      ('Rasio Pinggang-Panggul',
-          d.waistHipRatio == null ? '-' : d.waistHipRatio!.toStringAsFixed(2)),
+      (
+        'Lingkar Pinggang',
+        d.waistCircumference == null
+            ? '-'
+            : '${d.waistCircumference!.toStringAsFixed(1)} cm',
+      ),
+      (
+        'Lingkar Perut',
+        d.abdominalCircumference == null
+            ? '-'
+            : '${d.abdominalCircumference!.toStringAsFixed(1)} cm',
+      ),
+      (
+        'Lingkar Panggul',
+        d.hipCircumference == null
+            ? '-'
+            : '${d.hipCircumference!.toStringAsFixed(1)} cm',
+      ),
+      (
+        'Rasio Pinggang-Panggul',
+        d.waistHipRatio == null ? '-' : d.waistHipRatio!.toStringAsFixed(2),
+      ),
     ];
 
     final klinis = <(String, String)>[
@@ -969,8 +1014,10 @@ class _ExpandableScreeningCardWidgetState
                 'PPKO BEM FK — Laporan ini dibuat secara otomatis oleh sistem.',
                 style: pw.TextStyle(fontSize: 8, color: greyColor),
               ),
-              pw.Text('Hal. ${ctx.pageNumber}/${ctx.pagesCount}',
-                  style: pw.TextStyle(fontSize: 8, color: greyColor)),
+              pw.Text(
+                'Hal. ${ctx.pageNumber}/${ctx.pagesCount}',
+                style: pw.TextStyle(fontSize: 8, color: greyColor),
+              ),
             ],
           ),
         ),
@@ -1117,22 +1164,28 @@ class _ExpandableScreeningCardWidgetState
       columnWidths: const {0: pw.FlexColumnWidth(2), 1: pw.FlexColumnWidth(3)},
       children: [
         for (final (label, value) in rows)
-          pw.TableRow(children: [
-            pw.Container(
-              color: lightGrey,
-              padding: const pw.EdgeInsets.all(6),
-              child: pw.Text(label,
-                  style: pw.TextStyle(fontSize: 9, color: greyColor)),
-            ),
-            pw.Padding(
-              padding: const pw.EdgeInsets.all(6),
-              child: pw.Text(
-                value,
-                style:
-                    pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+          pw.TableRow(
+            children: [
+              pw.Container(
+                color: lightGrey,
+                padding: const pw.EdgeInsets.all(6),
+                child: pw.Text(
+                  label,
+                  style: pw.TextStyle(fontSize: 9, color: greyColor),
+                ),
               ),
-            ),
-          ]),
+              pw.Padding(
+                padding: const pw.EdgeInsets.all(6),
+                child: pw.Text(
+                  value,
+                  style: pw.TextStyle(
+                    fontSize: 9,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
       ],
     );
   }

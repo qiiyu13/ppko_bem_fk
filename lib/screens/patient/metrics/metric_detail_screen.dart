@@ -5,6 +5,7 @@ import '../../../models/health_metric.dart';
 import '../../../widgets/metric_chart.dart';
 import '../../../services/api_service.dart';
 import '../../../services/profile_service.dart';
+import '../../../utils/responsive_size.dart';
 
 class MetricDetailScreen extends StatefulWidget {
   final HealthMetric metric;
@@ -81,6 +82,7 @@ class _MetricDetailScreenState extends State<MetricDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ResponsiveSize.init(context);
     final cardColor = Color.lerp(
       Colors.white,
       widget.metric.primaryColor,
@@ -131,8 +133,8 @@ class _MetricDetailScreenState extends State<MetricDetailScreen> {
                               widget.metric.nameId,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 20,
+                              style: TextStyle(
+                                fontSize: ResponsiveSize.fontXLarge,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.textPrimary,
                               ),
@@ -211,8 +213,8 @@ class _MetricDetailScreenState extends State<MetricDetailScreen> {
                           widget.metric.unit,
                           maxLines: 1,
                           softWrap: false,
-                          style: const TextStyle(
-                            fontSize: 20,
+                          style: TextStyle(
+                            fontSize: ResponsiveSize.fontXLarge,
                             color: AppColors.textSecondary,
                             fontWeight: FontWeight.w500,
                           ),

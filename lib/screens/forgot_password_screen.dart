@@ -3,6 +3,7 @@ import '../constants/app_colors.dart';
 import '../services/auth_service.dart';
 import '../services/otp_service.dart';
 import '../services/platform_util.dart';
+import '../widgets/app_snackbar.dart';
 
 enum ForgotPasswordStep { phone, otp, newPassword }
 
@@ -19,7 +20,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final List<TextEditingController> _otpControllers = List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _otpControllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> _otpFocusNodes = List.generate(6, (_) => FocusNode());
   bool _isLoading = false;
   String? _error;
@@ -58,7 +62,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       return;
     }
 
-    setState(() { _isLoading = true; _error = null; });
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
     try {
       await AuthService.forgotPassword(kkNumber: kk, phone: phone);
@@ -78,10 +85,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         _startResendCooldown();
       },
       onError: (error) {
-        setState(() { _isLoading = false; _error = error; });
+        setState(() {
+          _isLoading = false;
+          _error = error;
+        });
       },
       onAutoVerify: () {
-        setState(() { _isLoading = false; });
+        setState(() {
+          _isLoading = false;
+        });
         _verifyAndProceed();
       },
     );
@@ -92,7 +104,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 1));
       if (!mounted) return false;
-      setState(() { _resendCooldown--; });
+      setState(() {
+        _resendCooldown--;
+      });
       return _resendCooldown > 0;
     });
   }
@@ -110,17 +124,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       return;
     }
 
-    setState(() { _isLoading = true; _error = null; });
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
     try {
       final token = await OtpService.verifyOTP(code);
       if (token != null) {
         _verifyAndProceed(token: token);
       } else {
-        setState(() { _isLoading = false; _error = 'Gagal memverifikasi kode OTP'; });
+        setState(() {
+          _isLoading = false;
+          _error = 'Gagal memverifikasi kode OTP';
+        });
       }
     } catch (e) {
-      setState(() { _isLoading = false; _error = 'Kode OTP tidak valid'; });
+      setState(() {
+        _isLoading = false;
+        _error = 'Kode OTP tidak valid';
+      });
     }
   }
 
@@ -130,7 +153,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         setState(() => _error = 'Verifikasi gagal. Silakan coba lagi.');
         return;
       }
-      final finalToken = await OtpService.verifyOTP(_otpControllers.map((c) => c.text).join());
+      final finalToken = await OtpService.verifyOTP(
+        _otpControllers.map((c) => c.text).join(),
+      );
       if (finalToken == null) {
         setState(() => _error = 'Verifikasi gagal. Silakan coba lagi.');
         return;
@@ -155,11 +180,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       return;
     }
 
-    setState(() { _isLoading = true; _error = null; });
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
     final firebaseToken = await _getFirebaseToken();
     if (firebaseToken == null) {
-      setState(() { _isLoading = false; _error = 'Token verifikasi tidak ditemukan. Mulai ulang proses.'; });
+      setState(() {
+        _isLoading = false;
+        _error = 'Token verifikasi tidak ditemukan. Mulai ulang proses.';
+      });
       return;
     }
 
@@ -170,17 +201,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
 
     if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password berhasil direset')),
-      );
+      showAppSnackBar(context, 'Password berhasil direset', success: true);
       Navigator.pop(context);
     } else if (mounted) {
-      setState(() { _isLoading = false; _error = 'Gagal mereset password. Coba lagi.'; });
+      setState(() {
+        _isLoading = false;
+        _error = 'Gagal mereset password. Coba lagi.';
+      });
     }
   }
 
   Future<String?> _getFirebaseToken() async {
-    final user = await OtpService.verifyOTP(_otpControllers.map((c) => c.text).join());
+    final user = await OtpService.verifyOTP(
+      _otpControllers.map((c) => c.text).join(),
+    );
     return user;
   }
 
@@ -199,9 +233,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           _step == ForgotPasswordStep.phone
               ? 'Lupa Password'
               : _step == ForgotPasswordStep.otp
-                  ? 'Verifikasi OTP'
-                  : 'Password Baru',
-          style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+              ? 'Verifikasi OTP'
+              : 'Password Baru',
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       body: SafeArea(
@@ -212,7 +249,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             children: [
               if (_step == ForgotPasswordStep.phone) _buildPhoneStep(),
               if (_step == ForgotPasswordStep.otp) _buildOTPStep(),
-              if (_step == ForgotPasswordStep.newPassword) _buildNewPasswordStep(),
+              if (_step == ForgotPasswordStep.newPassword)
+                _buildNewPasswordStep(),
             ],
           ),
         ),
@@ -233,7 +271,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           controller: _kkController,
           keyboardType: TextInputType.number,
           maxLength: 16,
-          decoration: _inputDecoration('Nomor KK', 'Masukkan 16 digit nomor KK'),
+          decoration: _inputDecoration(
+            'Nomor KK',
+            'Masukkan 16 digit nomor KK',
+          ),
         ),
         const SizedBox(height: 16),
         TextField(
@@ -250,8 +291,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             onPressed: _isLoading ? null : _sendOTP,
             style: _buttonStyle(),
             child: _isLoading
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text('Kirim OTP', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text(
+                    'Kirim OTP',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
           ),
         ),
       ],
@@ -269,24 +320,32 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         const SizedBox(height: 32),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: List.generate(6, (index) => SizedBox(
-            width: 48,
-            child: TextField(
-              controller: _otpControllers[index],
-              focusNode: _otpFocusNodes[index],
-              textAlign: TextAlign.center,
-              keyboardType: TextInputType.number,
-              maxLength: 1,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              decoration: InputDecoration(
-                counterText: '',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                filled: true,
-                fillColor: AppColors.surface,
+          children: List.generate(
+            6,
+            (index) => SizedBox(
+              width: 48,
+              child: TextField(
+                controller: _otpControllers[index],
+                focusNode: _otpFocusNodes[index],
+                textAlign: TextAlign.center,
+                keyboardType: TextInputType.number,
+                maxLength: 1,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+                decoration: InputDecoration(
+                  counterText: '',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.surface,
+                ),
+                onChanged: (value) => _onOtpChanged(index, value),
               ),
-              onChanged: (value) => _onOtpChanged(index, value),
             ),
-          )),
+          ),
         ),
         const SizedBox(height: 24),
         if (_error != null) _errorWidget(),
@@ -297,8 +356,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             onPressed: _isLoading ? null : _verifyOTP,
             style: _buttonStyle(),
             child: _isLoading
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text('Verifikasi', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text(
+                    'Verifikasi',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
           ),
         ),
         const SizedBox(height: 16),
@@ -310,7 +379,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ? 'Kirim ulang dalam $_resendCooldown detik'
                   : 'Kirim ulang OTP',
               style: TextStyle(
-                color: _resendCooldown > 0 ? AppColors.textSecondary : AppColors.primary,
+                color: _resendCooldown > 0
+                    ? AppColors.textSecondary
+                    : AppColors.primary,
               ),
             ),
           ),
@@ -337,7 +408,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         TextField(
           controller: _confirmPasswordController,
           obscureText: true,
-          decoration: _inputDecoration('Konfirmasi Password', 'Ulangi password baru'),
+          decoration: _inputDecoration(
+            'Konfirmasi Password',
+            'Ulangi password baru',
+          ),
         ),
         const SizedBox(height: 24),
         if (_error != null) _errorWidget(),
@@ -348,8 +422,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             onPressed: _isLoading ? null : _resetPassword,
             style: _buttonStyle(),
             child: _isLoading
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text('Reset Password', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text(
+                    'Reset Password',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
           ),
         ),
       ],
@@ -377,7 +461,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         children: [
           const Icon(Icons.error_outline, color: AppColors.statusRed, size: 18),
           const SizedBox(width: 8),
-          Expanded(child: Text(_error!, style: const TextStyle(color: AppColors.statusRed, fontSize: 13))),
+          Expanded(
+            child: Text(
+              _error!,
+              style: const TextStyle(color: AppColors.statusRed, fontSize: 13),
+            ),
+          ),
         ],
       ),
     );
