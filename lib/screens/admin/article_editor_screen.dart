@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../constants/app_colors.dart';
 import '../../models/tanaman_article.dart';
 import '../../services/article_service.dart';
+import '../../widgets/app_snackbar.dart';
 import '../../widgets/article_image.dart';
 
 class ArticleEditorScreen extends StatefulWidget {
@@ -140,7 +141,7 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
         });
       }
     } catch (e) {
-      _showSnackBar('Gagal memilih gambar: $e');
+      _showSnackBar('Gagal memilih gambar: $e', error: true);
     }
   }
 
@@ -203,14 +204,14 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.1),
+                    color: AppColors.statusRed.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.delete, color: Colors.red),
+                  child: const Icon(Icons.delete, color: AppColors.statusRed),
                 ),
                 title: const Text(
                   'Hapus Gambar',
-                  style: TextStyle(color: Colors.red),
+                  style: TextStyle(color: AppColors.statusRed),
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -229,11 +230,11 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
 
   bool _validateForm() {
     if (_titleController.text.trim().isEmpty) {
-      _showSnackBar('Judul artikel tidak boleh kosong');
+      _showSnackBar('Judul artikel tidak boleh kosong', error: true);
       return false;
     }
     if (_quillController.document.isEmpty()) {
-      _showSnackBar('Konten artikel tidak boleh kosong');
+      _showSnackBar('Konten artikel tidak boleh kosong', error: true);
       return false;
     }
     return true;
@@ -295,16 +296,14 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
           _isLoading = false;
         });
         _showSnackBar(
-            'Gagal mengunggah gambar. Artikel belum disimpan — coba lagi.');
+            'Gagal mengunggah gambar. Artikel belum disimpan — coba lagi.',
+            error: true);
       }
     }
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-    );
-  }
+  void _showSnackBar(String message, {bool success = false, bool error = false}) =>
+      showAppSnackBar(context, message, success: success, error: error);
 
   @override
   Widget build(BuildContext context) {
@@ -316,8 +315,9 @@ class _ArticleEditorScreenState extends State<ArticleEditorScreen> {
       child: Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.card,
+        backgroundColor: AppColors.background,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: _confirmDiscard,

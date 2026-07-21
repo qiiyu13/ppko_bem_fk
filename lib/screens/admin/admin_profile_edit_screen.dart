@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../constants/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../utils/avatar_picker.dart';
 import '../../utils/responsive_size.dart';
 import '../../widgets/app_avatar.dart';
+import '../../widgets/app_snackbar.dart';
 
 class AdminProfileEditScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -33,6 +35,10 @@ class _AdminProfileEditScreenState extends State<AdminProfileEditScreen> {
     }
   }
 
+  late final String _initialName;
+  late final String _initialPosition;
+  late final String _initialPhone;
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +46,43 @@ class _AdminProfileEditScreenState extends State<AdminProfileEditScreen> {
     _nameController.text = (u['responsibleName'] ?? '') as String;
     _positionController.text = (u['position'] ?? '') as String? ?? '';
     _phoneController.text = (u['phone'] ?? '') as String? ?? '';
+    _initialName = _nameController.text;
+    _initialPosition = _positionController.text;
+    _initialPhone = _phoneController.text;
+  }
+
+  bool get _isDirty =>
+      _nameController.text != _initialName ||
+      _positionController.text != _initialPosition ||
+      _phoneController.text != _initialPhone ||
+      _passwordController.text.isNotEmpty ||
+      _avatarFile != null;
+
+  Future<void> _confirmDiscard() async {
+    if (!_isDirty) {
+      Navigator.pop(context);
+      return;
+    }
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Buang Perubahan?'),
+        content: const Text(
+            'Perubahan profil belum disimpan dan akan hilang jika keluar.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Lanjut Mengedit'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Buang',
+                style: TextStyle(color: AppColors.statusRed)),
+          ),
+        ],
+      ),
+    );
+    if (discard == true && mounted) Navigator.pop(context);
   }
 
   @override
@@ -65,18 +108,14 @@ class _AdminProfileEditScreenState extends State<AdminProfileEditScreen> {
         await AuthService.updatePicture(_avatarFile!);
       }
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Profil diperbarui'),
-        backgroundColor: AppColors.statusGreen,
-      ));
+      showAppSnackBar(context, 'Profil diperbarui', success: true);
       AuthService.getMe(force: true);
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Gagal menyimpan profil. Periksa koneksi lalu coba lagi.'),
-        backgroundColor: AppColors.statusRed,
-      ));
+      showAppSnackBar(
+          context, 'Gagal menyimpan profil. Periksa koneksi lalu coba lagi.',
+          error: true);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -86,14 +125,19 @@ class _AdminProfileEditScreenState extends State<AdminProfileEditScreen> {
   Widget build(BuildContext context) {
     ResponsiveSize.init(context);
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _confirmDiscard();
+      },
+      child: Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
+          onPressed: _confirmDiscard,
         ),
         title: Text(
           'Edit Profil',
@@ -165,6 +209,7 @@ class _AdminProfileEditScreenState extends State<AdminProfileEditScreen> {
                   hint: 'Contoh: 081234567890',
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 ),
                 SizedBox(height: ResponsiveSize.spacingLarge),
                 _field(
@@ -210,6 +255,7 @@ class _AdminProfileEditScreenState extends State<AdminProfileEditScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -218,6 +264,7 @@ class _AdminProfileEditScreenState extends State<AdminProfileEditScreen> {
     required String hint,
     required TextEditingController controller,
     TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
     bool obscure = false,
     Widget? suffix,
     String? Function(String?)? validator,
@@ -235,19 +282,20 @@ class _AdminProfileEditScreenState extends State<AdminProfileEditScreen> {
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           obscureText: obscure,
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.surface),
+            hintStyle: const TextStyle(color: AppColors.textSecondary),
             suffixIcon: suffix,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.divider),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.divider),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

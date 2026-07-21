@@ -10,6 +10,8 @@ import '../../services/websocket_service.dart';
 import '../../utils/date_utils.dart';
 import '../../utils/responsive_size.dart';
 import '../../utils/schedule_status.dart';
+import '../../widgets/app_snackbar.dart';
+import '../../widgets/error_state_widget.dart';
 import '../superadmin/screens/schedule_form_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
@@ -26,6 +28,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
   DateTime _focusedDate = DateTime.now();
   DateTime? _selectedDate;
   bool _isLoading = true;
+  bool _hasError = false;
 
   List<Map<String, dynamic>> _schedules = [];
   StreamSubscription<Map<String, dynamic>>? _wsSub;
@@ -107,17 +110,39 @@ class _ScheduleScreenState extends State<ScheduleScreen>
       setState(() {
         _schedules = mapped;
         _isLoading = false;
+        _hasError = false;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Gagal memuat jadwal. Periksa koneksi lalu coba lagi.')),
-      );
+      // No data yet: full error state so failure isn't mistaken for an empty
+      // schedule. Refresh failure with data on screen keeps the snackbar.
+      if (_schedules.isEmpty) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+        showAppSnackBar(
+            context, 'Gagal memuat jadwal. Periksa koneksi lalu coba lagi.',
+            error: true);
+      }
     }
+  }
+
+  Widget _buildErrorState() {
+    return ErrorStateWidget(
+      message: 'Gagal memuat jadwal. Periksa koneksi Anda.',
+      onRetry: () {
+        setState(() {
+          _isLoading = true;
+          _hasError = false;
+        });
+        _loadAppointments();
+      },
+    );
   }
 
   @override
@@ -173,11 +198,11 @@ class _ScheduleScreenState extends State<ScheduleScreen>
         backgroundColor: AppColors.background,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        title: const Text(
+        title: Text(
           'Jadwal Monitoring',
           style: TextStyle(
             color: AppColors.primary,
-            fontSize: 20,
+            fontSize: ResponsiveSize.fontXLarge,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -245,6 +270,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
+    if (_hasError) return _buildErrorState();
     final today = DateTime.now();
     return RefreshIndicator(
       onRefresh: _refresh,
@@ -352,9 +378,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     if (uri == null) return;
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak dapat membuka Google Maps')),
-      );
+      showAppSnackBar(context, 'Tidak dapat membuka Google Maps', error: true);
     }
   }
 
@@ -389,7 +413,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.statusRed),
             child: const Text('Hapus'),
           ),
         ],
@@ -404,12 +428,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           : DateTime.now();
       await AppointmentService.deleteAppointment(id, updatedAt);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Jadwal berhasil dihapus'),
-          backgroundColor: AppColors.statusGreen,
-        ),
-      );
+      showAppSnackBar(context, 'Jadwal berhasil dihapus', success: true);
       _loadAppointments();
     } catch (e) {
       if (!mounted) return;
@@ -420,6 +439,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           SnackBar(
             content: const Text('Data telah diubah oleh pengguna lain. Silakan coba lagi.'),
             backgroundColor: AppColors.statusAmber,
+            behavior: SnackBarBehavior.floating,
             action: SnackBarAction(
               label: 'Refresh',
               textColor: AppColors.textPrimary,
@@ -428,12 +448,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           ),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Gagal menghapus jadwal. Coba lagi.'),
-            backgroundColor: AppColors.statusRed,
-          ),
-        );
+        showAppSnackBar(context, 'Gagal menghapus jadwal. Coba lagi.',
+            error: true);
       }
     }
   }
@@ -514,6 +530,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                     Expanded(
                       child: Text(
                         schedule['title'],
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 16,
@@ -666,6 +684,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
+    if (_hasError) return _buildErrorState();
     return RefreshIndicator(
       onRefresh: _refresh,
       color: AppColors.primary,
@@ -814,18 +833,23 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        day.toString(),
-                        style: TextStyle(
-                          color: isSelected
-                              ? AppColors.textOnPrimary
-                              : isToday
-                              ? AppColors.primary
-                              : AppColors.textPrimary,
-                          fontSize: 14,
-                          fontWeight: isToday || isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
+                      // FittedBox keeps large accessibility text scales from
+                      // overflowing the square calendar cell.
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          day.toString(),
+                          style: TextStyle(
+                            color: isSelected
+                                ? AppColors.textOnPrimary
+                                : isToday
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
+                            fontSize: 14,
+                            fontWeight: isToday || isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                          ),
                         ),
                       ),
                       if (hasEvent)

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mediku/widgets/app_avatar.dart';
 import '../../../constants/app_colors.dart';
+import '../../../widgets/error_state_widget.dart';
 import '../../../services/auth_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../patient/tabs/settings_tab.dart';
@@ -18,6 +19,7 @@ class AdminProfilTab extends StatefulWidget {
 class _AdminProfilTabState extends State<AdminProfilTab> {
   Map<String, dynamic>? _user;
   bool _isLoading = true;
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -26,12 +28,21 @@ class _AdminProfilTabState extends State<AdminProfilTab> {
   }
 
   Future<void> _loadProfile() async {
-    final me = await AuthService.getMe(force: true);
-    if (!mounted) return;
-    setState(() {
-      _user = me;
-      _isLoading = false;
-    });
+    try {
+      final me = await AuthService.getMe(force: true);
+      if (!mounted) return;
+      setState(() {
+        _user = me;
+        _isLoading = false;
+        _hasError = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _hasError = _user == null;
+      });
+    }
   }
 
   String _roleLabel(String role) {
@@ -41,7 +52,7 @@ class _AdminProfilTabState extends State<AdminProfilTab> {
       case 'ADMIN':
         return 'Admin Desa';
       default:
-        return role;
+        return 'Petugas';
     }
   }
 
@@ -94,7 +105,18 @@ class _AdminProfilTabState extends State<AdminProfilTab> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : RefreshIndicator(
+          : _hasError
+              ? ErrorStateWidget(
+                  message: 'Gagal memuat profil. Periksa koneksi Anda.',
+                  onRetry: () {
+                    setState(() {
+                      _isLoading = true;
+                      _hasError = false;
+                    });
+                    _loadProfile();
+                  },
+                )
+              : RefreshIndicator(
               onRefresh: _loadProfile,
               color: AppColors.primary,
               child: SingleChildScrollView(

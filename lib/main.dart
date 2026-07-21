@@ -6,6 +6,7 @@ import 'package:device_preview/device_preview.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'constants/app_theme.dart';
 import 'screens/splash_screen.dart';
+import 'screens/welcome_screen.dart';
 import 'services/api_service.dart';
 import 'services/cache_service.dart';
 import 'services/connectivity_service.dart';
@@ -23,6 +24,26 @@ void main() async {
   PaintingBinding.instance.imageCache.maximumSizeBytes = 50 << 20;
 
   ApiService.setupInterceptors();
+  // Dead session (failed token refresh): kick to login instead of leaving the
+  // user on a screen where every request silently fails until relaunch.
+  ApiService.onSessionExpired = () {
+    final nav = navigatorKey.currentState;
+    if (nav == null) return;
+    nav.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+      (route) => false,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = navigatorKey.currentContext;
+      if (ctx == null) return;
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        const SnackBar(
+          content: Text('Sesi berakhir, silakan masuk kembali.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    });
+  };
   await CacheService.init();
 
   runApp(

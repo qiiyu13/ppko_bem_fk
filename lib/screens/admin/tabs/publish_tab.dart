@@ -8,8 +8,10 @@ import '../../../services/websocket_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../widgets/article_image.dart';
 import '../../../widgets/dashboard/notification_bell.dart';
+import '../../../widgets/app_snackbar.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/error_state_widget.dart';
+import '../../../widgets/filter_chip_pill.dart';
 import '../article_editor_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
@@ -84,7 +86,7 @@ class _PublishTabState extends State<PublishTab> {
         _hasError = _articles.isEmpty;
       });
       if (_articles.isNotEmpty) {
-        _showSnackBar('Gagal memperbarui daftar artikel');
+        _showSnackBar('Gagal memperbarui daftar artikel', error: true);
       }
     }
   }
@@ -125,9 +127,11 @@ class _PublishTabState extends State<PublishTab> {
       setState(() {
         _articles.insert(0, result);
       });
-      _showSnackBar(result.id.startsWith('local_')
-          ? 'Artikel disimpan offline. Akan dikirim saat kembali online.'
-          : 'Artikel berhasil dibuat');
+      _showSnackBar(
+          result.id.startsWith('local_')
+              ? 'Artikel disimpan offline. Akan dikirim saat kembali online.'
+              : 'Artikel berhasil dibuat',
+          success: true);
     }
   }
 
@@ -148,7 +152,7 @@ class _PublishTabState extends State<PublishTab> {
           _articles[index] = result;
         }
       });
-      _showSnackBar('Artikel berhasil diperbarui');
+      _showSnackBar('Artikel berhasil diperbarui', success: true);
     }
   }
 
@@ -180,10 +184,10 @@ class _PublishTabState extends State<PublishTab> {
                     _articles[index] = updated;
                   }
                 });
-                _showSnackBar('Artikel diubah ke draft');
+                _showSnackBar('Artikel diubah ke draft', success: true);
               } catch (e) {
                 if (!mounted) return;
-                _showSnackBar('Gagal mengubah status artikel');
+                _showSnackBar('Gagal mengubah status artikel', error: true);
               }
             },
             child: const Text('Jadikan Draft',
@@ -225,9 +229,9 @@ class _PublishTabState extends State<PublishTab> {
           _articles[index] = updated;
         }
       });
-      _showSnackBar('Artikel berhasil dipublikasikan');
+      _showSnackBar('Artikel berhasil dipublikasikan', success: true);
     } catch (e) {
-      _showSnackBar('Gagal memublikasikan artikel');
+      _showSnackBar('Gagal memublikasikan artikel', error: true);
     }
   }
 
@@ -251,9 +255,9 @@ class _PublishTabState extends State<PublishTab> {
                 setState(() {
                   _articles.removeWhere((a) => a.id == article.id);
                 });
-                _showSnackBar('Artikel berhasil dihapus');
+                _showSnackBar('Artikel berhasil dihapus', success: true);
               } catch (e) {
-                _showSnackBar('Gagal menghapus artikel');
+                _showSnackBar('Gagal menghapus artikel', error: true);
               }
             },
             child: const Text('Hapus',
@@ -264,15 +268,8 @@ class _PublishTabState extends State<PublishTab> {
     );
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
+  void _showSnackBar(String message, {bool success = false, bool error = false}) =>
+      showAppSnackBar(context, message, success: success, error: error);
 
   @override
   Widget build(BuildContext context) {
@@ -363,10 +360,10 @@ class _PublishTabState extends State<PublishTab> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'Artikel',
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: ResponsiveSize.fontXLarge,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
@@ -507,62 +504,16 @@ class _PublishTabState extends State<PublishTab> {
   }
 
   Widget _buildFilterChip(String label) {
-    final isSelected = _selectedFilter == label;
-    final color = _filterColor(label);
-    final count = _filterCount(label);
-    final showDot = label != 'Semua';
-    return InkWell(
+    return FilterChipPill(
+      label: label,
+      color: _filterColor(label),
+      count: _filterCount(label),
+      selected: _selectedFilter == label,
+      showDot: label != 'Semua',
       onTap: () {
         if (_selectedFilter == label) return;
         setState(() => _selectedFilter = label);
       },
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.12) : AppColors.card,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? color : AppColors.divider,
-            width: isSelected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (showDot) ...[
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? color : AppColors.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (count > 0) ...[
-              const SizedBox(width: 6),
-              Text(
-                count.toString(),
-                style: TextStyle(
-                  color: isSelected ? color : AppColors.textSecondary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 

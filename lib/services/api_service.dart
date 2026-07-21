@@ -14,6 +14,10 @@ class ApiService {
   static bool _isRefreshing = false;
   static final DioCacheInterceptor cacheInterceptor = DioCacheInterceptor();
 
+  /// Set by main.dart. Called when a token refresh fails and the session is
+  /// dead, so the UI can redirect to login instead of silently erroring.
+  static void Function()? onSessionExpired;
+
   static final Dio dio = Dio(
     BaseOptions(
       baseUrl: baseUrl,
@@ -96,6 +100,7 @@ class ApiService {
                 } catch (e) {
                   _refreshCompleter!.complete(false);
                   await TokenService.clearAll();
+                  onSessionExpired?.call();
                 } finally {
                   _isRefreshing = false;
                   _refreshCompleter = null;
@@ -103,6 +108,7 @@ class ApiService {
               }
             } catch (e) {
               await TokenService.clearAll();
+              onSessionExpired?.call();
             }
           }
           if (error.response?.statusCode == 409) {

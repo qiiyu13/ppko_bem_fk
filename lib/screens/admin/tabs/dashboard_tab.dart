@@ -10,8 +10,10 @@ import '../../../services/token_service.dart';
 import '../../../services/notification_service.dart';
 import '../../../widgets/dashboard/greeting_header.dart';
 import '../../../widgets/dashboard/stat_cell.dart';
+import '../../../widgets/app_snackbar.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/error_state_widget.dart';
+import '../../../widgets/filter_chip_pill.dart';
 import '../admin_family_detail_screen.dart';
 import '../qr_scanner_screen.dart';
 import '../../superadmin/screens/screening_report_screen.dart';
@@ -151,9 +153,7 @@ class _DashboardTabState extends State<DashboardTab> {
           _hasError = true;
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gagal memuat data tambahan')),
-        );
+        showAppSnackBar(context, 'Gagal memuat data tambahan', error: true);
       }
     } finally {
       if (mounted && reqId == _requestId) {
@@ -329,61 +329,17 @@ class _DashboardTabState extends State<DashboardTab> {
   }  // AnnotatedRegion closes GestureDetector closes Scaffold above
 
   Widget _buildFilterChip(String key, String label, int count, Color color) {
-    final isSelected = _selectedFilter == key;
-    final showDot = key != 'All';
-    return InkWell(
+    return FilterChipPill(
+      label: label,
+      color: color,
+      count: count,
+      selected: _selectedFilter == key,
+      showDot: key != 'All',
       onTap: () {
         if (_selectedFilter == key) return;
         setState(() => _selectedFilter = key);
         _fetchPatients();
       },
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.12) : AppColors.card,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? color : AppColors.divider,
-            width: isSelected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (showDot) ...[
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? color : AppColors.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (count > 0) ...[
-              const SizedBox(width: 6),
-              Text(
-                count.toString(),
-                style: TextStyle(
-                  color: isSelected ? color : AppColors.textSecondary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 
@@ -506,6 +462,9 @@ class _DashboardTabState extends State<DashboardTab> {
     );
   }
 
+  // ponytail: eager Column build, fine at page-size 20; convert the card
+  // wrapper to DecoratedSliver + SliverList if load-more lists grow into
+  // hundreds of rows and scrolling janks.
   Widget _buildFlatList() {
     return Column(
       children: [

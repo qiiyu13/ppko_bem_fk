@@ -5,6 +5,7 @@ import '../../config/env.dart';
 import '../../constants/app_colors.dart';
 import '../../services/api_service.dart';
 import '../../utils/patient_utils.dart';
+import '../../widgets/app_snackbar.dart';
 import '../../utils/responsive_size.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/error_state_widget.dart';
@@ -113,9 +114,8 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
     final uri = Uri(scheme: 'tel', path: phone);
     if (!await launchUrl(uri)) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak dapat membuka aplikasi telepon')),
-      );
+      showAppSnackBar(context, 'Tidak dapat membuka aplikasi telepon',
+          error: true);
     }
   }
 
@@ -172,9 +172,10 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
                   style: TextStyle(color: Colors.white)),
             ),
       appBar: AppBar(
-        backgroundColor: AppColors.card,
+        backgroundColor: AppColors.background,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         title: Text(
           name,
           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -187,7 +188,11 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
               message: 'Gagal memuat data keluarga.\nPeriksa koneksi lalu coba lagi.',
               onRetry: _fetch,
             )
-          : ListView(
+          : RefreshIndicator(
+              onRefresh: _fetch,
+              color: AppColors.primary,
+              child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.all(ResponsiveSize.paddingMedium),
               children: [
                 _buildHeaderCard(name, kk, phone, profiles.length),
@@ -235,6 +240,7 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
                     ),
                   ),
               ],
+            ),
             ),
     );
   }
@@ -344,10 +350,13 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
       ),
     );
     if (!isAction) return chip;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: chip,
+    return Tooltip(
+      message: 'Ketuk untuk menelepon',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: chip,
+      ),
     );
   }
 
@@ -394,13 +403,9 @@ class _AdminFamilyDetailScreenState extends State<AdminFamilyDetailScreen> {
                   onPressed: () => Navigator.pop(ctx, false),
                   child: const Text('Batal'),
                 ),
-                ElevatedButton(
+                TextButton(
                   onPressed: () => Navigator.pop(ctx, true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                  ),
-                  child: const Text('Lanjutkan',
-                      style: TextStyle(color: AppColors.textOnPrimary)),
+                  child: const Text('Lanjutkan'),
                 ),
               ],
             ),

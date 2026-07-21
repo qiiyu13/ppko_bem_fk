@@ -9,6 +9,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:zxing2/qrcode.dart';
 
 import '../../constants/app_colors.dart';
+import '../../widgets/app_snackbar.dart';
 import '../superadmin/screens/medical_screening_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
@@ -132,13 +133,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       return;
     }
     _lastErrorAt = now;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.statusRed,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    showAppSnackBar(context, message,
+        error: true, duration: const Duration(seconds: 2));
   }
 
   Future<void> _toggleTorch() async {
@@ -230,7 +226,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
   Widget _buildDesktopFallback() {
     return Center(
-      child: ConstrainedBox(
+      child: SingleChildScrollView(
+        child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 400),
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -305,6 +302,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
               ],
             ],
           ),
+        ),
         ),
       ),
     );
