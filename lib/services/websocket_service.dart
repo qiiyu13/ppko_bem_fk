@@ -47,6 +47,7 @@ class WebSocketService {
       const wsUrl = Env.wsBaseUrl;
 
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
+      await _channel!.ready;
 
       _channel!.stream.listen(
         (data) {
