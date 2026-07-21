@@ -4,6 +4,9 @@ const app = require('../src/app');
 let authToken;
 let profileId;
 const testKK = '3275' + String(Date.now() + 1).padStart(12, '0').slice(-12);
+// Unique per run like testKK — a fixed NIK collides with rows left in the
+// test DB by earlier runs (unique constraint on nik).
+const testNIK = '8887' + String(Date.now() + 2).padStart(12, '0').slice(-12);
 
 describe('Metrics Endpoints', () => {
   beforeAll(async () => {
@@ -20,7 +23,7 @@ describe('Metrics Endpoints', () => {
     const profile = await request(app)
       .post('/api/v1/profiles')
       .set('Authorization', `Bearer ${authToken}`)
-      .send({ name: 'Test Profile', nik: '888777666', gender: 'wanita', birthDate: '1985-01-01' });
+      .send({ name: 'Test Profile', nik: testNIK, gender: 'wanita', birthDate: '1985-01-01' });
     profileId = profile.body.data.id;
   });
 

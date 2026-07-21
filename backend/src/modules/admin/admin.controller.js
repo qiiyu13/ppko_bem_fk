@@ -25,4 +25,14 @@ const getPatientDetail = async (req, res, next) => {
   }
 };
 
-module.exports = { getPatients, getPatientDetail };
+const getProfileDetail = async (req, res, next) => {
+  try {
+    const profile = await adminService.getProfileDetail(req.params.id, req.user);
+    return success(res, profile);
+  } catch (err) {
+    if (err.message === 'Patient not found') return error(res, err.message, 404, 'NOT_FOUND');
+    next(err);
+  }
+};
+
+module.exports = { getPatients, getPatientDetail, getProfileDetail };

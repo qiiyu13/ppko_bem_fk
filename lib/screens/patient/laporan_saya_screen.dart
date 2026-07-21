@@ -105,6 +105,7 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
                   storedIrdCategory: map['irdCategory'] as String?,
                   patientName: profile?.name,
                   patientNik: profile?.nik,
+                  birthDate: profile?.birthDate,
                   waistCircumference:
                       (map['waistCircumference'] as num?)?.toDouble(),
                   abdominalCircumference:
@@ -289,6 +290,7 @@ class BPScreeningData {
   final String? storedIrdCategory;
   final String? patientName;
   final String? patientNik;
+  final DateTime? birthDate;
   // Newer measurements + perilaku snapshot — null on rows that predate them
   final double? waistCircumference;
   final double? abdominalCircumference;
@@ -310,6 +312,7 @@ class BPScreeningData {
     this.storedIrdCategory,
     this.patientName,
     this.patientNik,
+    this.birthDate,
     this.waistCircumference,
     this.abdominalCircumference,
     this.hipCircumference,
@@ -323,6 +326,17 @@ class BPScreeningData {
     final h = hipCircumference;
     if (w == null || h == null || h <= 0) return null;
     return w / h;
+  }
+
+  int? get age {
+    if (birthDate == null) return null;
+    final now = DateTime.now();
+    var age = now.year - birthDate!.year;
+    if (now.month < birthDate!.month ||
+        (now.month == birthDate!.month && now.day < birthDate!.day)) {
+      age--;
+    }
+    return age >= 0 ? age : null;
   }
 
   double get bmi {
@@ -901,404 +915,224 @@ class _ExpandableScreeningCardWidgetState
     final doc = pw.Document(theme: await _pdfTheme());
     final d = widget.data;
 
-    final primaryColor = PdfColor.fromHex('144425');
+    // Black & white, same design language as the admin per-person report.
     final greyColor = PdfColor.fromHex('6B7280');
     final lightGrey = PdfColor.fromHex('F3F4F6');
-    final borderColor = PdfColor.fromHex('E5E7EB');
-
-    PdfColor irdColor;
-    PdfColor irdLightColor;
-    switch (d.irdCategory) {
-      case 'normal':
-        irdColor = PdfColor.fromHex('4CAF50');
-        irdLightColor = PdfColor.fromHex('E8F5E9');
-        break;
-      case 'attention':
-        irdColor = PdfColor.fromHex('FFA726');
-        irdLightColor = PdfColor.fromHex('FFF8E1');
-        break;
-      default:
-        irdColor = PdfColor.fromHex('EF5350');
-        irdLightColor = PdfColor.fromHex('FFEBEE');
-    }
+    final borderColor = PdfColor.fromHex('D1D5DB');
 
     final auNormal = d.isMale ? 7.0 : 6.0;
     final behaviorRows = _behaviorRows();
-    final hasAnthropometry = d.waistCircumference != null ||
-        d.abdominalCircumference != null ||
-        d.hipCircumference != null;
+
+    String labValue(double? v, int decimals, double normal, double borderline) {
+      if (v == null) return '-';
+      return '${v.toStringAsFixed(decimals)} mg/dL (${_labStatusText(v, normal, borderline)})';
+    }
+
+    final dataDiri = <(String, String)>[
+      ('Jenis Kelamin', d.gender),
+      if (d.age != null) ('Usia', '${d.age} tahun'),
+    ];
+
+    final antropometri = <(String, String)>[
+      ('Berat Badan', '${d.weight.toStringAsFixed(1)} kg'),
+      ('Tinggi Badan', '${d.height.toStringAsFixed(0)} cm'),
+      ('IMT', '${d.bmi.toStringAsFixed(1)} (${d.bmiCategory})'),
+      ('Lingkar Pinggang',
+          d.waistCircumference == null ? '-' : '${d.waistCircumference!.toStringAsFixed(1)} cm'),
+      ('Lingkar Perut',
+          d.abdominalCircumference == null ? '-' : '${d.abdominalCircumference!.toStringAsFixed(1)} cm'),
+      ('Lingkar Panggul',
+          d.hipCircumference == null ? '-' : '${d.hipCircumference!.toStringAsFixed(1)} cm'),
+      ('Rasio Pinggang-Panggul',
+          d.waistHipRatio == null ? '-' : d.waistHipRatio!.toStringAsFixed(2)),
+    ];
+
+    final klinis = <(String, String)>[
+      ('Tekanan Darah', '${d.systolic}/${d.diastolic} mmHg'),
+      ('Denyut Nadi', d.pulse == null ? '-' : '${d.pulse} x/menit'),
+      ('Gula Darah', labValue(d.bloodSugar, 0, 100, 126)),
+      ('Kolesterol', labValue(d.cholesterol, 0, 200, 240)),
+      ('Asam Urat', labValue(d.uricAcid, 1, auNormal, auNormal + 1)),
+    ];
 
     doc.addPage(
       // MultiPage: the new sections can push content past one A4 page.
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
-        build: (pw.Context context) => [
-          pw.Container(
-              width: double.infinity,
-              padding: const pw.EdgeInsets.all(16),
-              decoration: pw.BoxDecoration(
-                color: primaryColor,
-                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+        footer: (ctx) => pw.Padding(
+          padding: const pw.EdgeInsets.only(top: 8),
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'PPKO BEM FK — Laporan ini dibuat secara otomatis oleh sistem.',
+                style: pw.TextStyle(fontSize: 8, color: greyColor),
               ),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    'LAPORAN SCREENING KESEHATAN',
-                    style: pw.TextStyle(
-                      fontSize: 16,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.white,
-                    ),
-                  ),
-                  pw.SizedBox(height: 4),
-                  if (d.patientName != null)
+              pw.Text('Hal. ${ctx.pageNumber}/${ctx.pagesCount}',
+                  style: pw.TextStyle(fontSize: 8, color: greyColor)),
+            ],
+          ),
+        ),
+        build: (pw.Context context) => [
+          // Identity header
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
                     pw.Text(
-                      'Nama: ${d.patientName}'
-                      '${d.patientNik != null ? '  ·  NIK: ${d.patientNik}' : ''}',
-                      style: const pw.TextStyle(
-                        fontSize: 10,
-                        color: PdfColors.white,
+                      (d.patientName ?? 'LAPORAN SCREENING').toUpperCase(),
+                      style: pw.TextStyle(
+                        fontSize: 16,
+                        fontWeight: pw.FontWeight.bold,
                       ),
                     ),
+                    if (d.patientNik != null) ...[
+                      pw.SizedBox(height: 2),
+                      pw.Text(
+                        'NIK: ${d.patientNik}',
+                        style: pw.TextStyle(fontSize: 9, color: greyColor),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
                   pw.Text(
-                    'Tanggal Screening: ${_formatDate(d.date)}',
-                    style: const pw.TextStyle(
+                    _formatDate(d.date),
+                    style: pw.TextStyle(
                       fontSize: 10,
-                      color: PdfColors.white,
+                      fontWeight: pw.FontWeight.bold,
                     ),
                   ),
                   pw.Text(
                     'Dicetak: ${_formatDate(DateTime.now())}',
-                    style: const pw.TextStyle(
-                      fontSize: 10,
-                      color: PdfColors.white,
-                    ),
+                    style: pw.TextStyle(fontSize: 9, color: greyColor),
                   ),
-                ],
-              ),
-            ),
-            pw.SizedBox(height: 20),
-            pw.Text(
-              'DATA VITAL',
-              style: pw.TextStyle(
-                fontSize: 12,
-                fontWeight: pw.FontWeight.bold,
-                color: primaryColor,
-              ),
-            ),
-            pw.SizedBox(height: 6),
-            pw.Table(
-              border: pw.TableBorder.all(color: borderColor, width: 0.5),
-              columnWidths: const {
-                0: pw.FlexColumnWidth(2),
-                1: pw.FlexColumnWidth(1.5),
-                2: pw.FlexColumnWidth(1),
-              },
-              children: [
-                pw.TableRow(
-                  decoration: pw.BoxDecoration(color: lightGrey),
-                  children: [
-                    _pdfCell('Parameter', bold: true),
-                    _pdfCell('Nilai', bold: true),
-                    _pdfCell('Satuan', bold: true),
-                  ],
-                ),
-                pw.TableRow(
-                  children: [
-                    _pdfCell('Tekanan Darah'),
-                    _pdfCell('${d.systolic}/${d.diastolic}'),
-                    _pdfCell('mmHg'),
-                  ],
-                ),
-                pw.TableRow(
-                  children: [
-                    _pdfCell('Berat Badan'),
-                    _pdfCell(d.weight.toStringAsFixed(1)),
-                    _pdfCell('kg'),
-                  ],
-                ),
-                pw.TableRow(
-                  children: [
-                    _pdfCell('Tinggi Badan'),
-                    _pdfCell(d.height.toStringAsFixed(0)),
-                    _pdfCell('cm'),
-                  ],
-                ),
-                pw.TableRow(
-                  children: [
-                    _pdfCell('BMI'),
-                    _pdfCell(d.bmi.toStringAsFixed(1)),
-                    _pdfCell(d.bmiCategory),
-                  ],
-                ),
-                if (d.pulse != null)
-                  pw.TableRow(
-                    children: [
-                      _pdfCell('Denyut Nadi'),
-                      _pdfCell('${d.pulse}'),
-                      _pdfCell('x/menit'),
-                    ],
-                  ),
-              ],
-            ),
-            if (hasAnthropometry) ...[
-              pw.SizedBox(height: 20),
-              pw.Text(
-                'ANTROPOMETRI',
-                style: pw.TextStyle(
-                  fontSize: 12,
-                  fontWeight: pw.FontWeight.bold,
-                  color: primaryColor,
-                ),
-              ),
-              pw.SizedBox(height: 6),
-              pw.Table(
-                border: pw.TableBorder.all(color: borderColor, width: 0.5),
-                columnWidths: const {
-                  0: pw.FlexColumnWidth(2),
-                  1: pw.FlexColumnWidth(1.5),
-                  2: pw.FlexColumnWidth(1),
-                },
-                children: [
-                  pw.TableRow(
-                    decoration: pw.BoxDecoration(color: lightGrey),
-                    children: [
-                      _pdfCell('Parameter', bold: true),
-                      _pdfCell('Nilai', bold: true),
-                      _pdfCell('Satuan', bold: true),
-                    ],
-                  ),
-                  if (d.waistCircumference != null)
-                    pw.TableRow(children: [
-                      _pdfCell('Lingkar Pinggang'),
-                      _pdfCell(d.waistCircumference!.toStringAsFixed(1)),
-                      _pdfCell('cm'),
-                    ]),
-                  if (d.abdominalCircumference != null)
-                    pw.TableRow(children: [
-                      _pdfCell('Lingkar Perut'),
-                      _pdfCell(d.abdominalCircumference!.toStringAsFixed(1)),
-                      _pdfCell('cm'),
-                    ]),
-                  if (d.hipCircumference != null)
-                    pw.TableRow(children: [
-                      _pdfCell('Lingkar Panggul'),
-                      _pdfCell(d.hipCircumference!.toStringAsFixed(1)),
-                      _pdfCell('cm'),
-                    ]),
-                  if (d.waistHipRatio != null)
-                    pw.TableRow(children: [
-                      _pdfCell('Rasio Pinggang-Panggul'),
-                      _pdfCell(d.waistHipRatio!.toStringAsFixed(2)),
-                      _pdfCell('—'),
-                    ]),
                 ],
               ),
             ],
-            pw.SizedBox(height: 20),
-            pw.Text(
-              'HASIL LABORATORIUM',
-              style: pw.TextStyle(
-                fontSize: 12,
-                fontWeight: pw.FontWeight.bold,
-                color: primaryColor,
-              ),
-            ),
-            pw.SizedBox(height: 6),
-            pw.Table(
-              border: pw.TableBorder.all(color: borderColor, width: 0.5),
-              columnWidths: const {
-                0: pw.FlexColumnWidth(2),
-                1: pw.FlexColumnWidth(1.5),
-                2: pw.FlexColumnWidth(1.5),
-                3: pw.FlexColumnWidth(1),
-              },
-              children: [
-                pw.TableRow(
-                  decoration: pw.BoxDecoration(color: lightGrey),
-                  children: [
-                    _pdfCell('Pemeriksaan', bold: true),
-                    _pdfCell('Hasil', bold: true),
-                    _pdfCell('Normal', bold: true),
-                    _pdfCell('Status', bold: true),
-                  ],
-                ),
-                _pdfLabRow('Gula Darah', d.bloodSugar, 0, '< 100 mg/dL', 100, 126),
-                _pdfLabRow(
-                  'Asam Urat',
-                  d.uricAcid,
-                  1,
-                  '< ${auNormal.toStringAsFixed(0)} mg/dL',
-                  auNormal,
-                  auNormal + 1,
-                ),
-                _pdfLabRow('Kolesterol', d.cholesterol, 0, '< 200 mg/dL', 200, 240),
-              ],
-            ),
-            if (behaviorRows.isNotEmpty) ...[
-              pw.SizedBox(height: 20),
-              pw.Text(
-                'GAYA HIDUP',
-                style: pw.TextStyle(
-                  fontSize: 12,
-                  fontWeight: pw.FontWeight.bold,
-                  color: primaryColor,
-                ),
-              ),
-              pw.SizedBox(height: 6),
-              pw.Table(
-                border: pw.TableBorder.all(color: borderColor, width: 0.5),
-                columnWidths: const {
-                  0: pw.FlexColumnWidth(1.5),
-                  1: pw.FlexColumnWidth(2.5),
-                },
-                children: [
-                  pw.TableRow(
-                    decoration: pw.BoxDecoration(color: lightGrey),
-                    children: [
-                      _pdfCell('Perilaku', bold: true),
-                      _pdfCell('Keterangan', bold: true),
-                    ],
-                  ),
-                  for (final (title, value) in behaviorRows)
-                    pw.TableRow(children: [
-                      _pdfCell(title),
-                      _pdfCell(value),
-                    ]),
-                ],
-              ),
-            ],
-            pw.SizedBox(height: 20),
-            pw.Text(
-              'INDEX RISIKO DIABETES (IRD)',
-              style: pw.TextStyle(
-                fontSize: 12,
-                fontWeight: pw.FontWeight.bold,
-                color: primaryColor,
-              ),
-            ),
-            pw.SizedBox(height: 6),
-            pw.Container(
-              width: double.infinity,
-              padding: const pw.EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 12,
-              ),
-              decoration: pw.BoxDecoration(
-                color: irdLightColor,
-                border: pw.Border(
-                  left: pw.BorderSide(color: irdColor, width: 4),
-                ),
-              ),
-              child: pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'Nilai IRD',
-                        style: pw.TextStyle(fontSize: 9, color: greyColor),
-                      ),
-                      pw.Text(
-                        d.ird.toStringAsFixed(2),
-                        style: pw.TextStyle(
-                          fontSize: 20,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.end,
-                    children: [
-                      pw.Text(
-                        'Kategori Risiko',
-                        style: pw.TextStyle(fontSize: 9, color: greyColor),
-                      ),
-                      pw.Text(
-                        d.irdCategoryLabel,
-                        style: pw.TextStyle(
-                          fontSize: 14,
-                          fontWeight: pw.FontWeight.bold,
-                          color: irdColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            pw.SizedBox(height: 24),
-            pw.Divider(color: borderColor),
-            pw.Text(
-              'PPKO BEM FK — Laporan ini dibuat secara otomatis oleh sistem.',
-              style: pw.TextStyle(fontSize: 8, color: greyColor),
-            ),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Divider(thickness: 1, color: PdfColors.black),
+          pw.SizedBox(height: 12),
+          _pdfSectionTitle('DATA DIRI'),
+          _pdfKvTable(dataDiri, lightGrey, greyColor, borderColor),
+          pw.SizedBox(height: 12),
+          _pdfSectionTitle('ANTROPOMETRI'),
+          _pdfKvTable(antropometri, lightGrey, greyColor, borderColor),
+          pw.SizedBox(height: 12),
+          _pdfSectionTitle('HASIL KLINIS'),
+          _pdfKvTable(klinis, lightGrey, greyColor, borderColor),
+          if (behaviorRows.isNotEmpty) ...[
+            pw.SizedBox(height: 12),
+            _pdfSectionTitle('GAYA HIDUP'),
+            _pdfKvTable(behaviorRows, lightGrey, greyColor, borderColor),
           ],
-        ),
+          pw.SizedBox(height: 16),
+          // Result box — bold text only, no color in B/W print
+          pw.Container(
+            width: double.infinity,
+            padding: const pw.EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.black, width: 1.2),
+            ),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'SKOR IRD',
+                      style: pw.TextStyle(fontSize: 8, color: greyColor),
+                    ),
+                    pw.Text(
+                      d.ird.toStringAsFixed(2),
+                      style: pw.TextStyle(
+                        fontSize: 22,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text(
+                      'KATEGORI RISIKO',
+                      style: pw.TextStyle(fontSize: 8, color: greyColor),
+                    ),
+                    pw.Text(
+                      d.irdCategoryLabel.toUpperCase(),
+                      style: pw.TextStyle(
+                        fontSize: 16,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
 
     return doc;
   }
 
-  pw.Widget _pdfCell(String text, {bool bold = false}) {
+  pw.Widget _pdfSectionTitle(String title) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.all(6),
+      padding: const pw.EdgeInsets.only(bottom: 6),
       child: pw.Text(
-        text,
+        title,
         style: pw.TextStyle(
           fontSize: 10,
-          fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-        ),
-      ),
-    );
-  }
-
-  pw.Widget _pdfColorCell(String text, PdfColor color) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.all(6),
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(
-          fontSize: 10,
-          color: color,
           fontWeight: pw.FontWeight.bold,
+          letterSpacing: 0.5,
         ),
       ),
     );
   }
 
-  /// Skipped lab (null) renders as "-" instead of a green "Normal" 0.
-  pw.TableRow _pdfLabRow(
-    String name,
-    double? value,
-    int decimals,
-    String normalText,
-    double normal,
-    double borderline,
+  /// Two-column label/value table — same look as the admin report.
+  pw.Widget _pdfKvTable(
+    List<(String, String)> rows,
+    PdfColor lightGrey,
+    PdfColor greyColor,
+    PdfColor borderColor,
   ) {
-    if (value == null) {
-      return pw.TableRow(
-        children: [
-          _pdfCell(name),
-          _pdfCell('-'),
-          _pdfCell(normalText),
-          _pdfColorCell('-', PdfColor.fromHex('6B7280')),
-        ],
-      );
-    }
-    return pw.TableRow(
+    return pw.Table(
+      border: pw.TableBorder.all(color: borderColor, width: 0.5),
+      columnWidths: const {0: pw.FlexColumnWidth(2), 1: pw.FlexColumnWidth(3)},
       children: [
-        _pdfCell(name),
-        _pdfCell('${value.toStringAsFixed(decimals)} mg/dL'),
-        _pdfCell(normalText),
-        _pdfColorCell(
-          _labStatusText(value, normal, borderline),
-          _pdfLabColor(value, normal, borderline),
-        ),
+        for (final (label, value) in rows)
+          pw.TableRow(children: [
+            pw.Container(
+              color: lightGrey,
+              padding: const pw.EdgeInsets.all(6),
+              child: pw.Text(label,
+                  style: pw.TextStyle(fontSize: 9, color: greyColor)),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(6),
+              child: pw.Text(
+                value,
+                style:
+                    pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+              ),
+            ),
+          ]),
       ],
     );
   }
@@ -1307,11 +1141,5 @@ class _ExpandableScreeningCardWidgetState
     if (value < normal) return 'Normal';
     if (value < borderline) return 'Batas';
     return 'Tinggi';
-  }
-
-  PdfColor _pdfLabColor(double value, double normal, double borderline) {
-    if (value < normal) return PdfColor.fromHex('4CAF50');
-    if (value < borderline) return PdfColor.fromHex('FFA726');
-    return PdfColor.fromHex('EF5350');
   }
 }

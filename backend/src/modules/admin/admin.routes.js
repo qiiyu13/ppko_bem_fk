@@ -12,6 +12,7 @@ router.use(authenticate, authorize('ADMIN', 'SUPERADMIN'));
 // Dashboard
 router.get('/patients', adminController.getPatients);
 router.get('/patients/:id', adminController.getPatientDetail);
+router.get('/profiles/:id', adminController.getProfileDetail);
 
 // User Management
 router.get('/users', usersController.getUsers);

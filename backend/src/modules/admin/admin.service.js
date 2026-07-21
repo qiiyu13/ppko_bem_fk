@@ -11,6 +11,56 @@ const resolveScopedRegionId = async (actor, clientRegionId) => {
   return me?.regionId || '__no_region__';
 };
 
+// Full profile shape for the admin patient-detail screen. Shared by
+// getPatientDetail (nested under the family) and getProfileDetail (single
+// profile) so both paths return identical fields.
+const PROFILE_DETAIL_SELECT = {
+  id: true,
+  name: true,
+  nik: true,
+  gender: true,
+  birthDate: true,
+  height: true,
+  weight: true,
+  bloodType: true,
+  phone: true,
+  avatarPath: true,
+  // Demografi + perilaku — shown on the admin patient detail screen
+  education: true,
+  occupation: true,
+  maritalStatus: true,
+  income: true,
+  familyDiseaseHistory: true,
+  smokingStatus: true,
+  physicalActivity: true,
+  fruitConsumption: true,
+  vegetableConsumption: true,
+  sweetFoodConsumption: true,
+  sweetDrinkConsumption: true,
+  fattyFoodConsumption: true,
+  fastFoodConsumption: true,
+  sleepDuration: true,
+  medicationRoutine: true,
+  metrics: {
+    orderBy: { recordedAt: 'desc' },
+    take: 50,
+    select: {
+      id: true,
+      type: true,
+      value: true,
+      secondaryValue: true,
+      unit: true,
+      notes: true,
+      recordedAt: true,
+    },
+  },
+  screenings: {
+    orderBy: { screeningAt: 'desc' },
+    take: 20,
+    include: { screener: { select: { responsibleName: true } } },
+  },
+};
+
 const getPatients = async ({ search, irdCategory, page = 1, limit = 10, regionId }, actor = {}) => {
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const take = parseInt(limit);
@@ -181,47 +231,7 @@ const getPatientDetail = async (id, actor = {}) => {
       phone: true,
       createdAt: true,
       familyProfiles: {
-        select: {
-          id: true,
-          name: true,
-          nik: true,
-          gender: true,
-          birthDate: true,
-          height: true,
-          weight: true,
-          bloodType: true,
-          phone: true,
-          avatarPath: true,
-          // Perilaku defaults — the screening form prefills from these
-          smokingStatus: true,
-          physicalActivity: true,
-          fruitConsumption: true,
-          vegetableConsumption: true,
-          sweetFoodConsumption: true,
-          sweetDrinkConsumption: true,
-          fattyFoodConsumption: true,
-          fastFoodConsumption: true,
-          sleepDuration: true,
-          medicationRoutine: true,
-          metrics: {
-            orderBy: { recordedAt: 'desc' },
-            take: 50,
-            select: {
-              id: true,
-              type: true,
-              value: true,
-              secondaryValue: true,
-              unit: true,
-              notes: true,
-              recordedAt: true,
-            },
-          },
-          screenings: {
-            orderBy: { screeningAt: 'desc' },
-            take: 20,
-            include: { screener: { select: { responsibleName: true } } },
-          },
-        },
+        select: PROFILE_DETAIL_SELECT,
       },
       appointments: {
         orderBy: { date: 'desc' },
@@ -234,4 +244,30 @@ const getPatientDetail = async (id, actor = {}) => {
   return user;
 };
 
-module.exports = { getPatients, getPatientDetail };
+// Single-profile detail. `id` here is a familyProfile id — not the user (KK)
+// id that getPatientDetail takes — so callers that only know the profile
+// (notification deep link, patient-detail pull-to-refresh) can load it
+// directly. Same region rules as getPatientDetail: ADMIN is confined to their
+// own region subtree, outside => 404.
+const getProfileDetail = async (id, actor = {}) => {
+  const userFilter = { role: 'PATIENT' };
+  if (actor?.role === 'ADMIN') {
+    const me = await prisma.user.findUnique({ where: { id: actor.id }, select: { regionId: true } });
+    if (!me?.regionId) throw Object.assign(new Error('Patient not found'), { statusCode: 404 });
+    Object.assign(userFilter, regionScopeFilter(me.regionId));
+  }
+
+  const profile = await prisma.familyProfile.findFirst({
+    where: { id, mergedIntoId: null, user: userFilter },
+    select: {
+      ...PROFILE_DETAIL_SELECT,
+      user: { select: { id: true, kkNumber: true, responsibleName: true, phone: true } },
+    },
+  });
+
+  if (!profile) throw Object.assign(new Error('Patient not found'), { statusCode: 404 });
+  // familyName: what the detail screen shows as the family header.
+  return { ...profile, familyName: profile.user.responsibleName };
+};
+
+module.exports = { getPatients, getPatientDetail, getProfileDetail };

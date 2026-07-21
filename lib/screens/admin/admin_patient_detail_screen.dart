@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:mediku/widgets/app_avatar.dart';
 import '../../config/env.dart';
 import '../../constants/app_colors.dart';
+import '../../constants/screening_options.dart';
 import '../../services/api_service.dart';
 import '../../utils/responsive_size.dart';
 import '../../utils/patient_utils.dart';
+import '../../widgets/error_state_widget.dart';
 import '../../models/health_metric.dart';
 
 class AdminPatientDetailScreen extends StatefulWidget {
@@ -27,8 +30,10 @@ class AdminPatientDetailScreen extends StatefulWidget {
 
 class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
   bool _isLoading = true;
+  bool _hasError = false;
   Map<String, dynamic>? _patientData;
   List<Map<String, dynamic>> _screenings = [];
+  final Set<int> _expandedHistory = {};
 
   @override
   void initState() {
@@ -47,8 +52,11 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
     final patientId =
         widget.patient['profileId'] ?? widget.patient['id'];
     try {
+      // /admin/profiles/:id takes the familyProfile id — /admin/patients/:id
+      // takes the user (KK) id and returns the whole family, which this
+      // screen can't render.
       final response =
-          await ApiService.get('/admin/patients/$patientId');
+          await ApiService.get('/admin/profiles/$patientId');
       final data =
           response.data['data'] as Map<String, dynamic>? ?? {};
       final List<dynamic> screenings = data['screenings'] ?? [];
@@ -57,13 +65,26 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
         _patientData = data;
         _screenings = screenings.cast<Map<String, dynamic>>();
         _isLoading = false;
+        _hasError = false;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal memuat data pasien')),
-      );
+      // No data yet: full error state instead of a page of zeroed vitals.
+      // Refresh failure with data on screen keeps the snackbar.
+      if (_patientData == null && !widget.preloaded) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+      } else {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal memuat data pasien'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -133,6 +154,9 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                         getLatestMetricValue('cholesterol') ??
                         patientMap['cholesterol'] ?? 0;
 
+    // Newer measurements — null when the latest screening predates them
+    double? nullableDouble(dynamic v) => (v as num?)?.toDouble();
+
     return {
       'name': patientMap['name'] ?? '',
       'nik': patientMap['nik'] ?? '',
@@ -145,6 +169,26 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
       'height': (height as num).toDouble(),
       'uricAcid': (uricAcid as num).toDouble(),
       'cholesterol': (cholesterol as num).toDouble(),
+      'pulse': (latestScreening?['pulse'] as num?)?.toInt(),
+      'waistCircumference': nullableDouble(latestScreening?['waistCircumference']),
+      'abdominalCircumference': nullableDouble(latestScreening?['abdominalCircumference']),
+      'hipCircumference': nullableDouble(latestScreening?['hipCircumference']),
+      // Demografi + perilaku live on the profile itself
+      'education': patientMap['education'],
+      'occupation': patientMap['occupation'],
+      'maritalStatus': patientMap['maritalStatus'],
+      'income': nullableDouble(patientMap['income']),
+      'familyDiseaseHistory': patientMap['familyDiseaseHistory'],
+      'smokingStatus': patientMap['smokingStatus'],
+      'physicalActivity': patientMap['physicalActivity'],
+      'fruitConsumption': patientMap['fruitConsumption'],
+      'vegetableConsumption': patientMap['vegetableConsumption'],
+      'sweetFoodConsumption': patientMap['sweetFoodConsumption'],
+      'sweetDrinkConsumption': patientMap['sweetDrinkConsumption'],
+      'fattyFoodConsumption': patientMap['fattyFoodConsumption'],
+      'fastFoodConsumption': patientMap['fastFoodConsumption'],
+      'sleepDuration': nullableDouble(patientMap['sleepDuration']),
+      'medicationRoutine': patientMap['medicationRoutine'],
     };
   }
 
@@ -234,7 +278,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'INDEX RISK DIABETES (IRD)',
+                      'INDEKS RISIKO DIABETES (IRD)',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -373,7 +417,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
   Widget build(BuildContext context) {
     ResponsiveSize.init(context);
 
-    if (_isLoading) {
+    if (_isLoading || _hasError) {
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
@@ -394,7 +438,18 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
           ),
           centerTitle: true,
         ),
-        body: const Center(child: CircularProgressIndicator()),
+        body: _hasError
+            ? ErrorStateWidget(
+                message: 'Gagal memuat data pasien. Periksa koneksi Anda.',
+                onRetry: () {
+                  setState(() {
+                    _isLoading = true;
+                    _hasError = false;
+                  });
+                  _fetchPatientDetail();
+                },
+              )
+            : const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -666,6 +721,10 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
               ),
             ),
           ],
+
+          // New-variable info blocks — hidden when the profile predates them
+          _buildInfoBlock('Demografi', _demografiRows(data)),
+          _buildInfoBlock('Gaya Hidup', _behaviorRowsFrom(data)),
         ],
       ),
     );
@@ -674,6 +733,120 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
   bool _isFemale(String gender) {
     final g = gender.toLowerCase().trim();
     return g == 'wanita' || g == 'perempuan' || g == 'p' || g == 'female';
+  }
+
+  /// Demografi rows (only filled values) for the profile info block.
+  List<(String, String)> _demografiRows(Map<String, dynamic> data) {
+    final rows = <(String, String)>[];
+    void add(String label, String? key, List<OptionItem> opts) {
+      if (key != null) rows.add((label, ScreeningOptions.labelFor(opts, key)));
+    }
+
+    add('Pendidikan', data['education'] as String?, ScreeningOptions.education);
+    add('Pekerjaan', data['occupation'] as String?, ScreeningOptions.occupation);
+    add('Status Perkawinan', data['maritalStatus'] as String?, ScreeningOptions.maritalStatus);
+    final income = data['income'];
+    if (income is num) {
+      rows.add(('Pendapatan', 'Rp ${NumberFormat('#,###', 'id_ID').format(income)}'));
+    }
+    add('Riwayat Keluarga (DM/HT/Stroke/Jantung)',
+        data['familyDiseaseHistory'] as String?, ScreeningOptions.familyDiseaseHistory);
+    return rows;
+  }
+
+  /// Perilaku rows from any map carrying the option keys (profile defaults
+  /// or a screening's snapshot). Empty when nothing was ever recorded.
+  List<(String, String)> _behaviorRowsFrom(Map<String, dynamic> m) {
+    final rows = <(String, String)>[];
+    void add(String key, String title, List<OptionItem> opts) {
+      final v = m[key];
+      if (v is String) rows.add((title, ScreeningOptions.labelFor(opts, v)));
+    }
+
+    add('smokingStatus', 'Merokok', ScreeningOptions.smokingStatus);
+    add('physicalActivity', 'Aktivitas fisik', ScreeningOptions.physicalActivity);
+    add('fruitConsumption', 'Konsumsi buah', ScreeningOptions.fruitConsumption);
+    add('vegetableConsumption', 'Konsumsi sayur', ScreeningOptions.vegetableConsumption);
+    add('sweetFoodConsumption', 'Makanan manis', ScreeningOptions.sweetFoodConsumption);
+    add('sweetDrinkConsumption', 'Minuman manis', ScreeningOptions.sweetDrinkConsumption);
+    add('fattyFoodConsumption', 'Makanan berlemak', ScreeningOptions.fattyFoodConsumption);
+    add('fastFoodConsumption', 'Makanan cepat saji', ScreeningOptions.fastFoodConsumption);
+    final sd = m['sleepDuration'];
+    if (sd is num) {
+      rows.add(('Durasi tidur', '${sd % 1 == 0 ? sd.toInt() : sd} jam'));
+    }
+    add('medicationRoutine', 'Rutin minum obat', ScreeningOptions.medicationRoutine);
+    return rows;
+  }
+
+  /// Titled label/value block matching the report's kv-table look. Renders
+  /// nothing when there is no data (old profiles/screenings).
+  Widget _buildInfoBlock(String title, List<(String, String)> rows) {
+    if (rows.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        Text(
+          title.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textSecondary,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.background.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.divider, width: 0.5),
+          ),
+          child: Column(
+            children: [
+              for (var i = 0; i < rows.length; i++)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: i < rows.length - 1
+                        ? const Border(
+                            bottom: BorderSide(color: AppColors.divider, width: 0.5))
+                        : null,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          rows[i].$1,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          rows[i].$2,
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _demographicChip(IconData icon, String label) {
@@ -831,14 +1004,31 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
           unit: 'kg/cm',
         ),
         _buildRedesignedVitalCard(
-          label: 'INDEX MASSA TUBUH',
+          label: 'INDEKS MASSA TUBUH',
           value: bmiVal > 0 ? bmiVal.toStringAsFixed(1) : '-',
           unit: 'BMI',
           statusLabel: bmiLabel,
           statusColor: bmiColor,
         ),
+        _buildRedesignedVitalCard(
+          label: 'DENYUT NADI',
+          value: data['pulse'] != null ? '${data['pulse']}' : '-',
+          unit: 'x/menit',
+        ),
+        _buildRedesignedVitalCard(
+          label: 'RASIO PINGGANG-PANGGUL',
+          value: _waistHipRatio(data)?.toStringAsFixed(2) ?? '-',
+          unit: 'WHR',
+        ),
       ],
     );
+  }
+
+  double? _waistHipRatio(Map<String, dynamic> data) {
+    final w = (data['waistCircumference'] as num?)?.toDouble();
+    final h = (data['hipCircumference'] as num?)?.toDouble();
+    if (w == null || h == null || h <= 0) return null;
+    return w / h;
   }
 
   Widget _buildRedesignedVitalCard({
@@ -865,40 +1055,48 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
-              letterSpacing: 0.5,
+          // FittedBox keeps large accessibility text scales from overflowing
+          // the fixed-aspect-ratio grid cell.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textSecondary,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
           const Spacer(),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              if (value != '-' && unit.isNotEmpty) ...[
-                const SizedBox(width: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
                 Text(
-                  unit,
+                  value,
                   style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
                 ),
+                if (value != '-' && unit.isNotEmpty) ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    unit,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
           const Spacer(),
           if (statusLabel != null)
@@ -950,7 +1148,7 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
             const Icon(Icons.assignment_outlined, size: 40, color: AppColors.textSecondary),
             const SizedBox(height: 8),
             Text(
-              'Belum ada riwayat screening kesehatan',
+              'Belum ada riwayat skrining kesehatan',
               style: TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: ResponsiveSize.fontMedium,
@@ -974,12 +1172,13 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
     return Column(
       children: [
         for (var i = 0; i < sortedScreenings.length; i++)
-          _buildTimelineHistoryItem(sortedScreenings[i], isLast: i == sortedScreenings.length - 1),
+          _buildTimelineHistoryItem(sortedScreenings[i], i,
+              isLast: i == sortedScreenings.length - 1),
       ],
     );
   }
 
-  Widget _buildTimelineHistoryItem(Map<String, dynamic> s, {required bool isLast}) {
+  Widget _buildTimelineHistoryItem(Map<String, dynamic> s, int index, {required bool isLast}) {
     final dateStr = s['screeningAt'] ?? '';
     String formattedDate = '';
     try {
@@ -1008,6 +1207,22 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
     final irdCat = PatientUtils.irdCategoryFromScore(score);
     final dotColor = PatientUtils.riskColor(irdCat);
     final dotIcon = _getStatusIcon(irdCat);
+    final isExpanded = _expandedHistory.contains(index);
+
+    // Newer measurements, shown in the expanded area only
+    final extraMetrics = <(String, String)>[
+      if (s['pulse'] != null) ('Nadi', '${(s['pulse'] as num).toInt()} x/menit'),
+      if (s['waistCircumference'] != null)
+        ('L. Pinggang', '${(s['waistCircumference'] as num).toDouble().toStringAsFixed(1)} cm'),
+      if (s['abdominalCircumference'] != null)
+        ('L. Perut', '${(s['abdominalCircumference'] as num).toDouble().toStringAsFixed(1)} cm'),
+      if (s['hipCircumference'] != null)
+        ('L. Panggul', '${(s['hipCircumference'] as num).toDouble().toStringAsFixed(1)} cm'),
+      if (_waistHipRatio(s) != null)
+        ('Rasio P-P', _waistHipRatio(s)!.toStringAsFixed(2)),
+    ];
+    final behaviorRows = _behaviorRowsFrom(s);
+    final hasMore = extraMetrics.isNotEmpty || behaviorRows.isNotEmpty;
 
     return IntrinsicHeight(
       child: Row(
@@ -1058,29 +1273,54 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                   ),
                 ],
               ),
-              child: Column(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        formattedDate,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                  InkWell(
+                    onTap: hasMore
+                        ? () => setState(() {
+                              if (isExpanded) {
+                                _expandedHistory.remove(index);
+                              } else {
+                                _expandedHistory.add(index);
+                              }
+                            })
+                        : null,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          formattedDate,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
-                      ),
-                      Text(
-                        'Oleh: $screenerName',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w500,
+                        Row(
+                          children: [
+                            Text(
+                              'Oleh: $screenerName',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (hasMore) ...[
+                              const SizedBox(width: 4),
+                              Icon(
+                                isExpanded
+                                    ? Icons.keyboard_arrow_up
+                                    : Icons.keyboard_arrow_down,
+                                size: 16,
+                                color: AppColors.primary,
+                              ),
+                            ],
+                          ],
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   // Screening Metrics Grid (Two Columns: 3 Left, 3 Right)
                   Row(
@@ -1143,6 +1383,32 @@ class _AdminPatientDetailScreenState extends State<AdminPatientDetailScreen> {
                         ],
                       ),
                     ),
+                  ],
+
+                  // Expanded: newer measurements + perilaku snapshot
+                  if (isExpanded && hasMore) ...[
+                    const SizedBox(height: 12),
+                    for (var i = 0; i < extraMetrics.length; i += 2)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _buildHistoryMetricItem(
+                                  extraMetrics[i].$1, extraMetrics[i].$2),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: i + 1 < extraMetrics.length
+                                  ? _buildHistoryMetricItem(
+                                      extraMetrics[i + 1].$1, extraMetrics[i + 1].$2)
+                                  : const SizedBox.shrink(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    _buildInfoBlock('Gaya Hidup', behaviorRows),
                   ],
                 ],
               ),
