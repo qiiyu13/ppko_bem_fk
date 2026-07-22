@@ -230,6 +230,8 @@ class _FamilyAccountsScreenState extends State<FamilyAccountsScreen> {
                 children: [
                   Text(
                     name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: ResponsiveSize.fontLarge,
                       fontWeight: FontWeight.bold,

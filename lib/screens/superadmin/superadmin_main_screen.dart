@@ -63,7 +63,10 @@ class _SuperadminMainScreenState extends State<SuperadminMainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(top: false, child: _screens[_currentIndex]),
+      body: SafeArea(
+        top: false,
+        child: IndexedStack(index: _currentIndex, children: _screens),
+      ),
       bottomNavigationBar: AnimatedLineNavBar(
         currentIndex: _currentIndex,
         onTap: _onTabChanged,

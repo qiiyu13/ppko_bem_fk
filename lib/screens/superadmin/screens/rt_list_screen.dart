@@ -104,6 +104,8 @@ class _RtListScreenState extends State<RtListScreen> {
                           EmptyStateWidget(
                             icon: Icons.home_outlined,
                             title: 'Belum ada RT',
+                            subtitle:
+                                'RT terbentuk otomatis saat warga wilayah ini didaftarkan.',
                           ),
                         ],
                       )
@@ -182,6 +184,8 @@ class _RtListScreenState extends State<RtListScreen> {
                   children: [
                     Text(
                       rt['name']?.toString() ?? 'RT',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontLarge,
                         fontWeight: FontWeight.bold,

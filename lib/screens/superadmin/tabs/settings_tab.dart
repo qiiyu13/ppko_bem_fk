@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../../constants/app_colors.dart';
+import '../../../screens/admin/admin_profile_edit_screen.dart';
 import '../../../screens/common/settings/about_screen.dart';
 import '../../../screens/common/settings/help_screen.dart';
 import '../../../screens/common/settings/language_screen.dart';
 import '../../../screens/common/settings/notification_settings_screen.dart';
 import '../../../screens/welcome_screen.dart';
+import '../../../services/auth_service.dart';
 import '../../../services/profile_service.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../widgets/app_snackbar.dart';
 import 'package:mediku/utils/page_transitions.dart';
 
 void _push(BuildContext context, Widget screen) {
@@ -23,6 +26,7 @@ class SuperadminSettingsTab extends StatefulWidget {
 
 class _SuperadminSettingsTabState extends State<SuperadminSettingsTab> {
   String _appVersion = '';
+  bool _openingProfile = false;
 
   @override
   void initState() {
@@ -32,20 +36,36 @@ class _SuperadminSettingsTabState extends State<SuperadminSettingsTab> {
     });
   }
 
+  Future<void> _openProfile() async {
+    if (_openingProfile) return;
+    setState(() => _openingProfile = true);
+    final me = await AuthService.getMe();
+    if (!mounted) return;
+    setState(() => _openingProfile = false);
+    if (me == null) {
+      showAppSnackBar(
+          context, 'Gagal memuat profil. Periksa koneksi lalu coba lagi.',
+          error: true);
+      return;
+    }
+    _push(context, AdminProfileEditScreen(user: me));
+  }
+
   @override
   Widget build(BuildContext context) {
     ResponsiveSize.init(context);
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        title: const Text(
+        title: Text(
           'Setelan',
           style: TextStyle(
             color: AppColors.primary,
-            fontSize: 20,
+            fontSize: ResponsiveSize.fontXLarge,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -59,6 +79,15 @@ class _SuperadminSettingsTabState extends State<SuperadminSettingsTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: ResponsiveSize.spacingMedium),
+
+              _buildSettingsItem(
+                icon: Icons.person_outline,
+                title: 'Profil',
+                subtitle: _openingProfile
+                    ? 'Memuat…'
+                    : 'Ubah nama, password, dan foto',
+                onTap: _openProfile,
+              ),
 
               _buildSettingsItem(
                 icon: Icons.notifications_outlined,

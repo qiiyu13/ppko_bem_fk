@@ -6,6 +6,7 @@ import '../../../services/api_service.dart';
 import '../../../services/region_service.dart';
 import '../../../utils/responsive_size.dart';
 import '../../../widgets/app_avatar.dart';
+import '../../../widgets/app_snackbar.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/error_state_widget.dart';
 import '../screens/rw_list_screen.dart';
@@ -225,6 +226,8 @@ class _UsersTabState extends State<UsersTab>
                   children: [
                     Text(
                       name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontLarge,
                         fontWeight: FontWeight.bold,
@@ -360,24 +363,18 @@ class _UsersTabState extends State<UsersTab>
           admin['id'] as String,
           DateTime.parse(admin['updatedAt'] as String),
         );
-        _showSnackBar('Admin berhasil dihapus');
+        if (mounted) showAppSnackBar(context, 'Admin berhasil dihapus', success: true);
         _loadUsers();
       } catch (e) {
-        _showSnackBar('Gagal menghapus admin. Periksa koneksi lalu coba lagi.');
+        if (mounted) {
+          showAppSnackBar(
+              context, 'Gagal menghapus admin. Periksa koneksi lalu coba lagi.',
+              error: true);
+        }
       } finally {
         if (mounted) setState(() => _isDeleting = false);
       }
     }
-  }
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   /// Pull-to-refresh must bypass the in-memory cache: /regions responses
@@ -414,6 +411,7 @@ class _UsersTabState extends State<UsersTab>
         content: TextField(
           controller: controller,
           autofocus: true,
+          textCapitalization: TextCapitalization.words,
           decoration: const InputDecoration(hintText: 'Nama desa/kelurahan'),
         ),
         actions: [
@@ -422,7 +420,15 @@ class _UsersTabState extends State<UsersTab>
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
+            // Empty name must not silently no-op: block confirm instead.
+            onPressed: () {
+              if (controller.text.trim().isEmpty) {
+                showAppSnackBar(context, 'Nama desa/kelurahan wajib diisi',
+                    error: true);
+                return;
+              }
+              Navigator.pop(context, true);
+            },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             child: const Text('Tambah', style: TextStyle(color: AppColors.textOnPrimary)),
           ),
@@ -430,19 +436,30 @@ class _UsersTabState extends State<UsersTab>
       ),
     );
     final name = controller.text.trim();
+    controller.dispose();
+    if (!mounted) return;
     if (confirmed == true && name.isNotEmpty) {
       final exists = _villages.any((v) =>
           (v['name'] as String?)?.trim().toLowerCase() == name.toLowerCase());
       if (exists) {
-        _showSnackBar('Desa/kelurahan "$name" sudah terdaftar');
+        showAppSnackBar(context, 'Desa/kelurahan "$name" sudah terdaftar',
+            error: true);
         return;
       }
       try {
         await RegionService.createRegion(type: 'VILLAGE', name: name);
+        if (mounted) {
+          showAppSnackBar(context, 'Desa/kelurahan "$name" ditambahkan',
+              success: true);
+        }
         _loadVillages();
         _loadStats();
       } catch (e) {
-        _showSnackBar('Gagal menambah desa. Periksa koneksi lalu coba lagi.');
+        if (mounted) {
+          showAppSnackBar(
+              context, 'Gagal menambah desa. Periksa koneksi lalu coba lagi.',
+              error: true);
+        }
       }
     }
   }
@@ -474,7 +491,7 @@ class _UsersTabState extends State<UsersTab>
           Padding(
             padding: EdgeInsets.symmetric(horizontal: ResponsiveSize.paddingMedium),
             child: Text(
-              '${_regionStats!['villageCount']} Desa • ${_regionStats!['rwCount']} RW • ${_regionStats!['rtCount']} RT • ${_regionStats!['profileCount']} Penduduk',
+              '${_regionStats!['villageCount'] ?? 0} Desa • ${_regionStats!['rwCount'] ?? 0} RW • ${_regionStats!['rtCount'] ?? 0} RT • ${_regionStats!['profileCount'] ?? 0} Penduduk',
               style: TextStyle(
                 fontSize: ResponsiveSize.fontSmall,
                 color: AppColors.primary,
@@ -573,6 +590,8 @@ class _UsersTabState extends State<UsersTab>
                   children: [
                     Text(
                       village['name'] as String,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontLarge,
                         fontWeight: FontWeight.bold,

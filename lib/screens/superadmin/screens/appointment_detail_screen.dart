@@ -70,10 +70,11 @@ class AppointmentDetailScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Detail Jadwal',
           style: TextStyle(
             color: AppColors.primary,
+            fontSize: ResponsiveSize.fontXLarge,
             fontWeight: FontWeight.w600,
           ),
         ),

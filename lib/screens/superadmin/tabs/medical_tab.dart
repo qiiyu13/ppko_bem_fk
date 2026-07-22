@@ -44,15 +44,19 @@ class _MedicalTabState extends State<MedicalTab> {
   Future<void> _load() async {
     setState(() => _isLoading = true);
     try {
+      // Throughput calls degrade to empty on failure — a broken admin metrics
+      // endpoint must not blank the whole Laporan tab.
       final results = await Future.wait([
         RegionService.getStats(),
         ScreeningService.getStats(),
         if (FeatureFlags.superadminAdminThroughput)
           AdminService.getUsers(role: 'ADMIN')
+              .catchError((_) => <Map<String, dynamic>>[])
         else
           Future.value(<Map<String, dynamic>>[]),
         if (FeatureFlags.superadminAdminThroughput)
           AdminService.getThroughput()
+              .catchError((_) => <Map<String, dynamic>>[])
         else
           Future.value(<Map<String, dynamic>>[]),
       ]);

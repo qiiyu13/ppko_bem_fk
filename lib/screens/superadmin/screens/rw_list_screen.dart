@@ -108,6 +108,8 @@ class _RwListScreenState extends State<RwListScreen> {
                           EmptyStateWidget(
                             icon: Icons.holiday_village_outlined,
                             title: 'Belum ada RW',
+                            subtitle:
+                                'RW terbentuk otomatis saat warga wilayah ini didaftarkan.',
                           ),
                         ],
                       )
@@ -188,6 +190,8 @@ class _RwListScreenState extends State<RwListScreen> {
                   children: [
                     Text(
                       rw['name']?.toString() ?? 'RW',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontLarge,
                         fontWeight: FontWeight.bold,

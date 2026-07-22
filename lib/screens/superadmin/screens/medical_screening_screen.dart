@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/api_service.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../widgets/app_snackbar.dart';
+import '../../../widgets/error_state_widget.dart';
 import '../../../widgets/health_variables_section.dart';
 import '../../admin/qr_scanner_screen.dart';
 import 'package:mediku/utils/page_transitions.dart';
@@ -59,7 +63,15 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
   Map<String, dynamic>? _selectedProfile;
   bool _isLoading = false;
   bool _isSubmitting = false;
+  bool _loadFamiliesFailed = false;
   List<Map<String, dynamic>> _families = [];
+
+  Timer? _searchDebounce;
+  int _fetchSeq = 0;
+
+  // Snapshot of the prefilled behavior values; the discard guard compares
+  // against this so behavior-only edits also count as unsaved changes.
+  String _behaviorBaseline = '';
 
   @override
   void initState() {
@@ -67,12 +79,14 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     if (widget.initialPatient != null) {
       _selectedProfile = widget.initialPatient;
       _behavior.loadBehaviorFrom(widget.initialPatient!);
+      _behaviorBaseline = _behavior.toBehaviorApiMap().toString();
     }
     _fetchFamilies();
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     _systolicController.dispose();
     _diastolicController.dispose();
@@ -106,20 +120,21 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
 
   bool get _isFormDirty {
     return [
-      _systolicController,
-      _diastolicController,
-      _weightController,
-      _heightController,
-      _bloodSugarController,
-      _uricAcidController,
-      _cholesterolController,
-      _notesController,
-      _ageController,
-      _waistController,
-      _abdominalController,
-      _hipController,
-      _pulseController,
-    ].any((c) => c.text.trim().isNotEmpty);
+          _systolicController,
+          _diastolicController,
+          _weightController,
+          _heightController,
+          _bloodSugarController,
+          _uricAcidController,
+          _cholesterolController,
+          _notesController,
+          _ageController,
+          _waistController,
+          _abdominalController,
+          _hipController,
+          _pulseController,
+        ].any((c) => c.text.trim().isNotEmpty) ||
+        _behavior.toBehaviorApiMap().toString() != _behaviorBaseline;
   }
 
   Future<bool> _confirmDiscard() async {
@@ -146,7 +161,15 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     return result ?? false;
   }
 
+  /// Debounced so typing doesn't fire one request per keystroke.
+  void _onSearchChanged(String _) {
+    _searchDebounce?.cancel();
+    _searchDebounce =
+        Timer(const Duration(milliseconds: 350), _fetchFamilies);
+  }
+
   Future<void> _fetchFamilies() async {
+    final seq = ++_fetchSeq;
     setState(() => _isLoading = true);
     try {
       final queryParams = <String, dynamic>{};
@@ -157,14 +180,20 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
         '/admin/patients',
         queryParameters: queryParams,
       );
+      // A slower earlier response must never overwrite a newer search.
+      if (!mounted || seq != _fetchSeq) return;
       final List<dynamic> data = response.data['data'] ?? [];
       setState(() {
         _families = data.cast<Map<String, dynamic>>();
+        _loadFamiliesFailed = false;
+        _isLoading = false;
       });
     } catch (e) {
-      setState(() => _families = []);
-    } finally {
-      setState(() => _isLoading = false);
+      if (!mounted || seq != _fetchSeq) return;
+      setState(() {
+        _loadFamiliesFailed = true;
+        _isLoading = false;
+      });
     }
   }
 
@@ -194,9 +223,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _isLoadingFamily = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal memuat anggota keluarga')),
-      );
+      showAppSnackBar(context, 'Gagal memuat anggota keluarga', error: true);
     }
   }
 
@@ -299,12 +326,8 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     try {
       await ApiService.post('/screenings', data: body);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Data screening berhasil disimpan!'),
-            backgroundColor: AppColors.statusGreen,
-          ),
-        );
+        showAppSnackBar(context, 'Data screening berhasil disimpan!',
+            success: true);
         Navigator.pop(context);
       }
     } catch (e) {
@@ -322,12 +345,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
           msg = serverMsg ??
               'Gagal menyimpan data screening (${e.response!.statusCode}).';
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(msg),
-            backgroundColor: AppColors.statusRed,
-          ),
-        );
+        showAppSnackBar(context, msg, error: true);
       }
     }
   }
@@ -344,7 +362,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
     ];
     for (final (c, f) in order) {
       final t = c.text.trim();
-      if (t.isEmpty || double.tryParse(t) == null) {
+      if (t.isEmpty || _parseDecimal(t) == null) {
         f.requestFocus();
         return;
       }
@@ -454,6 +472,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
             setState(() {
               _selectedProfile = data;
               _behavior.loadBehaviorFrom(data);
+              _behaviorBaseline = _behavior.toBehaviorApiMap().toString();
             });
           },
         ),
@@ -471,7 +490,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
               Expanded(
                 child: TextField(
                   controller: _searchController,
-                  onChanged: (_) => _fetchFamilies(),
+                  onChanged: _onSearchChanged,
                   decoration: InputDecoration(
                     hintText: 'Cari No. KK atau Nama Kepala Keluarga',
                     hintStyle: const TextStyle(color: AppColors.textSecondary),
@@ -479,11 +498,11 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                         const Icon(Icons.search, color: AppColors.textSecondary),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.surface),
+                      borderSide: const BorderSide(color: AppColors.divider),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.surface),
+                      borderSide: const BorderSide(color: AppColors.divider),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -510,6 +529,12 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
         Expanded(
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
+              : _loadFamiliesFailed
+                  ? ErrorStateWidget(
+                      message:
+                          'Gagal memuat daftar keluarga.\nPeriksa koneksi lalu coba lagi.',
+                      onRetry: _fetchFamilies,
+                    )
               : _families.isEmpty
                   ? Center(
                       child: Column(
@@ -577,6 +602,8 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
                   children: [
                     Text(
                       name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: ResponsiveSize.fontLarge,
                         fontWeight: FontWeight.bold,
@@ -738,6 +765,7 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
           setState(() {
             _selectedProfile = profile;
             _behavior.loadBehaviorFrom(profile);
+            _behaviorBaseline = _behavior.toBehaviorApiMap().toString();
           });
         },
         child: Padding(
@@ -1250,11 +1278,11 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
             hintStyle: const TextStyle(color: AppColors.textSecondary),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.divider),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.divider),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -1314,11 +1342,11 @@ class _MedicalScreeningScreenState extends State<MedicalScreeningScreen> {
             suffixStyle: const TextStyle(color: AppColors.textSecondary),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.divider),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.divider),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

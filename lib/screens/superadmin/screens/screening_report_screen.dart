@@ -11,6 +11,7 @@ import '../../../services/admin_service.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/screening_service.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../widgets/app_snackbar.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/error_state_widget.dart';
 
@@ -107,6 +108,7 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
     final initial = isFrom ? _from : _to;
     final picked = await showDatePicker(
       context: context,
+      locale: const Locale('id', 'ID'),
       initialDate: initial,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
@@ -180,7 +182,7 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
       case 'normal':
         return 'Normal';
       case 'attention':
-        return 'Perhatian';
+        return 'Waspada';
       case 'high':
         return 'Tinggi';
       default:
@@ -280,7 +282,7 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
             'Laporan_Skrining_${DateFormat('yyyyMMdd').format(_from)}_${DateFormat('yyyyMMdd').format(_to)}.pdf',
       );
     } catch (_) {
-      _toast('Gagal membuat PDF. Coba lagi.');
+      _toast('Gagal membuat PDF. Coba lagi.', error: true);
     }
   }
 
@@ -441,7 +443,7 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
         pw.Row(children: [
           _pdfStatBox('Normal', nNormal),
           pw.SizedBox(width: 8),
-          _pdfStatBox('Perhatian', nAttention),
+          _pdfStatBox('Waspada', nAttention),
           pw.SizedBox(width: 8),
           _pdfStatBox('Tinggi', nHigh),
         ]),
@@ -620,9 +622,9 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
     );
   }
 
-  void _toast(String msg) {
+  void _toast(String msg, {bool error = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    showAppSnackBar(context, msg, error: error);
   }
 
   @override

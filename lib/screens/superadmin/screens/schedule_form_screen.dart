@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/appointment_service.dart';
 import '../../../utils/responsive_size.dart';
+import '../../../widgets/app_snackbar.dart';
 
 class ScheduleFormScreen extends StatefulWidget {
   final Map<String, dynamic>? schedule;
@@ -27,6 +28,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
   TimeOfDay? _endTime;
   DateTime? _originalDate;
   bool _isLoading = false;
+  String _initialSnapshot = '';
 
   static final _mapsUrlPattern = RegExp(
     r'^https?://(www\.)?(google\.[a-z.]+/maps|maps\.app\.goo\.gl|goo\.gl/maps)',
@@ -64,6 +66,40 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
         }
       }
     }
+    _initialSnapshot = _snapshot();
+  }
+
+  String _snapshot() => [
+        _titleController.text,
+        _locationController.text,
+        _mapsUrlController.text,
+        _dateDisplayController.text,
+        _timeDisplayController.text,
+      ].join(' ');
+
+  bool get _isDirty => _snapshot() != _initialSnapshot;
+
+  Future<void> _onPopAttempt() async {
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Buang perubahan?'),
+        content: const Text(
+            'Perubahan yang belum disimpan akan hilang. Yakin ingin keluar?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.statusRed),
+            child: const Text('Buang'),
+          ),
+        ],
+      ),
+    );
+    if (discard == true && mounted) Navigator.pop(context);
   }
 
   void _parseTimeRange(String range) {
@@ -163,12 +199,8 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
     final endMin = end.hour * 60 + end.minute;
     if (endMin <= startMin) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Waktu selesai harus setelah waktu mulai'),
-          backgroundColor: AppColors.statusRed,
-        ),
-      );
+      showAppSnackBar(context, 'Waktu selesai harus setelah waktu mulai',
+          error: true);
       return;
     }
 
@@ -183,24 +215,14 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
     final uri = Uri.parse('https://www.google.com/maps');
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tidak dapat membuka Google Maps'),
-          backgroundColor: AppColors.statusRed,
-        ),
-      );
+      showAppSnackBar(context, 'Tidak dapat membuka Google Maps', error: true);
     }
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tanggal wajib diisi'),
-          backgroundColor: AppColors.statusRed,
-        ),
-      );
+      showAppSnackBar(context, 'Tanggal wajib diisi', error: true);
       return;
     }
 
@@ -243,24 +265,18 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isEdit
+      showAppSnackBar(
+          context,
+          isEdit
               ? 'Jadwal berhasil diperbarui!'
-              : 'Jadwal berhasil ditambahkan!'),
-          backgroundColor: AppColors.statusGreen,
-        ),
-      );
+              : 'Jadwal berhasil ditambahkan!',
+          success: true);
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text('Gagal menyimpan jadwal. Periksa koneksi lalu coba lagi.'),
-          backgroundColor: AppColors.statusRed,
-        ),
-      );
+      showAppSnackBar(
+          context, 'Gagal menyimpan jadwal. Periksa koneksi lalu coba lagi.',
+          error: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -271,7 +287,12 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
     ResponsiveSize.init(context);
     final isEdit = widget.schedule != null;
 
-    return GestureDetector(
+    return PopScope(
+      canPop: !_isDirty,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onPopAttempt();
+      },
+      child: GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: AppColors.background,
@@ -280,7 +301,8 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () =>
+                _isDirty ? _onPopAttempt() : Navigator.pop(context),
           ),
           title: Text(
             isEdit ? 'Edit Jadwal' : 'Tambah Jadwal',
@@ -401,6 +423,7 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -441,11 +464,11 @@ class _ScheduleFormScreenState extends State<ScheduleFormScreen> {
             suffixIcon: suffixIcon,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.divider),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.surface),
+              borderSide: const BorderSide(color: AppColors.divider),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
