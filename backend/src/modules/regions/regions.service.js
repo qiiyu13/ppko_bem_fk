@@ -27,7 +27,9 @@ const createRegion = async (data) => {
   return prisma.region.create({
     data: {
       type: data.type,
-      name: data.name,
+      // Trim + collapse whitespace so " Desa  Sukamaju " and "Desa Sukamaju"
+      // can't become two region rows.
+      name: data.name.trim().replace(/\s+/g, ' '),
       parentId: data.parentId || null,
     },
   });

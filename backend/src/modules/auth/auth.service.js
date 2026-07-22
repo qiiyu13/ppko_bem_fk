@@ -28,8 +28,10 @@ const register = async ({ kkNumber, responsibleName, password, phone, villageId,
 
   let regionId = null;
   if (villageId && rwNumber && rtNumber) {
-    const rwName = `RW ${String(rwNumber).padStart(2, '0')}`;
-    const rtName = `RT ${String(rtNumber).padStart(2, '0')}`;
+    // parseInt first: the validator accepts "01"/"001" as integers, and
+    // padding the raw string would mint "RW 001" as a separate region row.
+    const rwName = `RW ${String(parseInt(rwNumber, 10)).padStart(2, '0')}`;
+    const rtName = `RT ${String(parseInt(rtNumber, 10)).padStart(2, '0')}`;
 
     const rw = await findOrCreateRegion('RW', rwName, villageId);
     const rt = await findOrCreateRegion('RT', rtName, rw.id);
