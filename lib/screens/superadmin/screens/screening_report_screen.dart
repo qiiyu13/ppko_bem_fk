@@ -175,6 +175,19 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
   String _category(Map<String, dynamic> r) =>
       (r['irdCategory'] ?? '-').toString();
 
+  /// Backend accepts pria|wanita|male|female|laki-laki (screenings.routes.js),
+  /// so a raw column mixes vocabularies and can't be grouped. Normalise it.
+  String _genderLabel(dynamic raw) {
+    switch (raw?.toString().toLowerCase()) {
+      case 'pria' || 'male' || 'laki-laki':
+        return 'Laki-laki';
+      case 'wanita' || 'female':
+        return 'Perempuan';
+      default:
+        return raw?.toString() ?? '-';
+    }
+  }
+
   /// One vocabulary everywhere (list, CSV, PDF, patient app, notification)
   /// instead of leaking the raw English enum values.
   String _categoryLabel(String raw) {
@@ -191,6 +204,22 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
   }
 
   // ---- CSV export ----
+  // Every variable the screening form collects, plus the profile demografi the
+  // per-person PDF page shows — the CSV is what gets loaded into Excel/SPSS, so
+  // it must not be the thin export.
+  static const _csvColumns = [
+    'Tanggal', 'Nama', 'NIK', 'JK', 'Usia',
+    'Pendidikan', 'Pekerjaan', 'StatusPerkawinan', 'Pendapatan(Rp)', 'RiwayatKeluarga',
+    'Sistolik(mmHg)', 'Diastolik(mmHg)', 'Nadi(x/menit)',
+    'GulaDarah(mg/dl)', 'AsamUrat(mg/dl)', 'Kolesterol(mg/dl)',
+    'BeratBadan(kg)', 'TinggiBadan(cm)', 'BMI(kg/m2)',
+    'LingkarPinggang(cm)', 'LingkarPerut(cm)', 'LingkarPanggul(cm)', 'RasioPinggangPanggul',
+    'Merokok', 'AktivitasFisik', 'KonsumsiBuah', 'KonsumsiSayur',
+    'MakananManis', 'MinumanManis', 'MakananBerlemak', 'MakananCepatSaji',
+    'DurasiTidur(jam)', 'RutinMinumObat',
+    'IRDScore', 'Kategori', 'Petugas', 'Catatan',
+  ];
+
   // Semicolon delimiter + comma decimals: what Excel/Sheets with the id_ID
   // locale actually splits into columns. Fields are RFC 4180-quoted so names
   // containing the delimiter, quotes, or newlines can't break rows.
@@ -206,27 +235,62 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
         ? '-'
         : (v as num).toDouble().toStringAsFixed(decimals).replaceAll('.', ',');
 
+    // Perilaku/demografi keys are stored as enum keys; export the same
+    // Indonesian labels the PDF prints so one vocabulary reaches the analyst.
+    String opt(List<OptionItem> options, dynamic v) =>
+        esc(ScreeningOptions.labelFor(options, v as String?));
+
     final buf = StringBuffer();
-    buf.writeln(
-        'Tanggal;Nama;NIK;JK;Sistolik(mmHg);Diastolik(mmHg);GulaDarah(mg/dl);AsamUrat(mg/dl);Kolesterol(mg/dl);BeratBadan(kg);TinggiBadan(cm);BMI(kg/m2);IRDScore;Kategori;Petugas');
+    buf.writeln(_csvColumns.join(';'));
     for (final r in _results) {
-      buf.writeln([
+      final p = r['profile'] as Map<String, dynamic>? ?? {};
+      final waist = (r['waistCircumference'] as num?)?.toDouble();
+      final hip = (r['hipCircumference'] as num?)?.toDouble();
+      final age = _profileAge(r);
+      final row = [
         _rowDate(r),
         esc(_patientName(r)),
         esc(_patientNik(r)),
-        esc((r['profile']?['gender'] ?? '-').toString()),
+        esc(_genderLabel(p['gender'])),
+        age?.toString() ?? '-',
+        opt(ScreeningOptions.education, p['education']),
+        opt(ScreeningOptions.occupation, p['occupation']),
+        opt(ScreeningOptions.maritalStatus, p['maritalStatus']),
+        csvNum(p['income'], decimals: 0),
+        opt(ScreeningOptions.familyDiseaseHistory, p['familyDiseaseHistory']),
         _int(r['systolic']),
         _int(r['diastolic']),
+        _int(r['pulse']),
         csvNum(r['bloodSugar']),
         csvNum(r['uricAcid']),
         csvNum(r['cholesterol']),
         csvNum(r['weight']),
         csvNum(r['height']),
         csvNum(_bmi(r)),
+        csvNum(waist),
+        csvNum(r['abdominalCircumference']),
+        csvNum(hip),
+        csvNum((waist != null && hip != null && hip > 0) ? waist / hip : null,
+            decimals: 2),
+        opt(ScreeningOptions.smokingStatus, r['smokingStatus']),
+        opt(ScreeningOptions.physicalActivity, r['physicalActivity']),
+        opt(ScreeningOptions.fruitConsumption, r['fruitConsumption']),
+        opt(ScreeningOptions.vegetableConsumption, r['vegetableConsumption']),
+        opt(ScreeningOptions.sweetFoodConsumption, r['sweetFoodConsumption']),
+        opt(ScreeningOptions.sweetDrinkConsumption, r['sweetDrinkConsumption']),
+        opt(ScreeningOptions.fattyFoodConsumption, r['fattyFoodConsumption']),
+        opt(ScreeningOptions.fastFoodConsumption, r['fastFoodConsumption']),
+        csvNum(r['sleepDuration']),
+        opt(ScreeningOptions.medicationRoutine, r['medicationRoutine']),
         csvNum(r['irdScore'], decimals: 2),
         _categoryLabel(_category(r)),
         esc(_screenerOf(r)),
-      ].join(';'));
+        esc((r['notes'] ?? '-').toString()),
+      ];
+      // Header/row drift silently shifts every column right of the mistake.
+      assert(row.length == _csvColumns.length,
+          'CSV row has ${row.length} fields, header has ${_csvColumns.length}');
+      buf.writeln(row.join(';'));
     }
     return buf.toString();
   }
@@ -397,7 +461,7 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text(
-                'PPKO BEM FK — dibuat otomatis ${_dateFmt.format(DateTime.now())}',
+                'PPKO BEM FK - dibuat otomatis ${_dateFmt.format(DateTime.now())}',
                 style: pw.TextStyle(fontSize: 8, color: _pdfGrey),
               ),
               pw.Text('Hal. ${ctx.pageNumber}/${ctx.pagesCount}',
@@ -432,10 +496,10 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
         pw.SizedBox(height: 16),
         _pdfKvTable([
           ('Petugas', _selectedScopeLabel()),
-          ('Periode', '${_dateFmt.format(_from)} – ${_dateFmt.format(_to)}'),
+          ('Periode', '${_dateFmt.format(_from)} s/d ${_dateFmt.format(_to)}'),
           ('Total Orang', '$total orang'),
           if (_truncated)
-            ('Catatan', 'Data terpotong — melebihi batas ekspor, persempit rentang tanggal'),
+            ('Catatan', 'Data terpotong - melebihi batas ekspor, persempit rentang tanggal'),
         ]),
         pw.SizedBox(height: 28),
         _pdfSectionTitle('RINGKASAN KATEGORI RISIKO'),
@@ -477,15 +541,25 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
     final hip = (r['hipCircumference'] as num?)?.toDouble();
     final ratio = (waist != null && hip != null && hip > 0) ? waist / hip : null;
     final behaviorRows = _behaviorRows(r);
+    // ponytail: whitespace collapsed + capped so a long note can't push the
+    // person Column past one A4 page (MultiPage throws on an unsplittable
+    // child and kills the whole export). Full note is in the CSV.
+    final rawNotes =
+        (r['notes'] ?? '').toString().replaceAll(RegExp(r'\s+'), ' ').trim();
+    final notes = rawNotes.length > 350
+        ? '${rawNotes.substring(0, 350)}...'
+        : rawNotes;
 
     final identitas = <(String, String)>[
-      ('Jenis Kelamin', (profile['gender'] ?? '-').toString()),
+      ('Jenis Kelamin', _genderLabel(profile['gender'])),
       if (age != null) ('Usia', '$age tahun'),
       ('Pendidikan', ScreeningOptions.labelFor(ScreeningOptions.education, profile['education'] as String?)),
       ('Pekerjaan', ScreeningOptions.labelFor(ScreeningOptions.occupation, profile['occupation'] as String?)),
       ('Status Perkawinan', ScreeningOptions.labelFor(ScreeningOptions.maritalStatus, profile['maritalStatus'] as String?)),
       ('Pendapatan', _incomeText(profile['income'])),
-      ('Riwayat Keluarga (DM/HT/Stroke/Jantung)', ScreeningOptions.labelFor(ScreeningOptions.familyDiseaseHistory, profile['familyDiseaseHistory'] as String?)),
+      // Short label: the full "(DM/HT/Stroke/Jantung)" breaks mid-word in the
+      // narrow two-column layout.
+      ('Riwayat Penyakit Keluarga', ScreeningOptions.labelFor(ScreeningOptions.familyDiseaseHistory, profile['familyDiseaseHistory'] as String?)),
     ];
 
     final antropometri = <(String, String)>[
@@ -539,19 +613,53 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
         ),
         pw.SizedBox(height: 8),
         pw.Divider(thickness: 1, color: PdfColors.black),
-        pw.SizedBox(height: 12),
-        _pdfSectionTitle('IDENTITAS & DEMOGRAFI'),
-        _pdfKvTable(identitas),
-        pw.SizedBox(height: 12),
-        _pdfSectionTitle('ANTROPOMETRI'),
-        _pdfKvTable(antropometri),
-        pw.SizedBox(height: 12),
+        pw.SizedBox(height: 8),
+        // Two columns: the identity and body-measurement blocks are both short
+        // and short-valued, so pairing them keeps a fully-filled record on one
+        // page instead of orphaning a heading at the page break.
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Expanded(
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  _pdfSectionTitle('IDENTITAS & DEMOGRAFI'),
+                  _pdfKvTable(identitas),
+                ],
+              ),
+            ),
+            pw.SizedBox(width: 12),
+            pw.Expanded(
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  _pdfSectionTitle('ANTROPOMETRI'),
+                  _pdfKvTable(antropometri),
+                ],
+              ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 8),
         _pdfSectionTitle('HASIL KLINIS'),
         _pdfKvTable(klinis),
         if (behaviorRows.isNotEmpty) ...[
-          pw.SizedBox(height: 12),
+          pw.SizedBox(height: 8),
           _pdfSectionTitle('PERILAKU & GAYA HIDUP'),
           _pdfKvTable(behaviorRows),
+        ],
+        if (notes.isNotEmpty) ...[
+          pw.SizedBox(height: 8),
+          _pdfSectionTitle('CATATAN PETUGAS'),
+          pw.Container(
+            width: double.infinity,
+            padding: const pw.EdgeInsets.all(8),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: _pdfBorder, width: 0.5),
+            ),
+            child: pw.Text(notes, style: const pw.TextStyle(fontSize: 9)),
+          ),
         ],
         pw.SizedBox(height: 16),
         // Result box — category as bold text only; no color in B/W print
@@ -609,11 +717,11 @@ class _ScreeningReportScreenState extends State<ScreeningReportScreen> {
           pw.TableRow(children: [
             pw.Container(
               color: _pdfLightGrey,
-              padding: const pw.EdgeInsets.all(6),
+              padding: const pw.EdgeInsets.all(4),
               child: pw.Text(label, style: pw.TextStyle(fontSize: 9, color: _pdfGrey)),
             ),
             pw.Padding(
-              padding: const pw.EdgeInsets.all(6),
+              padding: const pw.EdgeInsets.all(4),
               child: pw.Text(value,
                   style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
             ),
