@@ -28,3 +28,9 @@ jobs:
             cd /home/admin/deployment-nondsih && \
             ansible-playbook -i fk_mediku_ppkobem/hosts fk_mediku_ppkobem/deploy.yml && \
             ssh -o StrictHostKeyChecking=no admin@10.2.16.46 'docker restart fk_medikuappunnesid_bem-backend-1'"
+
+      - name: Apply monitoring
+        run: |
+          ssh -o StrictHostKeyChecking=no admin@103.23.102.190 "
+            cd /home/admin/ppko_bem_fk/ && \
+            ansible-playbook -i localhost, ops/uptime-kuma/deploy.yml"

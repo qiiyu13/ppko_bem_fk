@@ -1,0 +1,84 @@
+# Uptime Kuma - uptime monitoring for the mediku backend.
+#
+# Runs on the CI/CD host (103.23.102.190), deliberately NOT on the app host
+# (10.2.16.46), so that a dead app host still produces an alert instead of
+# taking the monitor down with it.
+#
+# Applied by .github/workflows/deploy.yml on every push to `production`.
+# Manually:  ansible-playbook -i localhost, ops/uptime-kuma/deploy.yml
+# UI:        ssh -L 3001:localhost:3001 admin@103.23.102.190 -> http://localhost:3001
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    kuma_dir: /home/admin/uptime-kuma
+    # user_id 1 is the account created by Kuma's first-run setup wizard.
+    monitors:
+      - name: Mediku Backend (internal 10.2.16.46:39024)
+        url: http://10.2.16.46:39024/api/v1/health
+        description: App container + database. This endpoint returns 503 when Prisma loses the DB.
+      - name: Mediku Public (mediku.appunnes.id)
+        url: https://mediku.appunnes.id/api/v1/health
+        description: Full public path including the 103.23.102.191 gateway. Down here but up on internal = gateway problem.
+  tasks:
+    - name: create uptime-kuma directory
+      file:
+        path: "{{ kuma_dir }}"
+        state: directory
+        mode: "0755"
+
+    # Holds TS_AUTHKEY. Deliberately not in git and never written by this
+    # playbook - fail loudly rather than half-start without tailscale.
+    - name: check tailscale env file exists
+      stat:
+        path: "{{ kuma_dir }}/.env"
+      register: kuma_env
+      failed_when: not kuma_env.stat.exists
+      # See ops/uptime-kuma/README.md for how to create it.
+
+    - name: copy compose file
+      copy:
+        src: docker-compose.yml
+        dest: "{{ kuma_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: copy tailscale serve config
+      copy:
+        src: ts-serve.json
+        dest: "{{ kuma_dir }}/ts-serve.json"
+        mode: "0644"
+
+    - name: start uptime-kuma
+      command: docker compose up -d
+      args:
+        chdir: "{{ kuma_dir }}"
+      register: kuma_up
+      changed_when: kuma_up.stderr is search('Created|Started|Recreated')
+
+    - name: wait for uptime-kuma to answer
+      uri:
+        url: http://127.0.0.1:3001
+        status_code: [200, 302]
+      register: kuma_http
+      until: kuma_http is succeeded
+      retries: 30
+      delay: 2
+
+    # Seeded straight into Kuma's SQLite because Kuma v1 has no API for this.
+    # Keyed on url, so re-running the playbook never duplicates a monitor.
+    - name: seed monitors
+      command: >
+        docker exec uptime-kuma sqlite3 /app/data/kuma.db
+        "INSERT INTO monitor (name,url,type,active,user_id,interval,retry_interval,maxretries,timeout,method,description)
+         SELECT '{{ item.name }}','{{ item.url }}','http',1,1,60,60,2,48,'GET','{{ item.description }}'
+         WHERE NOT EXISTS (SELECT 1 FROM monitor WHERE url='{{ item.url }}');
+         SELECT changes();"
+      loop: "{{ monitors }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: kuma_seed
+      changed_when: kuma_seed.stdout | trim != '0'
+
+    - name: restart uptime-kuma so newly seeded monitors start probing
+      command: docker restart uptime-kuma
+      when: kuma_seed is changed
