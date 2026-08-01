@@ -49,21 +49,21 @@ class ScreeningOptions {
   ];
 
   static const physicalActivity = <OptionItem>[
-    (key: 'rendah', label: 'Rendah: 1-2 kali seminggu (jalan)'),
-    (key: 'sedang', label: 'Sedang: 3-5 kali seminggu (jalan)'),
-    (key: 'tinggi', label: 'Tinggi: 3-5 kali seminggu (jogging)'),
+    (key: 'rendah', label: 'Rendah (jalan kaki, 1–2x/minggu)'),
+    (key: 'sedang', label: 'Sedang (jalan kaki, 3–5x/minggu)'),
+    (key: 'tinggi', label: 'Tinggi (jogging, 3–5x/minggu)'),
   ];
 
   static const fruitConsumption = <OptionItem>[
-    (key: 'rendah', label: 'Rendah: <5 porsi per hari seminggu'),
-    (key: 'cukup', label: 'Cukup: >=5 porsi per hari seminggu'),
+    (key: 'rendah', label: 'Kurang dari 5 porsi/hari'),
+    (key: 'cukup', label: '5 porsi/hari atau lebih'),
   ];
 
   static const vegetableConsumption = fruitConsumption;
 
   static const sweetFoodConsumption = <OptionItem>[
-    (key: 'sering', label: 'Sering: 1-6 kali seminggu'),
-    (key: 'jarang', label: 'Jarang: <=3 kali sebulan/ tidak pernah'),
+    (key: 'sering', label: 'Sering (1–6x/minggu)'),
+    (key: 'jarang', label: 'Jarang (≤3x/bulan atau tidak pernah)'),
   ];
 
   static const sweetDrinkConsumption = sweetFoodConsumption;
