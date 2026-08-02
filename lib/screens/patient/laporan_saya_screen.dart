@@ -1001,7 +1001,9 @@ class _ExpandableScreeningCardWidgetState
     ];
 
     doc.addPage(
-      // MultiPage: the new sections can push content past one A4 page.
+      // MultiPage as a safety net; spacing is tuned to keep the worst case
+      // (every optional field filled) on one A4 page — verified by rendering
+      // with maxed-out dummy data and counting page objects in the output.
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
@@ -1066,29 +1068,29 @@ class _ExpandableScreeningCardWidgetState
               ),
             ],
           ),
-          pw.SizedBox(height: 8),
+          pw.SizedBox(height: 6),
           pw.Divider(thickness: 1, color: PdfColors.black),
-          pw.SizedBox(height: 12),
+          pw.SizedBox(height: 8),
           _pdfSectionTitle('DATA DIRI'),
           _pdfKvTable(dataDiri, lightGrey, greyColor, borderColor),
-          pw.SizedBox(height: 12),
+          pw.SizedBox(height: 8),
           _pdfSectionTitle('ANTROPOMETRI'),
           _pdfKvTable(antropometri, lightGrey, greyColor, borderColor),
-          pw.SizedBox(height: 12),
+          pw.SizedBox(height: 8),
           _pdfSectionTitle('HASIL KLINIS'),
           _pdfKvTable(klinis, lightGrey, greyColor, borderColor),
           if (behaviorRows.isNotEmpty) ...[
-            pw.SizedBox(height: 12),
+            pw.SizedBox(height: 8),
             _pdfSectionTitle('GAYA HIDUP'),
             _pdfKvTable(behaviorRows, lightGrey, greyColor, borderColor),
           ],
-          pw.SizedBox(height: 16),
+          pw.SizedBox(height: 10),
           // Result box — bold text only, no color in B/W print
           pw.Container(
             width: double.infinity,
             padding: const pw.EdgeInsets.symmetric(
               horizontal: 14,
-              vertical: 12,
+              vertical: 8,
             ),
             decoration: pw.BoxDecoration(
               border: pw.Border.all(color: PdfColors.black, width: 1.2),
@@ -1140,7 +1142,7 @@ class _ExpandableScreeningCardWidgetState
 
   pw.Widget _pdfSectionTitle(String title) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 6),
+      padding: const pw.EdgeInsets.only(bottom: 4),
       child: pw.Text(
         title,
         style: pw.TextStyle(
@@ -1168,14 +1170,20 @@ class _ExpandableScreeningCardWidgetState
             children: [
               pw.Container(
                 color: lightGrey,
-                padding: const pw.EdgeInsets.all(6),
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 3,
+                ),
                 child: pw.Text(
                   label,
                   style: pw.TextStyle(fontSize: 9, color: greyColor),
                 ),
               ),
               pw.Padding(
-                padding: const pw.EdgeInsets.all(6),
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 3,
+                ),
                 child: pw.Text(
                   value,
                   style: pw.TextStyle(
