@@ -220,6 +220,7 @@ class ProfileService {
     try {
       FormData formData;
       final map = profile.toApiMap();
+      if (map['nik'] == null) map.remove('nik');
       map['updatedAt'] = profile.updatedAt.toIso8601String();
       if (avatar != null) {
         formData = FormData.fromMap({

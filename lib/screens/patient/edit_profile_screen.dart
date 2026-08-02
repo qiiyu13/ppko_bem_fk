@@ -217,15 +217,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 // NIK (read-only)
                 ProfileFormField(
                   controller: _nikController,
-                  label: 'NIK *',
+                  label: 'NIK',
                   hint: 'Masukkan 16 digit NIK',
                   keyboardType: TextInputType.number,
                   maxLength: 16,
                   readOnly: true,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'NIK wajib diisi';
-                    }
+                    if (value == null || value.isEmpty) return null;
                     if (value.length != 16) return 'NIK harus 16 digit';
                     return null;
                   },
