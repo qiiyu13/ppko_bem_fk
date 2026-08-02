@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const config = require('./config');
 const routes = require('./routes');
+const { verifyToken } = require('./utils/jwt');
 const errorHandler = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');
 
@@ -54,14 +55,38 @@ if (config.nodeEnv !== 'production') {
 app.use('/uploads', express.static(path.resolve(__dirname, '../uploads'), {
   maxAge: '1y',
   immutable: true,
+  setHeaders: (res, filePath) => {
+    // Force download instead of an in-browser preview attempt for APKs
+    // (e.g. QR-code install links) — no click-through needed.
+    if (filePath.endsWith('.apk')) {
+      res.setHeader('Content-Disposition', 'attachment');
+    }
+  },
 }));
 
 // Rate limit scoped to the API only — not static assets or WebSocket upgrades.
+// Keyed by user id when the request carries a valid token, not just req.ip:
+// admins on the same campus NAT'd WiFi share one public IP, so IP-keying would
+// collapse e.g. 20 concurrent admins into a single 200-req/15min bucket.
+// This runs ahead of the real `authenticate` middleware, so it only peeks at
+// the token (verify, no DB/blacklist check) — falls back to IP pre-login.
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const { userId } = verifyToken(authHeader.split(' ')[1]);
+        if (userId) return `user:${userId}`;
+      } catch {
+        // fall through to IP-based key below
+      }
+    }
+    return rateLimit.ipKeyGenerator(req, res);
+  },
 });
 
 // Liveness probe — no DB, no rate limit, tiny body. Clients hit this to confirm
