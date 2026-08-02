@@ -63,7 +63,7 @@ class ScreeningOptions {
 
   static const sweetFoodConsumption = <OptionItem>[
     (key: 'sering', label: 'Sering (1–6x per minggu)'),
-    (key: 'jarang', label: 'Jarang (≤3x per bulan atau tidak pernah)'),
+    (key: 'jarang', label: 'Jarang (maks. 3x per bulan atau tidak pernah)'),
   ];
 
   static const sweetDrinkConsumption = sweetFoodConsumption;
