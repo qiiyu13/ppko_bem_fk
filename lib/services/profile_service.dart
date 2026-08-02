@@ -121,7 +121,7 @@ class ProfileService {
   }
 
   Future<FamilyProfile> createProfile({
-    required String nik,
+    String? nik,
     required String name,
     required String gender,
     required DateTime birthDate,
@@ -132,7 +132,7 @@ class ProfileService {
     Map<String, dynamic>? healthVariables,
   }) async {
     final base = <String, dynamic>{
-      'nik': nik,
+      'nik': ?nik,
       'name': name,
       'gender': gender,
       'birthDate': birthDate.toIso8601String(),

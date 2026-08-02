@@ -187,12 +187,12 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
 
               ProfileFormField(
                 controller: _nikController,
-                label: 'NIK *',
+                label: 'NIK (opsional)',
                 hint: 'Masukkan 16 digit NIK',
                 keyboardType: TextInputType.number,
                 maxLength: 16,
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'NIK wajib diisi';
+                  if (value == null || value.isEmpty) return null;
                   if (value.length != 16) return 'NIK harus 16 digit';
                   return null;
                 },
@@ -327,7 +327,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
 
     try {
       await ProfileService.instance.createProfile(
-        nik: _nikController.text,
+        nik: _nikController.text.isEmpty ? null : _nikController.text,
         name: _nameController.text,
         gender: _selectedGender.toLowerCase(),
         birthDate: _selectedBirthDate!,
