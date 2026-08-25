@@ -64,6 +64,15 @@ app.use('/uploads', express.static(path.resolve(__dirname, '../uploads'), {
   },
 }));
 
+// Static site files (privacy policy required by Google Play, etc.). Served
+// ahead of the rate limiter like /uploads — it is a legal page, not API traffic.
+app.use(express.static(path.resolve(__dirname, '../public'), {
+  maxAge: '1d',
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) res.setHeader('Content-Type', 'text/html; charset=UTF-8');
+  },
+}));
+
 // Rate limit scoped to the API only — not static assets or WebSocket upgrades.
 // Keyed by user id when the request carries a valid token, not just req.ip:
 // admins on the same campus NAT'd WiFi share one public IP, so IP-keying would
