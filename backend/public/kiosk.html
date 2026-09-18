@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pendaftaran Pasien — MEDIKU</title>
+<style>
+  :root { --green: #5B8C3E; --green-dark: #4a7030; --ink: #24301c; --bg: #f6f8f3; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; color: var(--ink); background: var(--bg); line-height: 1.5; }
+  h1 { color: var(--green); font-size: 1.4rem; margin-bottom: .25rem; }
+  .sub { color: #667; font-size: .9rem; margin-bottom: 1.5rem; }
+  .card { background: #fff; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,.08); margin-bottom: 1.25rem; }
+  label { display: block; font-size: .85rem; font-weight: 600; margin: .9rem 0 .3rem; }
+  label:first-child { margin-top: 0; }
+  input, select, textarea { width: 100%; padding: .6rem .7rem; border: 1px solid #d5dccb; border-radius: 8px; font-size: 1rem; font-family: inherit; background: #fff; }
+  textarea { resize: vertical; min-height: 3.5rem; }
+  .radio-row { display: flex; gap: 1rem; }
+  .radio-row label { display: flex; align-items: center; gap: .4rem; font-weight: 500; margin: 0; }
+  .radio-row input { width: auto; }
+  button { width: 100%; padding: .75rem; border: none; border-radius: 8px; background: var(--green); color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 1.25rem; }
+  button:disabled { opacity: .6; cursor: not-allowed; }
+  button.secondary { background: #fff; color: var(--green); border: 1px solid var(--green); }
+  .error { color: #c0392b; font-size: .85rem; margin-top: .6rem; display: none; }
+  .hint { color: #889; font-size: .78rem; margin-top: .25rem; }
+  #app { display: none; }
+  #app.ready { display: block; }
+  #login-card.hidden, #register-card.hidden, #result-card.hidden { display: none; }
+  .result-field { margin-bottom: .9rem; }
+  .result-field .k { font-size: .78rem; color: #667; text-transform: uppercase; letter-spacing: .03em; }
+  .result-field .v { font-size: 1.15rem; font-weight: 700; font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
+  .warn { background: #fff6e0; border: 1px solid #e8d18a; color: #7a5c00; padding: .7rem .9rem; border-radius: 8px; font-size: .85rem; margin: 1rem 0; }
+  .qr-block { text-align: center; margin: 1.25rem 0; }
+  .qr-block img { width: 260px; height: 260px; border: 1px solid #e5e9dc; border-radius: 8px; }
+  .qr-block p { font-size: .85rem; color: #556; margin-top: .5rem; }
+  .who { display: flex; justify-content: space-between; align-items: center; font-size: .85rem; color: #667; margin-bottom: 1rem; }
+  .who button { width: auto; margin: 0; padding: .35rem .7rem; font-size: .8rem; background: none; color: #c0392b; border: 1px solid #e2b6ae; }
+</style>
+</head>
+<body>
+<h1>Pendaftaran Pasien</h1>
+<div class="sub">MEDIKU &mdash; loket skrining kesehatan</div>
+
+<div id="login-card" class="card">
+  <div class="sub" style="margin-bottom:1rem">Masuk sebagai petugas (admin) untuk mendaftarkan pasien baru.</div>
+  <label for="li-id">Username / No. KK petugas</label>
+  <input id="li-id" autocomplete="username">
+  <label for="li-pw">Password</label>
+  <input id="li-pw" type="password" autocomplete="current-password">
+  <div class="error" id="login-error"></div>
+  <button id="login-btn">Masuk</button>
+</div>
+
+<div id="app">
+  <div class="who">
+    <span>Masuk sebagai <strong id="who-name"></strong></span>
+    <button id="logout-btn">Keluar</button>
+  </div>
+
+  <div id="register-card" class="card">
+    <label for="f-name">Nama lengkap</label>
+    <input id="f-name" maxlength="100">
+
+    <label for="f-nik">NIK <span class="hint">(kosongkan jika pasien tidak membawa KTP)</span></label>
+    <input id="f-nik" inputmode="numeric" maxlength="16" placeholder="16 digit">
+
+    <label>Jenis kelamin</label>
+    <div class="radio-row">
+      <label><input type="radio" name="gender" value="pria"> Pria</label>
+      <label><input type="radio" name="gender" value="wanita"> Wanita</label>
+    </div>
+
+    <label for="f-occupation">Pekerjaan</label>
+    <select id="f-occupation">
+      <option value="">— Pilih —</option>
+      <option value="tidak_bekerja">Tidak bekerja</option>
+      <option value="sekolah">Sekolah</option>
+      <option value="pns_tni_polri">PNS/ TNI/ Polri/ BUMN/ BUMD</option>
+      <option value="pegawai_swasta">Pegawai swasta</option>
+      <option value="wiraswasta">Wiraswasta</option>
+      <option value="petani">Petani/ buruh tani</option>
+      <option value="pedagang">Pedagang</option>
+      <option value="lainnya">Lainnya</option>
+    </select>
+
+    <label for="f-income">Pendapatan per bulan (Rp)</label>
+    <input id="f-income" type="number" min="0" step="1000" placeholder="opsional">
+
+    <label for="f-bloodtype">Golongan darah</label>
+    <select id="f-bloodtype">
+      <option value="">— Tidak tahu —</option>
+      <option>A+</option><option>A-</option>
+      <option>B+</option><option>B-</option>
+      <option>O+</option><option>O-</option>
+      <option>AB+</option><option>AB-</option>
+    </select>
+
+    <label for="f-address">Alamat</label>
+    <textarea id="f-address" placeholder="opsional"></textarea>
+
+    <div class="error" id="register-error"></div>
+    <button id="register-btn">Daftarkan &amp; Buat QR</button>
+  </div>
+
+  <div id="result-card" class="card hidden">
+    <div class="result-field" style="text-align:center"><div class="k">Nama</div><div class="v" id="r-name"></div></div>
+    <div class="qr-block">
+      <img id="r-view-qr" alt="QR akun pasien">
+      <p><strong>Minta pasien pindai QR ini</strong> dengan kamera HP mereka sendiri. Halaman yang terbuka menampilkan QR skrining mereka dan info login &mdash; jadi mereka bisa cek dulu, pasang aplikasi belakangan.</p>
+    </div>
+    <details>
+      <summary style="cursor:pointer;font-size:.85rem;color:#667;margin-top:.5rem">Cadangan bila pasien tidak bisa memindai</summary>
+      <div class="warn" style="margin-top:.75rem">Password di bawah ini juga akan tampil satu kali di HP pasien saat mereka memindai QR &mdash; catat di sini hanya sebagai cadangan.</div>
+      <div class="result-field"><div class="k">No. KK</div><div class="v" id="r-kk"></div></div>
+      <div class="result-field"><div class="k">Username</div><div class="v" id="r-username"></div></div>
+      <div class="result-field"><div class="k">Password</div><div class="v" id="r-password"></div></div>
+    </details>
+    <button id="again-btn" class="secondary">Daftarkan pasien lain</button>
+  </div>
+</div>
+
+<script>
+const API = '/api/v1';
+const $ = (id) => document.getElementById(id);
+let token = sessionStorage.getItem('kiosk_token');
+let who = sessionStorage.getItem('kiosk_who');
+
+function showApp() {
+  $('login-card').classList.add('hidden');
+  $('app').classList.add('ready');
+  $('who-name').textContent = who || '';
+}
+
+if (token) showApp();
+
+$('login-btn').addEventListener('click', async () => {
+  const identifier = $('li-id').value.trim();
+  const password = $('li-pw').value;
+  $('login-error').style.display = 'none';
+  if (!identifier || !password) return;
+  $('login-btn').disabled = true;
+  try {
+    const res = await fetch(`${API}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, password }),
+    });
+    const body = await res.json();
+    if (!res.ok || !body.success) throw new Error(body.error?.message || 'Login gagal');
+    if (!['ADMIN', 'SUPERADMIN'].includes(body.data.user.role)) throw new Error('Akun ini bukan akun petugas');
+    token = body.data.token;
+    who = body.data.user.responsibleName;
+    sessionStorage.setItem('kiosk_token', token);
+    sessionStorage.setItem('kiosk_who', who);
+    showApp();
+  } catch (e) {
+    $('login-error').textContent = e.message;
+    $('login-error').style.display = 'block';
+  } finally {
+    $('login-btn').disabled = false;
+  }
+});
+
+$('logout-btn').addEventListener('click', () => {
+  sessionStorage.removeItem('kiosk_token');
+  sessionStorage.removeItem('kiosk_who');
+  location.reload();
+});
+
+$('register-btn').addEventListener('click', async () => {
+  const name = $('f-name').value.trim();
+  const gender = document.querySelector('input[name=gender]:checked')?.value;
+  $('register-error').style.display = 'none';
+  if (!name) return showRegError('Nama wajib diisi');
+  if (!gender) return showRegError('Jenis kelamin wajib dipilih');
+
+  const payload = {
+    name,
+    gender,
+    nik: $('f-nik').value.trim() || undefined,
+    occupation: $('f-occupation').value || undefined,
+    income: $('f-income').value || undefined,
+    bloodType: $('f-bloodtype').value || undefined,
+    address: $('f-address').value.trim() || undefined,
+  };
+
+  $('register-btn').disabled = true;
+  try {
+    const res = await fetch(`${API}/admin/kiosk/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    const body = await res.json();
+    if (res.status === 401) { sessionStorage.clear(); location.reload(); return; }
+    if (!res.ok || !body.success) throw new Error(body.error?.message || 'Gagal mendaftarkan pasien');
+
+    $('r-name').textContent = body.data.profile.name;
+    $('r-kk').textContent = body.data.kkNumber;
+    $('r-username').textContent = body.data.username;
+    $('r-password').textContent = body.data.password;
+    $('r-view-qr').src = body.data.viewQrDataUrl;
+
+    $('register-card').classList.add('hidden');
+    $('result-card').classList.remove('hidden');
+  } catch (e) {
+    showRegError(e.message);
+  } finally {
+    $('register-btn').disabled = false;
+  }
+});
+
+function showRegError(msg) {
+  $('register-error').textContent = msg;
+  $('register-error').style.display = 'block';
+}
+
+$('again-btn').addEventListener('click', () => {
+  document.querySelectorAll('#register-card input, #register-card select, #register-card textarea').forEach((el) => {
+    if (el.type === 'radio') el.checked = false; else el.value = '';
+  });
+  $('result-card').classList.add('hidden');
+  $('register-card').classList.remove('hidden');
+  $('f-name').focus();
+});
+</script>
+</body>
+</html>

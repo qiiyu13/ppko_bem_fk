@@ -39,6 +39,7 @@ const createProfile = async (data, userId) => {
       avatarPath: data.avatarPath || null,
       bloodType: data.bloodType || null,
       phone: data.phone || null,
+      address: data.address || null,
       ...Object.fromEntries(HEALTH_STRING_FIELDS.map((f) => [f, data[f] || null])),
       ...Object.fromEntries(HEALTH_NUMERIC_FIELDS.map((f) => [f, data[f] != null ? parseFloat(data[f]) : null])),
     },
@@ -128,6 +129,7 @@ const updateProfile = async (id, data, userId, existing) => {
   if (data.avatarPath !== undefined) updateData.avatarPath = data.avatarPath || null;
   if (data.bloodType !== undefined) updateData.bloodType = data.bloodType || null;
   if (data.phone !== undefined) updateData.phone = data.phone || null;
+  if (data.address !== undefined) updateData.address = data.address || null;
   for (const f of HEALTH_STRING_FIELDS) {
     if (data[f] !== undefined) updateData[f] = data[f] || null;
   }

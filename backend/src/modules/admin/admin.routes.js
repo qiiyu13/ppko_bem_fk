@@ -2,6 +2,8 @@ const router = require('express').Router();
 const { body } = require('express-validator');
 const adminController = require('./admin.controller');
 const usersController = require('./users.controller');
+const kioskController = require('./kiosk.controller');
+const { PROFILE_OPTION_FIELDS } = require('../../utils/healthOptions');
 const authenticate = require('../../middleware/auth');
 const authorize = require('../../middleware/roleGuard');
 const validate = require('../../middleware/validate');
@@ -38,5 +40,18 @@ router.delete('/users/:id', [
   body('updatedAt').isISO8601().withMessage('updatedAt is required for conflict detection'),
   validate,
 ], conflictDetection('user'), usersController.deleteUser);
+
+// Kiosk walk-in registration (screening-event front desk): six fields off an
+// ID card in, KK/username/password + QR out. See kiosk.service.js.
+router.post('/kiosk/register', [
+  body('name').isString().trim().notEmpty().isLength({ max: 100 }),
+  body('gender').customSanitizer((v) => typeof v === 'string' ? v.toLowerCase() : v).isIn(['pria', 'wanita']),
+  body('nik').optional({ checkFalsy: true }).isString().trim().isLength({ min: 16, max: 16 }).withMessage('NIK must be exactly 16 digits'),
+  body('occupation').optional({ checkFalsy: true }).isIn(PROFILE_OPTION_FIELDS.occupation),
+  body('income').optional({ checkFalsy: true }).isFloat({ min: 0, max: 1e12 }),
+  body('bloodType').optional({ checkFalsy: true }).isString().isLength({ max: 10 }),
+  body('address').optional({ checkFalsy: true }).isString().isLength({ max: 500 }),
+  validate,
+], kioskController.registerWalkIn);
 
 module.exports = router;

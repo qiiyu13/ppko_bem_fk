@@ -21,5 +21,6 @@ router.use('/screenings', require('../modules/screenings/screenings.routes'));
 router.use('/admin', require('../modules/admin/admin.routes'));
 router.use('/regions', require('../modules/regions/regions.routes'));
 router.use('/notifications', require('../modules/notifications/notifications.routes'));
+router.use('/public', require('../modules/public/public.routes'));
 
 module.exports = router;

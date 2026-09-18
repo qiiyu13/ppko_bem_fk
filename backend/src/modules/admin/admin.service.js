@@ -24,6 +24,7 @@ const PROFILE_DETAIL_SELECT = {
   weight: true,
   bloodType: true,
   phone: true,
+  address: true,
   avatarPath: true,
   // Demografi + perilaku — shown on the admin patient detail screen
   education: true,

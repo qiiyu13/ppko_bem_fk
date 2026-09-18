@@ -27,6 +27,7 @@ router.post('/', uploadAvatarMiddleware, [
   body('nik').optional({ nullable: true }).isString().notEmpty(),
   body('gender').customSanitizer((v) => typeof v === 'string' ? v.toLowerCase() : v).isIn(['pria', 'wanita']),
   body('birthDate').optional({ nullable: true }).isISO8601(),
+  body('address').optional({ nullable: true, checkFalsy: true }).isString().isLength({ max: 500 }),
   ...healthVariableValidators,
   validate,
 ], controller.createProfile);
@@ -36,6 +37,7 @@ router.put('/:id', uploadAvatarMiddleware, [
   body('nik').optional().isString().notEmpty(),
   body('gender').optional().customSanitizer((v) => typeof v === 'string' ? v.toLowerCase() : v).isIn(['pria', 'wanita']),
   body('birthDate').optional().isISO8601(),
+  body('address').optional({ checkFalsy: true }).isString().isLength({ max: 500 }),
   ...healthVariableValidators,
   body('updatedAt').isISO8601().withMessage('updatedAt is required for conflict detection'),
   validate,

@@ -53,6 +53,7 @@ model FamilyProfile {
   avatarPath   String?   @map("avatar_path")
   bloodType    String?   @map("blood_type")
   phone        String?
+  address      String?
   mergedIntoId String?   @map("merged_into_id")
 
   // Demografi (values are lowercase keys, validated at the API layer)
