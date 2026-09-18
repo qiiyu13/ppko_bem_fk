@@ -5,41 +5,78 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pendaftaran Pasien — MEDIKU</title>
 <style>
-  :root { --green: #5B8C3E; --green-dark: #4a7030; --ink: #24301c; --bg: #f6f8f3; }
+  :root { --green: #5B8C3E; --green-dark: #4a7030; --green-wash: #edf3e6; --ink: #24301c; --muted: #5d6b57; --border: #d7ddca; --bg: #f3f6ee; --err: #b3261e; --err-wash: #fbeceb; }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; color: var(--ink); background: var(--bg); line-height: 1.5; }
-  h1 { color: var(--green); font-size: 1.4rem; margin-bottom: .25rem; }
-  .sub { color: #667; font-size: .9rem; margin-bottom: 1.5rem; }
-  .card { background: #fff; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,.08); margin-bottom: 1.25rem; }
-  label { display: block; font-size: .85rem; font-weight: 600; margin: .9rem 0 .3rem; }
-  label:first-child { margin-top: 0; }
-  input, select, textarea { width: 100%; padding: .6rem .7rem; border: 1px solid #d5dccb; border-radius: 8px; font-size: 1rem; font-family: inherit; background: #fff; }
-  textarea { resize: vertical; min-height: 3.5rem; }
-  .radio-row { display: flex; gap: 1rem; }
-  .radio-row label { display: flex; align-items: center; gap: .4rem; font-weight: 500; margin: 0; }
-  .radio-row input { width: auto; }
-  button { width: 100%; padding: .75rem; border: none; border-radius: 8px; background: var(--green); color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 1.25rem; }
-  button:disabled { opacity: .6; cursor: not-allowed; }
-  button.secondary { background: #fff; color: var(--green); border: 1px solid var(--green); }
-  .error { color: #c0392b; font-size: .85rem; margin-top: .6rem; display: none; }
-  .hint { color: #889; font-size: .78rem; margin-top: .25rem; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 1.25rem 1rem calc(3rem + env(safe-area-inset-bottom)); color: var(--ink); background: var(--bg); line-height: 1.5; }
+
+  .brand { display: flex; align-items: center; gap: .75rem; margin-bottom: 1.5rem; }
+  .brand img { width: 44px; height: 44px; flex-shrink: 0; }
+  h1 { color: var(--green-dark); font-size: 1.25rem; line-height: 1.25; margin: 0; }
+  .sub { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+
+  .card { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem; margin-bottom: 1.25rem; }
+
+  label { display: block; font-size: .9rem; font-weight: 600; margin: 1.25rem 0 .4rem; }
+  label:first-of-type { margin-top: 0; }
+  .field-hint { display: block; font-weight: 400; color: var(--muted); font-size: .8rem; margin-top: .15rem; }
+
+  input, select, textarea {
+    width: 100%; padding: .85rem .9rem; border: 1.5px solid var(--border); border-radius: 10px;
+    font-size: 1rem; font-family: inherit; background: #fff; color: var(--ink); min-height: 48px;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px var(--green-wash); }
+  textarea { resize: vertical; min-height: 4.5rem; }
+  select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%235d6b57' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right .75rem center; padding-right: 2.5rem; }
+
+  fieldset { border: none; padding: 0; margin: 0; }
+  .toggle-row { display: flex; gap: .6rem; }
+  .toggle-row .opt { flex: 1; position: relative; }
+  .toggle-row .opt input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .toggle-row .opt label {
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    margin: 0; min-height: 48px; padding: .7rem .5rem; border: 1.5px solid var(--border); border-radius: 10px;
+    font-weight: 600; color: var(--ink); background: #fff;
+  }
+  .toggle-row .opt:has(input:checked) label { border-color: var(--green); background: var(--green-wash); color: var(--green-dark); }
+  .toggle-row .opt:has(input:focus-visible) label { box-shadow: 0 0 0 3px var(--green-wash); }
+
+  button { width: 100%; min-height: 50px; padding: .8rem 1rem; border: none; border-radius: 10px; background: var(--green); color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 1.5rem; }
+  button:active { background: var(--green-dark); }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  button.secondary { background: #fff; color: var(--green-dark); border: 1.5px solid var(--green); }
+
+  .error { color: var(--err); background: var(--err-wash); border-radius: 8px; padding: .6rem .75rem; font-size: .85rem; margin-top: .75rem; display: none; }
+
   #app { display: none; }
   #app.ready { display: block; }
   #login-card.hidden, #register-card.hidden, #result-card.hidden { display: none; }
-  .result-field { margin-bottom: .9rem; }
-  .result-field .k { font-size: .78rem; color: #667; text-transform: uppercase; letter-spacing: .03em; }
-  .result-field .v { font-size: 1.15rem; font-weight: 700; font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
-  .warn { background: #fff6e0; border: 1px solid #e8d18a; color: #7a5c00; padding: .7rem .9rem; border-radius: 8px; font-size: .85rem; margin: 1rem 0; }
+
+  .who { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: space-between; align-items: center; font-size: .85rem; color: var(--muted); margin-bottom: 1.25rem; }
+  .who button { width: auto; min-height: 40px; margin: 0; padding: .4rem .9rem; font-size: .82rem; font-weight: 600; background: #fff; color: var(--err); border: 1.5px solid #e6bcb8; }
+
+  .result-field { margin-bottom: 1rem; }
+  .result-field .k { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+  .result-field .v { font-size: 1.2rem; font-weight: 700; font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
+
+  .warn { background: #fff6e0; border: 1px solid #e8d18a; color: #7a5c00; padding: .75rem .9rem; border-radius: 10px; font-size: .85rem; margin: .9rem 0; }
+
   .qr-block { text-align: center; margin: 1.25rem 0; }
-  .qr-block img { width: 260px; height: 260px; border: 1px solid #e5e9dc; border-radius: 8px; }
-  .qr-block p { font-size: .85rem; color: #556; margin-top: .5rem; }
-  .who { display: flex; justify-content: space-between; align-items: center; font-size: .85rem; color: #667; margin-bottom: 1rem; }
-  .who button { width: auto; margin: 0; padding: .35rem .7rem; font-size: .8rem; background: none; color: #c0392b; border: 1px solid #e2b6ae; }
+  .qr-block img { width: min(260px, 100%); height: auto; aspect-ratio: 1; border: 1px solid var(--border); border-radius: 10px; background: #fff; }
+  .qr-block p { font-size: .85rem; color: var(--muted); margin-top: .75rem; text-align: left; }
+
+  .backup-toggle { cursor: pointer; font-size: .85rem; font-weight: 600; color: var(--muted); padding: .6rem 0; min-height: 44px; display: flex; align-items: center; }
+  .backup-toggle::marker { color: var(--green); }
 </style>
 </head>
 <body>
-<h1>Pendaftaran Pasien</h1>
-<div class="sub">MEDIKU &mdash; loket skrining kesehatan</div>
+<div class="brand">
+  <img src="/assets/logo.png" alt="MEDIKU">
+  <div>
+    <h1>Pendaftaran Pasien</h1>
+    <div class="sub">Loket skrining kesehatan</div>
+  </div>
+</div>
 
 <div id="login-card" class="card">
   <div class="sub" style="margin-bottom:1rem">Masuk sebagai petugas (admin) untuk mendaftarkan pasien baru.</div>
@@ -61,14 +98,16 @@
     <label for="f-name">Nama lengkap</label>
     <input id="f-name" maxlength="100">
 
-    <label for="f-nik">NIK <span class="hint">(kosongkan jika pasien tidak membawa KTP)</span></label>
+    <label for="f-nik">NIK<span class="field-hint">Kosongkan jika pasien tidak membawa KTP</span></label>
     <input id="f-nik" inputmode="numeric" maxlength="16" placeholder="16 digit">
 
-    <label>Jenis kelamin</label>
-    <div class="radio-row">
-      <label><input type="radio" name="gender" value="pria"> Pria</label>
-      <label><input type="radio" name="gender" value="wanita"> Wanita</label>
-    </div>
+    <fieldset>
+      <label>Jenis kelamin</label>
+      <div class="toggle-row">
+        <div class="opt"><input type="radio" name="gender" value="pria" id="g-pria"><label for="g-pria">Pria</label></div>
+        <div class="opt"><input type="radio" name="gender" value="wanita" id="g-wanita"><label for="g-wanita">Wanita</label></div>
+      </div>
+    </fieldset>
 
     <label for="f-occupation">Pekerjaan</label>
     <select id="f-occupation">
@@ -83,8 +122,8 @@
       <option value="lainnya">Lainnya</option>
     </select>
 
-    <label for="f-income">Pendapatan per bulan (Rp)</label>
-    <input id="f-income" type="number" min="0" step="1000" placeholder="opsional">
+    <label for="f-income">Pendapatan per bulan (Rp)<span class="field-hint">Opsional</span></label>
+    <input id="f-income" type="number" min="0" step="1000" inputmode="numeric" placeholder="mis. 2500000">
 
     <label for="f-bloodtype">Golongan darah</label>
     <select id="f-bloodtype">
@@ -95,8 +134,8 @@
       <option>AB+</option><option>AB-</option>
     </select>
 
-    <label for="f-address">Alamat</label>
-    <textarea id="f-address" placeholder="opsional"></textarea>
+    <label for="f-address">Alamat<span class="field-hint">Opsional</span></label>
+    <textarea id="f-address" placeholder="Nama jalan, RT/RW, desa"></textarea>
 
     <div class="error" id="register-error"></div>
     <button id="register-btn">Daftarkan &amp; Buat QR</button>
@@ -109,8 +148,8 @@
       <p><strong>Minta pasien pindai QR ini</strong> dengan kamera HP mereka sendiri. Halaman yang terbuka menampilkan QR skrining mereka dan info login &mdash; jadi mereka bisa cek dulu, pasang aplikasi belakangan.</p>
     </div>
     <details>
-      <summary style="cursor:pointer;font-size:.85rem;color:#667;margin-top:.5rem">Cadangan bila pasien tidak bisa memindai</summary>
-      <div class="warn" style="margin-top:.75rem">Password di bawah ini juga akan tampil satu kali di HP pasien saat mereka memindai QR &mdash; catat di sini hanya sebagai cadangan.</div>
+      <summary class="backup-toggle">Cadangan bila pasien tidak bisa memindai</summary>
+      <div class="warn">Password di bawah ini juga akan tampil satu kali di HP pasien saat mereka memindai QR &mdash; catat di sini hanya sebagai cadangan.</div>
       <div class="result-field"><div class="k">No. KK</div><div class="v" id="r-kk"></div></div>
       <div class="result-field"><div class="k">Username</div><div class="v" id="r-username"></div></div>
       <div class="result-field"><div class="k">Password</div><div class="v" id="r-password"></div></div>
