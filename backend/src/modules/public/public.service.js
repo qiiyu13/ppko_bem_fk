@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const config = require('../../config');
-const { profileQrPayload, toDataUrl } = require('../../utils/qr');
+const { profileQrPayload, toBrandedDataUrl } = require('../../utils/qr');
 const pendingCredentials = require('../admin/pendingCredentials');
 
 const prisma = require('../../utils/prisma');
@@ -35,7 +35,7 @@ const getProfileByViewToken = async (token) => {
     // Only present the first time anyone opens this link - see
     // pendingCredentials.js. null on every visit after that.
     password: pendingCredentials.consume(profile.id),
-    qrDataUrl: await toDataUrl(profileQrPayload(profile)),
+    qrDataUrl: await toBrandedDataUrl(profileQrPayload(profile)),
   };
 };
 
