@@ -1,805 +1,255 @@
 <!DOCTYPE html>
-<html lang="id" class="scroll-smooth">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>E-Rapor Tim Pelaksana PPK Ormawa: BEM FK UNNES</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        serif: ['"Source Serif 4"', 'Georgia', 'serif'],
-                        sans: ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
-                    },
-                    colors: {
-                        ink: '#14203a',
-                        muted: '#4b5566',
-                        line: '#d3d8e0',
-                        paper: '#f6f5f1',
-                        surface: '#ffffff',
-                        accent: {
-                            DEFAULT: '#7a1230',
-                            dark: '#57091f',
-                            tint: '#f5e6ea',
-                        },
-                        ok: { text: '#1a5c37', tint: '#e3f0e6', border: '#bcdac4' },
-                        warn: { text: '#8a5a00', tint: '#fbf0d9', border: '#eeda9f' },
-                        neutral: { text: '#3d4552', tint: '#eceef1', border: '#d3d8e0' },
-                    },
-                    borderRadius: {
-                        DEFAULT: '3px',
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body { background-color: #f6f5f1; }
-        .chart-container { position: relative; width: 100%; max-width: 640px; margin-left: auto; margin-right: auto; height: 300px; }
-        @media (min-width: 768px) { .chart-container { height: 340px; } }
-        .doc-num { font-variant-numeric: tabular-nums; }
-        :focus-visible { outline: 2px solid #7a1230; outline-offset: 2px; }
-        table { border-collapse: collapse; }
-        .month-tab, .dom-tab-btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
-        #studentSelect, #tableSearch { min-height: 44px; }
-    </style>
+    <link rel="stylesheet" href="erapor.css">
 </head>
-<body class="font-sans text-ink bg-paper min-h-screen flex flex-col">
+<body>
+    <a href="#konten" class="skip-link">Lewati ke konten</a>
 
-    <a href="#konten" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:bg-ink focus:text-white focus:px-3 focus:py-2 focus:rounded">Lewati ke konten</a>
-
-    <header class="bg-ink text-white sticky top-0 z-40">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16 gap-4">
-                <div class="min-w-0">
-                    <p class="text-[11px] uppercase tracking-wider text-white/60 font-medium leading-none">BEM FK UNNES &middot; PPK Ormawa 2026</p>
-                    <h1 class="font-serif text-base sm:text-lg font-semibold leading-tight truncate">E-Rapor Tim Pelaksana</h1>
-                </div>
-                <nav class="hidden lg:flex items-center gap-1 text-sm font-medium text-white/80 shrink-0">
-                    <button onclick="scrollToSection('ringkasan')" class="px-2.5 py-1.5 rounded hover:bg-white/10 hover:text-white transition">Ringkasan</button>
-                    <button onclick="scrollToSection('indikator-penilaian')" class="px-2.5 py-1.5 rounded hover:bg-white/10 hover:text-white transition">Indikator</button>
-                    <button onclick="scrollToSection('evaluasi-bulanan')" class="px-2.5 py-1.5 rounded hover:bg-white/10 hover:text-white transition">Evaluasi Bulanan</button>
-                    <button onclick="scrollToSection('performa-mahasiswa')" class="px-2.5 py-1.5 rounded hover:bg-white/10 hover:text-white transition">Performa</button>
-                    <button onclick="scrollToSection('matriks-rekap')" class="px-2.5 py-1.5 rounded hover:bg-white/10 hover:text-white transition">Matriks Data</button>
-                    <button onclick="scrollToSection('rtl')" class="px-2.5 py-1.5 rounded hover:bg-white/10 hover:text-white transition">RTL</button>
-                </nav>
+    <header class="site-header">
+        <div class="container site-header__inner">
+            <div>
+                <p class="site-header__eyebrow">BEM FK UNNES &middot; PPK Ormawa 2026</p>
+                <h1 class="site-header__title">E-Rapor Tim Pelaksana</h1>
             </div>
+            <nav class="site-header__nav" aria-label="Navigasi utama">
+                <button type="button" data-scroll="ringkasan">Ringkasan</button>
+                <button type="button" data-scroll="indikator-penilaian">Indikator</button>
+                <button type="button" data-scroll="evaluasi-bulanan">Evaluasi Bulanan</button>
+                <button type="button" data-scroll="performa-mahasiswa">Performa</button>
+                <button type="button" data-scroll="matriks-rekap">Matriks Data</button>
+                <button type="button" data-scroll="rtl">RTL</button>
+            </nav>
         </div>
     </header>
 
-    <main id="konten" class="flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+    <main id="konten">
+        <div class="container stack">
 
-        <section class="border border-line bg-surface rounded p-6 sm:p-8">
-            <p class="text-xs uppercase tracking-wider text-muted font-semibold mb-2">Laporan Evaluasi &middot; Periode Mei &ndash; September 2026</p>
-            <h2 class="font-serif text-2xl sm:text-3xl font-semibold text-ink leading-snug mb-3">
-                E-Rapor Tim Pelaksana PPK Ormawa BEM FK UNNES
-            </h2>
-            <p class="text-ink font-medium text-sm sm:text-base mb-2 max-w-3xl leading-relaxed">
-                Program &ldquo;Glycos: Optimalisasi Pangan Fungsional Rendah Indeks Glikemik dan Pojok Skrining Diabetes untuk Mewujudkan Kelurahan Sumurrejo Sehat Berkelanjutan&rdquo;
-            </p>
-            <p class="text-muted text-sm leading-relaxed mb-6 max-w-3xl">
-                Rekapitulasi Penilaian Kemampuan Pemberdayaan Masyarakat 15 mahasiswa tim pelaksana, dinilai oleh Dosen Pendamping secara longitudinal dari Bulan Ke-0 hingga Bulan Ke-3.
-            </p>
-            <dl class="grid grid-cols-2 sm:grid-cols-4 gap-px bg-line border border-line rounded overflow-hidden text-sm">
-                <div class="bg-surface p-4">
-                    <dt class="text-xs text-muted font-medium mb-1">Skor Awal &middot; Bulan 0</dt>
-                    <dd class="doc-num text-xl font-semibold text-ink">1,38 <span class="text-xs font-normal text-muted">/ Range 1</span></dd>
-                </div>
-                <div class="bg-surface p-4">
-                    <dt class="text-xs text-muted font-medium mb-1">Skor Akhir &middot; Bulan 3</dt>
-                    <dd class="doc-num text-xl font-semibold text-accent">4,25 <span class="text-xs font-normal text-muted">/ Range 4</span></dd>
-                </div>
-                <div class="bg-surface p-4">
-                    <dt class="text-xs text-muted font-medium mb-1">Pertumbuhan Total</dt>
-                    <dd class="doc-num text-xl font-semibold text-ink">+2,87 <span class="text-xs font-normal text-muted">poin</span></dd>
-                </div>
-                <div class="bg-surface p-4">
-                    <dt class="text-xs text-muted font-medium mb-1">Tim Pelaksana</dt>
-                    <dd class="doc-num text-xl font-semibold text-ink">15 <span class="text-xs font-normal text-muted">mahasiswa</span></dd>
-                </div>
-            </dl>
-        </section>
+            <section class="card">
+                <p class="eyebrow">Laporan Evaluasi &middot; Periode Mei &ndash; September 2026</p>
+                <h2 class="h1">E-Rapor Tim Pelaksana PPK Ormawa BEM FK UNNES</h2>
+                <p class="subtitle">Program &ldquo;Glycos: Optimalisasi Pangan Fungsional Rendah Indeks Glikemik dan Pojok Skrining Diabetes untuk Mewujudkan Kelurahan Sumurrejo Sehat Berkelanjutan&rdquo;</p>
+                <p class="lede" style="margin-bottom:1.25rem;">Rekapitulasi Penilaian Kemampuan Pemberdayaan Masyarakat 15 mahasiswa tim pelaksana, dinilai oleh Dosen Pendamping secara longitudinal dari Bulan Ke-0 hingga Bulan Ke-3.</p>
+                <dl class="stat-grid">
+                    <div><dt>Skor Awal &middot; Bulan 0</dt><dd class="big">1,38 <span class="unit">/ Range 1</span></dd></div>
+                    <div><dt>Skor Akhir &middot; Bulan 3</dt><dd class="big accent">4,25 <span class="unit">/ Range 4</span></dd></div>
+                    <div><dt>Pertumbuhan Total</dt><dd class="big">+2,87 <span class="unit">poin</span></dd></div>
+                    <div><dt>Tim Pelaksana</dt><dd class="big">15 <span class="unit">mahasiswa</span></dd></div>
+                </dl>
+            </section>
 
-        <section id="ringkasan" class="border border-line bg-surface rounded p-6 sm:p-8 space-y-6">
-            <div>
-                <h3 class="font-serif text-xl font-semibold text-ink">1. Ringkasan Progresivitas (Bulan 0&ndash;3)</h3>
-                <p class="text-sm text-muted mt-1 max-w-2xl">
-                    Perkembangan kompetensi Tim Pelaksana secara berkesinambungan dari kondisi awal hingga pembentukan kemandirian masyarakat.
-                </p>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                <div class="border border-line rounded p-4">
-                    <h4 class="text-sm font-semibold text-ink mb-3 text-center">Tren Rata-Rata Kumulatif Tim</h4>
-                    <div class="chart-container">
-                        <canvas id="longitudinalLineChart" role="img" aria-label="Grafik garis tren skor kumulatif tim dari 1,38 pada Bulan 0 naik ke 4,25 pada Bulan 3"></canvas>
-                    </div>
+            <section id="ringkasan" class="card stack">
+                <div>
+                    <h3 class="h2">1. Ringkasan Progresivitas (Bulan 0&ndash;3)</h3>
+                    <p class="section-desc">Perkembangan kompetensi Tim Pelaksana secara berkesinambungan dari kondisi awal hingga pembentukan kemandirian masyarakat.</p>
                 </div>
-
-                <div class="space-y-4">
-                    <div class="border-l-2 border-accent bg-accent-tint/40 rounded-r p-4">
-                        <h5 class="text-sm font-semibold text-ink mb-1">Capaian Target Terpenuhi</h5>
-                        <p class="text-sm text-muted leading-relaxed">
-                            Progresivitas berkembang linier sesuai target: Bulan 0 pada Range 1 (1,38), Bulan 1 pada Range 2 (2,45), Bulan 2 pada Range 3 (3,44), ditutup Bulan 3 dengan skor <strong class="text-ink">4,25</strong> (target Range 4: 4,10&ndash;4,40).
-                        </p>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                        <div class="border border-line rounded p-3">
-                            <span class="font-semibold text-ink block mb-1 text-xs uppercase tracking-wide">Pertumbuhan Tertinggi</span>
-                            <span class="text-muted">Domain B: Partisipasi Masyarakat (+2,91) &middot; Domain F: Kolaborasi (+2,88)</span>
+                <div class="chart-grid">
+                    <div class="chart-card">
+                        <h4 class="chart-card__title">Tren Rata-Rata Kumulatif Tim</h4>
+                        <div class="chart-container">
+                            <canvas id="longitudinalLineChart" role="img" aria-label="Grafik garis tren skor kumulatif tim dari 1,38 pada Bulan 0 naik ke 4,25 pada Bulan 3"></canvas>
                         </div>
-                        <div class="border border-line rounded p-3">
-                            <span class="font-semibold text-ink block mb-1 text-xs uppercase tracking-wide">Pilar Transformasi</span>
-                            <span class="text-muted">Pojok Skrining Diabetes, Aplikasi MEDIKU, Pangan Fungsional Glycos</span>
+                    </div>
+                    <div class="stack">
+                        <div class="callout">
+                            <h5>Capaian Target Terpenuhi</h5>
+                            <p>Progresivitas berkembang linier sesuai target: Bulan 0 pada Range 1 (1,38), Bulan 1 pada Range 2 (2,45), Bulan 2 pada Range 3 (3,44), ditutup Bulan 3 dengan skor <strong>4,25</strong> (target Range 4: 4,10&ndash;4,40).</p>
+                        </div>
+                        <div class="info-grid">
+                            <div class="info-box"><strong>Pertumbuhan Tertinggi</strong><span>Domain B: Partisipasi Masyarakat (+2,91) &middot; Domain F: Kolaborasi (+2,88)</span></div>
+                            <div class="info-box"><strong>Pilar Transformasi</strong><span>Pojok Skrining Diabetes, Aplikasi MEDIKU, Pangan Fungsional Glycos</span></div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <section id="indikator-penilaian" class="border border-line bg-surface rounded p-6 sm:p-8 space-y-6">
-            <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <section id="indikator-penilaian" class="card stack">
+                <div class="chart-grid" style="grid-template-columns: 1fr auto; align-items: flex-start;">
+                    <div>
+                        <h3 class="h2">2. Rubrik Indikator Penilaian (Domain A&ndash;G)</h3>
+                        <p class="section-desc">Instrumen evaluasi terdiri dari 7 domain utama dengan 22 indikator, diukur menggunakan skala Likert 1&ndash;5.</p>
+                    </div>
+                    <div class="scale-box">
+                        <span>Skala Penilaian</span>
+                        <div class="scale-grid">
+                            <span class="scale-chip scale-chip--neutral">1 Sgt Kurang</span>
+                            <span class="scale-chip scale-chip--neutral">2 Kurang</span>
+                            <span class="scale-chip scale-chip--warn">3 Cukup</span>
+                            <span class="scale-chip scale-chip--ok">4 Baik</span>
+                            <span class="scale-chip scale-chip--ok" style="font-weight:600;">5 Sgt Baik</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tabs" role="tablist" aria-label="Filter domain" style="border-bottom:1px solid var(--line); padding-bottom:1rem;">
+                    <button type="button" class="tab dom-tab-btn is-active" data-domain="ALL">Semua Domain</button>
+                    <button type="button" class="tab dom-tab-btn" data-domain="A">Domain A</button>
+                    <button type="button" class="tab dom-tab-btn" data-domain="B">Domain B</button>
+                    <button type="button" class="tab dom-tab-btn" data-domain="C">Domain C</button>
+                    <button type="button" class="tab dom-tab-btn" data-domain="D">Domain D</button>
+                    <button type="button" class="tab dom-tab-btn" data-domain="E">Domain E</button>
+                    <button type="button" class="tab dom-tab-btn" data-domain="F">Domain F</button>
+                    <button type="button" class="tab dom-tab-btn" data-domain="G">Domain G</button>
+                </div>
+
+                <div id="domainGridContainer" class="domain-grid"></div>
+
+                <div class="card" style="padding:1rem;">
+                    <span style="font-weight:600; display:block; margin-bottom:12px;">Target Rentang Nilai per Periode Evaluasi</span>
+                    <div class="range-table">
+                        <div><strong>Bulan Ke-0 (Mei)</strong><span class="range-code">Range 1 &middot; 1.00&ndash;1.80</span><p>Persiapan konseptual &amp; baseline.</p></div>
+                        <div><strong>Bulan Ke-1 (Jun&ndash;Jul)</strong><span class="range-code">Range 2 &middot; 2.00&ndash;2.90</span><p>Inisiasi &amp; sosialisasi partisipatif.</p></div>
+                        <div><strong>Bulan Ke-2 (Jul&ndash;Agt)</strong><span class="range-code">Range 3 &middot; 3.00&ndash;3.90</span><p>Akselerasi, pelatihan &amp; produksi.</p></div>
+                        <div class="is-active"><strong>Bulan Ke-3 (Agt&ndash;Sep)</strong><span class="range-code">Range 4 &middot; 4.10&ndash;4.40</span><p>Kemandirian &amp; kelembagaan mandiri.</p></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="evaluasi-bulanan" class="card stack">
+                <div class="chart-grid" style="grid-template-columns: 1fr auto; align-items: flex-start;">
+                    <div>
+                        <h3 class="h2">3. Evaluasi Kinerja Bulanan Terperinci</h3>
+                        <p class="section-desc">Pilih periode untuk melihat skor 7 domain dan 22 indikator, beserta narasi analisis dosen pendamping.</p>
+                    </div>
+                    <div class="tabs tabs--boxed" role="tablist" aria-label="Pilih bulan evaluasi">
+                        <button type="button" class="tab month-tab is-active" data-month="0">Bulan 0</button>
+                        <button type="button" class="tab month-tab" data-month="1">Bulan 1</button>
+                        <button type="button" class="tab month-tab" data-month="2">Bulan 2</button>
+                        <button type="button" class="tab month-tab" data-month="3">Bulan 3</button>
+                    </div>
+                </div>
+
+                <div id="period-banner" class="period-banner"></div>
+
+                <div class="chart-grid">
+                    <div class="chart-card">
+                        <h4 id="spider-title" class="chart-card__title">Distribusi Skor 7 Domain</h4>
+                        <p id="spider-subtitle" class="chart-card__subtitle">Evaluasi Bulan Ke-0</p>
+                        <div class="chart-container"><canvas id="monthlySpiderChart"></canvas></div>
+                    </div>
+                    <div class="chart-card">
+                        <h4 id="bar-title" class="chart-card__title">Skor 22 Indikator Penilaian</h4>
+                        <p id="bar-subtitle" class="chart-card__subtitle">Rata-rata indikator Bulan Ke-0</p>
+                        <div class="chart-container"><canvas id="monthlyBarChart"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="narrative">
+                    <h4 id="narrative-title"></h4>
+                    <div id="narrative-content"></div>
+                </div>
+            </section>
+
+            <section id="performa-mahasiswa" class="card stack">
                 <div>
-                    <h3 class="font-serif text-xl font-semibold text-ink">2. Rubrik Indikator Penilaian (Domain A&ndash;G)</h3>
-                    <p class="text-sm text-muted mt-1 max-w-2xl">
-                        Instrumen evaluasi terdiri dari 7 domain utama dengan 22 indikator, diukur menggunakan skala Likert 1&ndash;5.
-                    </p>
+                    <h3 class="h2">4. Performa Individual 15 Mahasiswa</h3>
+                    <p class="section-desc">Pilih mahasiswa untuk melihat rekam jejak pertumbuhan skor dari Bulan Ke-0 hingga Bulan Ke-3.</p>
                 </div>
-                <div class="border border-line rounded p-3 shrink-0 text-xs">
-                    <span class="font-semibold text-ink block mb-1.5">Skala Penilaian</span>
-                    <div class="grid grid-cols-5 gap-1 text-center text-[10px]">
-                        <span class="px-1 py-1 bg-neutral-tint text-neutral-text rounded border border-neutral-border">1 Sangat Kurang</span>
-                        <span class="px-1 py-1 bg-neutral-tint text-neutral-text rounded border border-neutral-border">2 Kurang</span>
-                        <span class="px-1 py-1 bg-warn-tint text-warn-text rounded border border-warn-border">3 Cukup</span>
-                        <span class="px-1 py-1 bg-ok-tint text-ok-text rounded border border-ok-border">4 Baik</span>
-                        <span class="px-1 py-1 bg-ok-tint text-ok-text rounded border border-ok-border font-semibold">5 Sgt Baik</span>
-                    </div>
-                </div>
-            </div>
 
-            <div class="flex flex-wrap gap-1.5 pt-1 border-b border-line pb-4" role="tablist" aria-label="Filter domain">
-                <button onclick="filterDomain('ALL')" id="domtab-ALL" class="dom-tab-btn px-3 py-1.5 rounded text-xs font-semibold transition bg-ink text-white">Semua Domain</button>
-                <button onclick="filterDomain('A')" id="domtab-A" class="dom-tab-btn px-3 py-1.5 rounded text-xs font-semibold transition bg-neutral-tint text-neutral-text hover:bg-line">Domain A</button>
-                <button onclick="filterDomain('B')" id="domtab-B" class="dom-tab-btn px-3 py-1.5 rounded text-xs font-semibold transition bg-neutral-tint text-neutral-text hover:bg-line">Domain B</button>
-                <button onclick="filterDomain('C')" id="domtab-C" class="dom-tab-btn px-3 py-1.5 rounded text-xs font-semibold transition bg-neutral-tint text-neutral-text hover:bg-line">Domain C</button>
-                <button onclick="filterDomain('D')" id="domtab-D" class="dom-tab-btn px-3 py-1.5 rounded text-xs font-semibold transition bg-neutral-tint text-neutral-text hover:bg-line">Domain D</button>
-                <button onclick="filterDomain('E')" id="domtab-E" class="dom-tab-btn px-3 py-1.5 rounded text-xs font-semibold transition bg-neutral-tint text-neutral-text hover:bg-line">Domain E</button>
-                <button onclick="filterDomain('F')" id="domtab-F" class="dom-tab-btn px-3 py-1.5 rounded text-xs font-semibold transition bg-neutral-tint text-neutral-text hover:bg-line">Domain F</button>
-                <button onclick="filterDomain('G')" id="domtab-G" class="dom-tab-btn px-3 py-1.5 rounded text-xs font-semibold transition bg-neutral-tint text-neutral-text hover:bg-line">Domain G</button>
-            </div>
+                <div class="chart-grid" style="grid-template-columns: 1fr 2fr;">
+                    <div class="stack-sm" style="display:flex; flex-direction:column; gap:12px;">
+                        <label for="studentSelect" style="display:block; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.03em;">Pilih Mahasiswa</label>
+                        <select id="studentSelect" class="search-input" style="width:100%;"></select>
+                        <div id="student-bio-card" class="mini-card" style="padding:1rem;"></div>
+                    </div>
 
-            <div id="domainGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            </div>
-
-            <div class="border border-line rounded p-4 text-sm">
-                <span class="font-semibold text-ink block mb-3">Target Rentang Nilai per Periode Evaluasi</span>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-px bg-line border border-line rounded overflow-hidden">
-                    <div class="bg-surface p-3">
-                        <span class="font-semibold text-ink block text-sm">Bulan Ke-0 (Mei)</span>
-                        <span class="text-muted text-xs">Range 1 &middot; 1.00&ndash;1.80</span>
-                        <p class="text-xs text-muted mt-1">Persiapan konseptual &amp; baseline.</p>
-                    </div>
-                    <div class="bg-surface p-3">
-                        <span class="font-semibold text-ink block text-sm">Bulan Ke-1 (Jun&ndash;Jul)</span>
-                        <span class="text-muted text-xs">Range 2 &middot; 2.00&ndash;2.90</span>
-                        <p class="text-xs text-muted mt-1">Inisiasi &amp; sosialisasi partisipatif.</p>
-                    </div>
-                    <div class="bg-surface p-3">
-                        <span class="font-semibold text-ink block text-sm">Bulan Ke-2 (Jul&ndash;Agt)</span>
-                        <span class="text-muted text-xs">Range 3 &middot; 3.00&ndash;3.90</span>
-                        <p class="text-xs text-muted mt-1">Akselerasi, pelatihan &amp; produksi.</p>
-                    </div>
-                    <div class="bg-accent-tint/50 p-3">
-                        <span class="font-semibold text-ink block text-sm">Bulan Ke-3 (Agt&ndash;Sep)</span>
-                        <span class="text-accent text-xs font-semibold">Range 4 &middot; 4.10&ndash;4.40</span>
-                        <p class="text-xs text-muted mt-1">Kemandirian &amp; kelembagaan mandiri.</p>
+                    <div class="card" style="padding:1rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <h4 style="font-size:0.875rem; font-weight:600;">Perbandingan Domain Bulan 0 vs Bulan 3</h4>
+                            <span id="student-growth-badge" class="tag" style="background:var(--accent-tint); color:var(--accent);">&Delta; +0.00</span>
+                        </div>
+                        <div class="chart-container"><canvas id="studentRadarChart"></canvas></div>
+                        <div id="student-detail-summary" class="summary-bar" style="margin-top:1rem;"></div>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <section id="evaluasi-bulanan" class="border border-line bg-surface rounded p-6 sm:p-8 space-y-6">
-            <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <section id="matriks-rekap" class="card stack">
+                <div class="table-toolbar">
+                    <div>
+                        <h3 class="h2">5. Matriks E-Rapor &amp; Rekapitulasi Longitudinal</h3>
+                        <p class="section-desc">Data penilaian lengkap 15 mahasiswa tim pelaksana.</p>
+                    </div>
+                    <label class="sr-only" for="tableSearch">Cari nama mahasiswa atau peran</label>
+                    <input type="text" id="tableSearch" class="search-input" placeholder="Cari nama atau peran&hellip;">
+                </div>
+
+                <div class="table-wrap">
+                    <table class="data-table" id="performanceTable">
+                        <thead>
+                            <tr>
+                                <th>No</th><th>Nama Mahasiswa</th><th>Peran</th>
+                                <th class="num">B0</th><th class="num">B1</th><th class="num">B2</th><th class="num">B3</th>
+                                <th class="num">&Delta;</th><th>Klasifikasi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="rtl" class="card stack">
                 <div>
-                    <h3 class="font-serif text-xl font-semibold text-ink">3. Evaluasi Kinerja Bulanan Terperinci</h3>
-                    <p class="text-sm text-muted mt-1 max-w-2xl">
-                        Pilih periode untuk melihat skor 7 domain dan 22 indikator, beserta narasi analisis dosen pendamping.
-                    </p>
+                    <h3 class="h2">6. Simpulan &amp; Rencana Tindak Lanjut</h3>
+                    <p class="section-desc">Keberlanjutan pasca-penerjunan dan persiapan menuju Anugerah Abdidaya Ormawa.</p>
                 </div>
-                <div class="flex flex-wrap gap-1 border border-line rounded p-1 self-start" role="tablist" aria-label="Pilih bulan evaluasi">
-                    <button onclick="switchMonth(0)" id="tab-m0" class="month-tab px-3 py-1.5 rounded text-xs font-semibold transition">Bulan 0</button>
-                    <button onclick="switchMonth(1)" id="tab-m1" class="month-tab px-3 py-1.5 rounded text-xs font-semibold transition">Bulan 1</button>
-                    <button onclick="switchMonth(2)" id="tab-m2" class="month-tab px-3 py-1.5 rounded text-xs font-semibold transition">Bulan 2</button>
-                    <button onclick="switchMonth(3)" id="tab-m3" class="month-tab px-3 py-1.5 rounded text-xs font-semibold transition">Bulan 3</button>
-                </div>
-            </div>
 
-            <div id="period-banner" class="border border-line bg-paper rounded p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-2 text-sm"></div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                <div class="border border-line rounded p-4">
-                    <h4 id="spider-title" class="text-sm font-semibold text-ink mb-0.5 text-center">Distribusi Skor 7 Domain</h4>
-                    <p id="spider-subtitle" class="text-xs text-muted text-center mb-3">Evaluasi Bulan Ke-0</p>
-                    <div class="chart-container">
-                        <canvas id="monthlySpiderChart"></canvas>
+                <div class="rtl-grid">
+                    <div class="rtl-card">
+                        <div class="rtl-card__top">
+                            <div class="rtl-card__meta"><span class="tag" style="background:var(--accent-tint); color:var(--accent);">Okt 2026</span><span style="font-size:11px; color:var(--muted);">Regulasi</span></div>
+                            <h5>Institusionalisasi Pojok Skrining</h5>
+                            <p>SK Lurah Sumurrejo untuk operasionalisasi rutin Pojok Skrining Diabetes di seluruh Posbindu.</p>
+                        </div>
+                    </div>
+                    <div class="rtl-card">
+                        <div class="rtl-card__top">
+                            <div class="rtl-card__meta"><span class="tag" style="background:var(--accent-tint); color:var(--accent);">Okt&ndash;Nov 2026</span><span style="font-size:11px; color:var(--muted);">Digitalisasi</span></div>
+                            <h5>Integrasi Database MEDIKU</h5>
+                            <p>Penyambungan data faktor risiko PTM dengan pelaporan rujukan berkala Puskesmas Gunungpati.</p>
+                        </div>
+                    </div>
+                    <div class="rtl-card">
+                        <div class="rtl-card__top">
+                            <div class="rtl-card__meta"><span class="tag" style="background:var(--accent-tint); color:var(--accent);">Nov 2026</span><span style="font-size:11px; color:var(--muted);">Ekonomi</span></div>
+                            <h5>Hilirisasi &amp; Pemasaran Glycos</h5>
+                            <p>Perizinan P-IRT, sertifikasi halal, dan komersialisasi produk pangan fungsional.</p>
+                        </div>
+                    </div>
+                    <div class="rtl-card">
+                        <div class="rtl-card__top">
+                            <div class="rtl-card__meta"><span class="tag" style="background:var(--accent-tint); color:var(--accent);">Nov 2026</span><span style="font-size:11px; color:var(--muted);">Replikasi</span></div>
+                            <h5>Replikasi &amp; Skema ToT Kader</h5>
+                            <p>Pelatihan kader tingkat kecamatan oleh kader trainer Sumurrejo binaan mahasiswa.</p>
+                        </div>
+                    </div>
+                    <div class="rtl-card span2">
+                        <div class="rtl-card__top">
+                            <div class="rtl-card__meta"><span class="tag" style="background:var(--accent-tint); color:var(--accent);">Okt&ndash;Des 2026</span><span style="font-size:11px; color:var(--muted);">Kompetisi Nasional</span></div>
+                            <h5>Persiapan Anugerah Abdidaya Ormawa</h5>
+                            <p>Laporan akhir, poster, video dokumenter, dan penataan materi stand pameran bersama Dosen Pendamping.</p>
+                        </div>
                     </div>
                 </div>
-                <div class="border border-line rounded p-4">
-                    <h4 id="bar-title" class="text-sm font-semibold text-ink mb-0.5 text-center">Skor 22 Indikator Penilaian</h4>
-                    <p id="bar-subtitle" class="text-xs text-muted text-center mb-3">Rata-rata indikator Bulan Ke-0</p>
-                    <div class="chart-container">
-                        <canvas id="monthlyBarChart"></canvas>
-                    </div>
-                </div>
-            </div>
+            </section>
 
-            <div class="border-l-2 border-accent bg-accent-tint/30 rounded-r p-5 space-y-2">
-                <h4 id="narrative-title" class="text-sm font-semibold text-ink"></h4>
-                <div id="narrative-content" class="text-sm text-muted leading-relaxed space-y-2"></div>
-            </div>
-        </section>
-
-        <section id="performa-mahasiswa" class="border border-line bg-surface rounded p-6 sm:p-8 space-y-6">
-            <div>
-                <h3 class="font-serif text-xl font-semibold text-ink">4. Performa Individual 15 Mahasiswa</h3>
-                <p class="text-sm text-muted mt-1 max-w-2xl">
-                    Pilih mahasiswa untuk melihat rekam jejak pertumbuhan skor dari Bulan Ke-0 hingga Bulan Ke-3.
-                </p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                <div class="space-y-3">
-                    <label for="studentSelect" class="block text-xs font-semibold text-ink uppercase tracking-wide">Pilih Mahasiswa</label>
-                    <select id="studentSelect" onchange="updateStudentView()" class="w-full bg-surface border border-line rounded p-2.5 text-sm font-medium">
-                    </select>
-                    <div id="student-bio-card" class="border border-line rounded p-4 space-y-3"></div>
-                </div>
-
-                <div class="md:col-span-2 border border-line rounded p-4 space-y-4">
-                    <div class="flex justify-between items-center">
-                        <h4 id="student-chart-title" class="text-sm font-semibold text-ink">Perbandingan Domain Bulan 0 vs Bulan 3</h4>
-                        <span id="student-growth-badge" class="px-2 py-1 bg-accent-tint text-accent rounded border border-accent/20 text-xs font-semibold">Δ +0.00</span>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="studentRadarChart"></canvas>
-                    </div>
-                    <div id="student-detail-summary" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs"></div>
-                </div>
-            </div>
-        </section>
-
-        <section id="matriks-rekap" class="border border-line bg-surface rounded p-6 sm:p-8 space-y-6">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h3 class="font-serif text-xl font-semibold text-ink">5. Matriks E-Rapor &amp; Rekapitulasi Longitudinal</h3>
-                    <p class="text-sm text-muted mt-1">Data penilaian lengkap 15 mahasiswa tim pelaksana.</p>
-                </div>
-                <label class="sr-only" for="tableSearch">Cari nama mahasiswa atau peran</label>
-                <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Cari nama atau peran&hellip;" class="px-3 py-2 border border-line rounded text-sm w-full sm:w-64">
-            </div>
-
-            <div class="overflow-x-auto border border-line rounded">
-                <table id="performanceTable" class="w-full text-left text-sm text-ink">
-                    <thead class="bg-paper text-muted text-xs uppercase tracking-wide border-b border-line">
-                        <tr>
-                            <th class="py-2.5 px-3 font-semibold">No</th>
-                            <th class="py-2.5 px-3 font-semibold">Nama Mahasiswa</th>
-                            <th class="py-2.5 px-3 font-semibold">Peran</th>
-                            <th class="py-2.5 px-3 text-center font-semibold">B0</th>
-                            <th class="py-2.5 px-3 text-center font-semibold">B1</th>
-                            <th class="py-2.5 px-3 text-center font-semibold">B2</th>
-                            <th class="py-2.5 px-3 text-center font-semibold">B3</th>
-                            <th class="py-2.5 px-3 text-center font-semibold">Δ</th>
-                            <th class="py-2.5 px-3 font-semibold">Klasifikasi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody" class="divide-y divide-line"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <section id="rtl" class="border border-line bg-surface rounded p-6 sm:p-8 space-y-6">
-            <div>
-                <h3 class="font-serif text-xl font-semibold text-ink">6. Simpulan &amp; Rencana Tindak Lanjut</h3>
-                <p class="text-sm text-muted mt-1 max-w-2xl">
-                    Keberlanjutan pasca-penerjunan dan persiapan menuju Anugerah Abdidaya Ormawa.
-                </p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="border border-line rounded p-4 space-y-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-[11px] font-semibold text-accent bg-accent-tint px-2 py-0.5 rounded border border-accent/20">Okt 2026</span>
-                        <span class="text-xs text-muted">Regulasi</span>
-                    </div>
-                    <h4 class="text-sm font-semibold text-ink">Institusionalisasi Pojok Skrining</h4>
-                    <p class="text-xs text-muted leading-relaxed">SK Lurah Sumurrejo untuk operasionalisasi rutin Pojok Skrining Diabetes di seluruh Posbindu.</p>
-                </div>
-                <div class="border border-line rounded p-4 space-y-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-[11px] font-semibold text-accent bg-accent-tint px-2 py-0.5 rounded border border-accent/20">Okt&ndash;Nov 2026</span>
-                        <span class="text-xs text-muted">Digitalisasi</span>
-                    </div>
-                    <h4 class="text-sm font-semibold text-ink">Integrasi Database MEDIKU</h4>
-                    <p class="text-xs text-muted leading-relaxed">Penyambungan data faktor risiko PTM dengan pelaporan rujukan berkala Puskesmas Gunungpati.</p>
-                </div>
-                <div class="border border-line rounded p-4 space-y-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-[11px] font-semibold text-accent bg-accent-tint px-2 py-0.5 rounded border border-accent/20">Nov 2026</span>
-                        <span class="text-xs text-muted">Ekonomi</span>
-                    </div>
-                    <h4 class="text-sm font-semibold text-ink">Hilirisasi &amp; Pemasaran Glycos</h4>
-                    <p class="text-xs text-muted leading-relaxed">Perizinan P-IRT, sertifikasi halal, dan komersialisasi produk pangan fungsional.</p>
-                </div>
-                <div class="border border-line rounded p-4 space-y-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-[11px] font-semibold text-accent bg-accent-tint px-2 py-0.5 rounded border border-accent/20">Nov 2026</span>
-                        <span class="text-xs text-muted">Replikasi</span>
-                    </div>
-                    <h4 class="text-sm font-semibold text-ink">Replikasi &amp; Skema ToT Kader</h4>
-                    <p class="text-xs text-muted leading-relaxed">Pelatihan kader tingkat kecamatan oleh kader trainer Sumurrejo binaan mahasiswa.</p>
-                </div>
-                <div class="border border-line rounded p-4 space-y-2 md:col-span-2 lg:col-span-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-[11px] font-semibold text-accent bg-accent-tint px-2 py-0.5 rounded border border-accent/20">Okt&ndash;Des 2026</span>
-                        <span class="text-xs text-muted">Kompetisi Nasional</span>
-                    </div>
-                    <h4 class="text-sm font-semibold text-ink">Persiapan Anugerah Abdidaya Ormawa</h4>
-                    <p class="text-xs text-muted leading-relaxed">Laporan akhir, poster, video dokumenter, dan penataan materi stand pameran bersama Dosen Pendamping.</p>
-                </div>
-            </div>
-        </section>
-
+        </div>
     </main>
 
-    <footer class="border-t border-line py-6 mt-6 text-center text-xs text-muted">
-        <div class="max-w-6xl mx-auto px-4">
-            <p class="font-semibold text-ink">E-Rapor Tim Pelaksana PPK Ormawa BEM FK UNNES</p>
-            <p class="mt-1">Program Pemberdayaan Masyarakat Kelurahan Sumurrejo &middot; Dosen Pendamping &amp; Tim Observer</p>
+    <footer class="site-footer">
+        <div class="container">
+            <p class="strong">E-Rapor Tim Pelaksana PPK Ormawa BEM FK UNNES</p>
+            <p>Program Pemberdayaan Masyarakat Kelurahan Sumurrejo &middot; Dosen Pendamping &amp; Tim Observer</p>
         </div>
     </footer>
 
-    <script>
-        const domainDefinitions = [
-            {
-                code: 'A',
-                title: 'Analisis Situasi Masyarakat',
-                desc: 'Kemampuan mahasiswa dalam memetakan profil demografi, beban penyakit diabetes, serta potensi sosial masyarakat secara komprehensif.',
-                indicators: [
-                    { id: 1, text: 'Mampu mengidentifikasi masalah utama kesehatan masyarakat berdasarkan data lapangan' },
-                    { id: 2, text: 'Mampu mengidentifikasi potensi lokal yang dapat diberdayakan' },
-                    { id: 3, text: 'Mampu menentukan prioritas masalah bersama masyarakat' }
-                ]
-            },
-            {
-                code: 'B',
-                title: 'Partisipasi Masyarakat',
-                desc: 'Kemampuan menggerakkan partisipasi aktif warga, perwakilan kelompok sasaran, dan elemen masyarakat dari awal hingga keputusan akhir.',
-                indicators: [
-                    { id: 4, text: 'Melibatkan masyarakat sejak tahap perencanaan' },
-                    { id: 5, text: 'Mendorong masyarakat aktif menyampaikan ide' },
-                    { id: 6, text: 'Keputusan program dibuat bersama masyarakat' }
-                ]
-            },
-            {
-                code: 'C',
-                title: 'Pengembangan Kapasitas Masyarakat',
-                desc: 'Transfer pengetahuan dan keterampilan klinis dasar, pencatatan PTM, serta digitalisasi pemantauan kesehatan kader.',
-                indicators: [
-                    { id: 7, text: 'Melatih kader melakukan skrining diabetes secara mandiri' },
-                    { id: 8, text: 'Melatih kader menggunakan aplikasi MEDIKU' },
-                    { id: 9, text: 'Melatih kader melakukan pencatatan faktor risiko PTM' }
-                ]
-            },
-            {
-                code: 'D',
-                title: 'Pemberdayaan Berbasis Potensi Lokal',
-                desc: 'Pemanfaatan kekayaan hayati lokal (TOGA/tanaman herbal) dan inovasi produk pangan fungsional serbasari rendah indeks glikemik.',
-                indicators: [
-                    { id: 10, text: 'Mengoptimalkan pemanfaatan TOGA lokal' },
-                    { id: 11, text: 'Mengembangkan produk serbasari bersama masyarakat' },
-                    { id: 12, text: 'Melibatkan masyarakat dalam inovasi produk pangan fungsional' }
-                ]
-            },
-            {
-                code: 'E',
-                title: 'Keberlanjutan Program',
-                desc: 'Kemandirian kelompok masyarakat dalam mengoperasikan Pojok Skrining, pemutakhiran MEDIKU, dan reproduksi pangan fungsional.',
-                indicators: [
-                    { id: 13, text: 'Masyarakat mampu menjalankan pojok skrining tanpa pendampingan mahasiswa' },
-                    { id: 14, text: 'Kader mampu menginput data MEDIKU secara mandiri' },
-                    { id: 15, text: 'Kelompok masyarakat mampu memproduksi produk Glycos secara mandiri' },
-                    { id: 16, text: 'Terbentuk kader yang menjadi pelatih kader lain' }
-                ]
-            },
-            {
-                code: 'F',
-                title: 'Kolaborasi',
-                desc: 'Strategi membangun jejaring lintas sektor meliputi Kelurahan, Puskesmas Gunungpati, PKK, Posbindu, dan tokoh masyarakat.',
-                indicators: [
-                    { id: 17, text: 'Membangun kerja sama dengan puskesmas' },
-                    { id: 18, text: 'Membangun kerja sama dengan kelurahan' },
-                    { id: 19, text: 'Melibatkan PKK, Posbindu, dan tokoh masyarakat' }
-                ]
-            },
-            {
-                code: 'G',
-                title: 'Kepemimpinan Mahasiswa',
-                desc: 'Kompetensi manajerial mahasiswa dalam memfasilitasi dialog, pemecahan masalah/konflik, dan menjaga motivasi kader.',
-                indicators: [
-                    { id: 20, text: 'Mampu memfasilitasi diskusi masyarakat' },
-                    { id: 21, text: 'Mampu menyelesaikan konflik kelompok' },
-                    { id: 22, text: 'Mampu memotivasi kader agar aktif' }
-                ]
-            }
-        ];
-
-        const indicatorsList = [
-            "Indikator 1: Identifikasi Masalah Kesehatan",
-            "Indikator 2: Identifikasi Potensi Lokal",
-            "Indikator 3: Penetapan Prioritas Masalah",
-            "Indikator 4: Pelibatan Perencanaan",
-            "Indikator 5: Mendorong Penyampaian Ide",
-            "Indikator 6: Keputusan Bersama",
-            "Indikator 7: Pelatihan Skrining Diabetes",
-            "Indikator 8: Pelatihan Aplikasi MEDIKU",
-            "Indikator 9: Pencatatan Faktor Risiko",
-            "Indikator 10: Pemanfaatan TOGA Lokal",
-            "Indikator 11: Pengembangan Produk Serbasari",
-            "Indikator 12: Inovasi Pangan Fungsional",
-            "Indikator 13: Kemandirian Pojok Skrining",
-            "Indikator 14: Input Data MEDIKU Mandiri",
-            "Indikator 15: Produksi Mandiri Glycos",
-            "Indikator 16: Pembentukan Kader Trainer",
-            "Indikator 17: Kerjasama Puskesmas",
-            "Indikator 18: Kerjasama Kelurahan",
-            "Indikator 19: Pelibatan PKK & Posbindu",
-            "Indikator 20: Fasilitasi Diskusi",
-            "Indikator 21: Penyelesaian Konflik",
-            "Indikator 22: Motivasi Keaktifan Kader"
-        ];
-
-        const monthlyData = {
-            0: {
-                label: "Bulan Ke-0 (Mei 2026)",
-                targetRange: "Range 1 (1.00 - 1.80)",
-                domainScores: [1.38, 1.37, 1.38, 1.40, 1.38, 1.37, 1.39],
-                cumulativeAvg: 1.38,
-                indicatorScores: [1.39, 1.37, 1.38, 1.36, 1.37, 1.38, 1.39, 1.38, 1.37, 1.41, 1.40, 1.39, 1.38, 1.37, 1.39, 1.38, 1.37, 1.38, 1.36, 1.40, 1.39, 1.38],
-                narrative: "<strong>Evaluasi Baseline (Mei 2026):</strong> Berada pada Range 1 dengan rata-rata kumulatif 1,38. Mahasiswa tim BEM FK UNNES masih berada pada tahap persiapan konseptual sebelum penerjunan lapangan. Pemahaman potensi TOGA lokal (Domain D: 1,40) sedikit memimpin, sedangkan kolaborasi dan partisipasi berada di titik awal karena belum dimulainya interaksi terstruktur dengan pemangku kepentingan desa."
-            },
-            1: {
-                label: "Bulan Ke-1 (Juni - Juli 2026)",
-                targetRange: "Range 2 (2.00 - 2.90)",
-                domainScores: [2.47, 2.45, 2.46, 2.44, 2.43, 2.46, 2.47],
-                cumulativeAvg: 2.45,
-                indicatorScores: [2.48, 2.47, 2.46, 2.46, 2.44, 2.45, 2.47, 2.46, 2.45, 2.45, 2.44, 2.43, 2.44, 2.42, 2.43, 2.43, 2.47, 2.46, 2.45, 2.48, 2.46, 2.47],
-                narrative: "<strong>Evaluasi Inisiasi (Juni - Juli 2026):</strong> Berada pada Range 2 dengan rata-rata 2,45. Menggambarkan keberhasilan sosialisasi awal, pembentukan struktur Pojok Skrining, serta pengenalan modul aplikasi MEDIKU. Kepemimpinan mahasiswa dan analisis situasi (2,47) memimpin berkat komunikasi aktif tim dengan pihak Kelurahan Sumurrejo dan Puskesmas Gunungpati."
-            },
-            2: {
-                label: "Bulan Ke-2 (Juli - Agustus 2026)",
-                targetRange: "Range 3 (3.00 - 3.90)",
-                domainScores: [3.45, 3.44, 3.46, 3.43, 3.44, 3.44, 3.44],
-                cumulativeAvg: 3.44,
-                indicatorScores: [3.46, 3.45, 3.44, 3.45, 3.44, 3.43, 3.47, 3.46, 3.45, 3.44, 3.43, 3.42, 3.45, 3.43, 3.44, 3.44, 3.45, 3.44, 3.43, 3.45, 3.43, 3.44],
-                narrative: "<strong>Evaluasi Akselerasi (Juli - Agustus 2026):</strong> Berada pada Range 3 dengan rata-rata 3,44. Pelatihan praktik skrining glukosa darah mandiri dan simulasi input MEDIKU secara real-time mendorong lonjakan signifikan pada Pengembangan Kapasitas (Domain C: 3,46). Kader PKK juga mulai aktif memformulasi olahan pangan fungsional serbasari."
-            },
-            3: {
-                label: "Bulan Ke-3 (Agustus - September 2026)",
-                targetRange: "Range 4 (4.10 - 4.40)",
-                domainScores: [4.26, 4.28, 4.25, 4.25, 4.25, 4.25, 4.23],
-                cumulativeAvg: 4.25,
-                indicatorScores: [4.27, 4.26, 4.25, 4.29, 4.28, 4.27, 4.26, 4.25, 4.24, 4.26, 4.25, 4.24, 4.26, 4.25, 4.25, 4.24, 4.26, 4.25, 4.24, 4.24, 4.22, 4.23],
-                narrative: "<strong>Evaluasi Kemandirian (Agustus - September 2026):</strong> Mencapai skor puncak <strong>4,25</strong> (Sesuai target Range 4). Kader Posbindu dan PKK telah mampu mengelola Pojok Skrining mandiri, menginput data MEDIKU, serta mereplikasi pengetahuan melalui skema Training of Trainers (ToT). Mahasiswa sukses bertransformasi menjadi pendamping pasif."
-            }
-        };
-
-        const studentsData = [
-            { name: "Oktavia Kurniawati", role: "Ketua Tim Pelaksana", scores: [1.42, 2.50, 3.53, 4.31], class: "Sangat Unggul", domainB3: [4.32, 4.34, 4.31, 4.31, 4.31, 4.31, 4.29] },
-            { name: "N. Rania Danisya Adriani", role: "Administrasi & Sekretariat", scores: [1.41, 2.44, 3.47, 4.28], class: "Sangat Unggul", domainB3: [4.29, 4.31, 4.28, 4.28, 4.28, 4.28, 4.26] },
-            { name: "Nayara Raya Kanahaya", role: "Keuangan & Anggaran", scores: [1.37, 2.45, 3.46, 4.27], class: "Sangat Unggul", domainB3: [4.28, 4.30, 4.27, 4.27, 4.27, 4.27, 4.25] },
-            { name: "Rintis Aulia Maharani", role: "Teknis Skrining Kesehatan", scores: [1.42, 2.49, 3.49, 4.27], class: "Sangat Unggul", domainB3: [4.28, 4.30, 4.27, 4.27, 4.27, 4.27, 4.25] },
-            { name: "Aida Maghfiroh", role: "Formulasi Olah Pangan", scores: [1.39, 2.47, 3.44, 4.27], class: "Sangat Unggul", domainB3: [4.28, 4.30, 4.27, 4.27, 4.27, 4.27, 4.25] },
-            { name: "Edward Joshua Sibarani", role: "Humas & Kemitraan Eksternal", scores: [1.38, 2.49, 3.43, 4.22], class: "Unggul", domainB3: [4.23, 4.25, 4.22, 4.22, 4.22, 4.22, 4.20] },
-            { name: "Diva Ayu Hafsari Dewi", role: "Pengembang Sistem MEDIKU", scores: [1.40, 2.48, 3.47, 4.27], class: "Sangat Unggul", domainB3: [4.28, 4.30, 4.27, 4.27, 4.27, 4.27, 4.25] },
-            { name: "Aulia Zaziroturrohmah", role: "Edukasi & Literasi Kesehatan", scores: [1.40, 2.43, 3.44, 4.24], class: "Unggul", domainB3: [4.25, 4.27, 4.24, 4.24, 4.24, 4.24, 4.22] },
-            { name: "Fany Fitria Salsabilla", role: "Pemasaran & Bisnis Glycos", scores: [1.37, 2.48, 3.42, 4.27], class: "Sangat Unggul", domainB3: [4.28, 4.30, 4.27, 4.27, 4.27, 4.27, 4.25] },
-            { name: "Damar Syahid Nugraha", role: "Logistik & Aset Lapangan", scores: [1.38, 2.43, 3.40, 4.24], class: "Unggul", domainB3: [4.25, 4.27, 4.24, 4.24, 4.24, 4.24, 4.22] },
-            { name: "Ivani Ramadhani Putri Permana", role: "Konservasi TOGA Lokal", scores: [1.39, 2.49, 3.45, 4.26], class: "Sangat Unggul", domainB3: [4.27, 4.29, 4.26, 4.26, 4.26, 4.26, 4.24] },
-            { name: "Amalina Nayla Putri", role: "Pendampingan Lapangan", scores: [1.36, 2.36, 3.42, 4.22], class: "Unggul", domainB3: [4.23, 4.25, 4.22, 4.22, 4.22, 4.22, 4.20] },
-            { name: "Fathurrahman Muhammad", role: "Media & Publikasi Dokumenter", scores: [1.34, 2.41, 3.41, 4.19], class: "Unggul", domainB3: [4.20, 4.22, 4.19, 4.19, 4.19, 4.19, 4.17] },
-            { name: "Muhammad Fiqi Firmansyah", role: "Operasional Lapangan", scores: [1.34, 2.44, 3.41, 4.24], class: "Unggul", domainB3: [4.25, 4.27, 4.24, 4.24, 4.24, 4.24, 4.22] },
-            { name: "Zoar Lewi Panjaitan", role: "Evaluasi & Pengolahan Data", scores: [1.35, 2.43, 3.43, 4.26], class: "Sangat Unggul", domainB3: [4.27, 4.29, 4.26, 4.26, 4.26, 4.26, 4.24] }
-        ];
-
-        let longitudinalChartObj = null;
-        let spiderChartObj = null;
-        let barChartObj = null;
-        let studentRadarChartObj = null;
-
-        const INK = '#14203a';
-        const ACCENT = '#7a1230';
-        const MUTED = '#4b5566';
-        const LINE = '#d3d8e0';
-
-        document.addEventListener('DOMContentLoaded', () => {
-            renderDomainCards('ALL');
-            initLongitudinalChart();
-            renderMonthlyCharts(0);
-            populateStudentSelector();
-            updateStudentView();
-            renderTable();
-        });
-
-        function scrollToSection(id) {
-            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function filterDomain(code) {
-            document.querySelectorAll('.dom-tab-btn').forEach(btn => {
-                btn.classList.remove('bg-ink', 'text-white');
-                btn.classList.add('bg-neutral-tint', 'text-neutral-text');
-            });
-            const el = document.getElementById(`domtab-${code}`);
-            el.classList.remove('bg-neutral-tint', 'text-neutral-text');
-            el.classList.add('bg-ink', 'text-white');
-            renderDomainCards(code);
-        }
-
-        function renderDomainCards(codeFilter) {
-            const container = document.getElementById('domainGridContainer');
-            const listToRender = codeFilter === 'ALL'
-                ? domainDefinitions
-                : domainDefinitions.filter(d => d.code === codeFilter);
-
-            container.innerHTML = listToRender.map(d => `
-                <div class="border border-line rounded p-4 flex flex-col justify-between space-y-3">
-                    <div>
-                        <div class="flex items-center justify-between border-b border-line pb-2 mb-2">
-                            <span class="text-xs font-bold text-white bg-ink px-2 py-0.5 rounded">
-                                Domain ${d.code}
-                            </span>
-                            <span class="text-[10px] font-semibold text-muted uppercase">
-                                ${d.indicators.length} Indikator
-                            </span>
-                        </div>
-                        <h4 class="text-sm font-semibold text-ink mb-1">${d.title}</h4>
-                        <p class="text-xs text-muted leading-relaxed mb-3">${d.desc}</p>
-                        <div class="space-y-1.5 border-t border-line pt-2">
-                            ${d.indicators.map(i => `
-                                <div class="flex items-start gap-2 text-xs text-ink bg-paper p-2 rounded">
-                                    <span class="font-semibold text-accent shrink-0">#${i.id}</span>
-                                    <span class="leading-tight">${i.text}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function initLongitudinalChart() {
-            const ctx = document.getElementById('longitudinalLineChart').getContext('2d');
-            longitudinalChartObj = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Bulan 0', 'Bulan 1', 'Bulan 2', 'Bulan 3'],
-                    datasets: [
-                        {
-                            label: 'Rata-Rata Kumulatif Tim',
-                            data: [1.38, 2.45, 3.44, 4.25],
-                            borderColor: ACCENT,
-                            backgroundColor: 'rgba(122, 18, 48, 0.08)',
-                            borderWidth: 2.5,
-                            fill: true,
-                            tension: 0.25,
-                            pointRadius: 4,
-                            pointBackgroundColor: ACCENT
-                        },
-                        {
-                            label: 'Batas Bawah Target',
-                            data: [1.00, 2.00, 3.00, 4.10],
-                            borderColor: MUTED,
-                            borderDash: [4, 4],
-                            borderWidth: 1.5,
-                            fill: false,
-                            pointRadius: 0
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, color: INK } } },
-                    scales: {
-                        y: { min: 1, max: 5, ticks: { stepSize: 1, color: MUTED }, grid: { color: LINE } },
-                        x: { ticks: { color: MUTED }, grid: { display: false } }
-                    }
-                }
-            });
-        }
-
-        function switchMonth(mIndex) {
-            document.querySelectorAll('.month-tab').forEach((tab, idx) => {
-                if (idx === mIndex) {
-                    tab.classList.add('bg-ink', 'text-white');
-                    tab.classList.remove('text-muted');
-                } else {
-                    tab.classList.remove('bg-ink', 'text-white');
-                    tab.classList.add('text-muted');
-                }
-            });
-            renderMonthlyCharts(mIndex);
-        }
-
-        function renderMonthlyCharts(mIndex) {
-            const data = monthlyData[mIndex];
-            document.getElementById('spider-subtitle').innerText = `${data.label} · Target: ${data.targetRange}`;
-            document.getElementById('bar-subtitle').innerText = `22 Indikator · ${data.label}`;
-            document.getElementById('narrative-title').innerText = 'Narasi Analisis Evaluasi';
-            document.getElementById('narrative-content').innerHTML = data.narrative;
-
-            const banner = document.getElementById('period-banner');
-            banner.innerHTML = `
-                <div>
-                    <span class="font-semibold text-ink">${data.label}</span>
-                    <p class="text-xs text-muted mt-0.5">Skor Kumulatif Tim: <strong class="text-ink">${data.cumulativeAvg.toFixed(2)}</strong> &middot; ${data.targetRange}</p>
-                </div>
-                <span class="px-2.5 py-1 rounded border border-line bg-surface text-xs font-semibold text-ink">${data.targetRange.split(' ')[0]} ${data.targetRange.split(' ')[1]}</span>
-            `;
-
-            const ctxSpider = document.getElementById('monthlySpiderChart').getContext('2d');
-            if (spiderChartObj) spiderChartObj.destroy();
-            spiderChartObj = new Chart(ctxSpider, {
-                type: 'radar',
-                data: {
-                    labels: ['Domain A', 'Domain B', 'Domain C', 'Domain D', 'Domain E', 'Domain F', 'Domain G'],
-                    datasets: [{
-                        label: `Skor Domain`,
-                        data: data.domainScores,
-                        backgroundColor: 'rgba(122, 18, 48, 0.14)',
-                        borderColor: ACCENT,
-                        pointBackgroundColor: ACCENT,
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { r: { min: 1, max: 5, ticks: { stepSize: 1, display: false }, pointLabels: { font: { size: 10 }, color: INK }, grid: { color: LINE }, angleLines: { color: LINE } } },
-                    plugins: { legend: { display: false } }
-                }
-            });
-
-            const ctxBar = document.getElementById('monthlyBarChart').getContext('2d');
-            if (barChartObj) barChartObj.destroy();
-            barChartObj = new Chart(ctxBar, {
-                type: 'bar',
-                data: {
-                    labels: Array.from({length: 22}, (_, i) => `I${i+1}`),
-                    datasets: [{
-                        label: 'Skor Indikator',
-                        data: data.indicatorScores,
-                        backgroundColor: INK,
-                        borderRadius: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { callbacks: { title: (items) => indicatorsList[items[0].dataIndex] } }
-                    },
-                    scales: {
-                        y: { min: 1, max: 5, ticks: { stepSize: 1, color: MUTED }, grid: { color: LINE } },
-                        x: { ticks: { font: { size: 9 }, color: MUTED }, grid: { display: false } }
-                    }
-                }
-            });
-        }
-
-        function populateStudentSelector() {
-            const select = document.getElementById('studentSelect');
-            select.innerHTML = studentsData.map((s, idx) => `<option value="${idx}">${idx + 1}. ${s.name}</option>`).join('');
-        }
-
-        function updateStudentView() {
-            const idx = document.getElementById('studentSelect').value;
-            const s = studentsData[idx];
-
-            const bioCard = document.getElementById('student-bio-card');
-            bioCard.innerHTML = `
-                <div>
-                    <h4 class="font-semibold text-ink text-sm">${s.name}</h4>
-                    <p class="text-xs text-accent font-medium">${s.role}</p>
-                </div>
-                <div class="pt-2 border-t border-line text-xs space-y-1 text-muted">
-                    <div class="flex justify-between"><span>Status Klasifikasi</span> <span class="font-semibold text-ink">${s.class}</span></div>
-                    <div class="flex justify-between"><span>Skor Awal (B0)</span> <span class="font-semibold text-ink">${s.scores[0]}</span></div>
-                    <div class="flex justify-between"><span>Skor Akhir (B3)</span> <span class="font-semibold text-accent">${s.scores[3]}</span></div>
-                </div>
-            `;
-
-            const delta = (s.scores[3] - s.scores[0]).toFixed(2);
-            document.getElementById('student-growth-badge').innerText = `Δ +${delta} poin`;
-
-            const summaryBox = document.getElementById('student-detail-summary');
-            summaryBox.innerHTML = `
-                <div class="border border-line rounded p-2"><span class="block text-muted text-[10px]">Bulan 0</span><span class="font-semibold text-ink">${s.scores[0]}</span></div>
-                <div class="border border-line rounded p-2"><span class="block text-muted text-[10px]">Bulan 1</span><span class="font-semibold text-ink">${s.scores[1]}</span></div>
-                <div class="border border-line rounded p-2"><span class="block text-muted text-[10px]">Bulan 2</span><span class="font-semibold text-ink">${s.scores[2]}</span></div>
-                <div class="border border-accent/30 bg-accent-tint/40 rounded p-2"><span class="block text-accent text-[10px]">Bulan 3</span><span class="font-semibold text-accent">${s.scores[3]}</span></div>
-            `;
-
-            const ctx = document.getElementById('studentRadarChart').getContext('2d');
-            if (studentRadarChartObj) studentRadarChartObj.destroy();
-            studentRadarChartObj = new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels: ['Domain A', 'Domain B', 'Domain C', 'Domain D', 'Domain E', 'Domain F', 'Domain G'],
-                    datasets: [
-                        {
-                            label: 'Bulan Ke-0',
-                            data: Array(7).fill(s.scores[0]),
-                            borderColor: MUTED,
-                            backgroundColor: 'rgba(75, 85, 102, 0.08)',
-                            borderWidth: 1.5
-                        },
-                        {
-                            label: 'Bulan Ke-3',
-                            data: s.domainB3,
-                            borderColor: ACCENT,
-                            backgroundColor: 'rgba(122, 18, 48, 0.16)',
-                            borderWidth: 2
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { r: { min: 1, max: 5, ticks: { stepSize: 1, display: false }, pointLabels: { font: { size: 10 }, color: INK }, grid: { color: LINE }, angleLines: { color: LINE } } },
-                    plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, color: INK } } }
-                }
-            });
-        }
-
-        function renderTable() {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = studentsData.map((s, idx) => {
-                const growth = (s.scores[3] - s.scores[0]).toFixed(2);
-                const tagClass = s.class === 'Sangat Unggul' ? 'bg-ok-tint text-ok-text border-ok-border' : 'bg-warn-tint text-warn-text border-warn-border';
-                return `
-                    <tr class="hover:bg-paper transition">
-                        <td class="py-2 px-3 text-center text-muted">${idx + 1}</td>
-                        <td class="py-2 px-3 font-medium text-ink">${s.name}</td>
-                        <td class="py-2 px-3 text-muted">${s.role}</td>
-                        <td class="py-2 px-3 text-center text-muted">${s.scores[0]}</td>
-                        <td class="py-2 px-3 text-center text-muted">${s.scores[1]}</td>
-                        <td class="py-2 px-3 text-center text-muted">${s.scores[2]}</td>
-                        <td class="py-2 px-3 text-center font-semibold text-ink">${s.scores[3]}</td>
-                        <td class="py-2 px-3 text-center font-semibold text-accent">+${growth}</td>
-                        <td class="py-2 px-3">
-                            <span class="inline-block px-2 py-0.5 text-[10px] font-semibold rounded border ${tagClass}">${s.class}</span>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function filterTable() {
-            const query = document.getElementById('tableSearch').value.toLowerCase();
-            const rows = document.querySelectorAll('#tableBody tr');
-            rows.forEach(row => {
-                const text = row.innerText.toLowerCase();
-                row.style.display = text.includes(query) ? '' : 'none';
-            });
-        }
-    </script>
+    <script src="vendor/chart.umd.min.js"></script>
+    <script src="erapor-tim.js"></script>
 </body>
 </html>
