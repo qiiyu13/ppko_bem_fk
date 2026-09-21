@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-RAPOR TIM PELAKSANA PPK ORMAWA BEM FK UNNES - Kelurahan Sumurrejo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        },
+                        accent: {
+                            50: '#fffbeb',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                        },
+                        warmbg: '#faf9f6'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 650px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+            max-height: 380px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 360px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-warmbg text-gray-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-brand-600 text-white font-extrabold px-3 py-1.5 rounded-lg text-sm sm:text-base tracking-wide shadow">
+                        BEM FK UNNES
+                    </div>
+                    <div>
+                        <h1 class="text-base sm:text-lg font-black text-gray-900 leading-tight">
+                            E-RAPOR TIM PELAKSANA PPK ORMAWA
+                        </h1>
+                        <p class="text-xs text-gray-500 hidden sm:block">Kelurahan Sumurrejo • Penilaian Kemampuan Pemberdayaan Masyarakat</p>
+                    </div>
+                </div>
+                <nav class="hidden md:flex space-x-1 text-xs lg:text-sm font-medium">
+                    <button onclick="scrollToSection('ringkasan')" class="px-2.5 py-2 text-gray-700 hover:text-brand-600 hover:bg-gray-50 rounded-md transition">Ringkasan Utama</button>
+                    <button onclick="scrollToSection('indikator-penilaian')" class="px-2.5 py-2 text-brand-700 font-bold bg-brand-50 hover:bg-brand-100 rounded-md transition">Indikator Penilaian</button>
+                    <button onclick="scrollToSection('evaluasi-bulanan')" class="px-2.5 py-2 text-gray-700 hover:text-brand-600 hover:bg-gray-50 rounded-md transition">Evaluasi Bulanan</button>
+                    <button onclick="scrollToSection('performa-mahasiswa')" class="px-2.5 py-2 text-gray-700 hover:text-brand-600 hover:bg-gray-50 rounded-md transition">Performa Student</button>
+                    <button onclick="scrollToSection('matriks-rekap')" class="px-2.5 py-2 text-gray-700 hover:text-brand-600 hover:bg-gray-50 rounded-md transition">Matriks Data</button>
+                    <button onclick="scrollToSection('rtl')" class="px-2.5 py-2 text-gray-700 hover:text-brand-600 hover:bg-gray-50 rounded-md transition">RTL & Keberlanjutan</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-10">
+
+        <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 relative overflow-hidden">
+            <div class="max-w-4xl">
+                <div class="inline-flex items-center space-x-2 bg-brand-50 text-brand-700 px-3 py-1 rounded-full text-xs font-semibold mb-3 border border-brand-100">
+                    <span>&#9733; E-RAPOR TIM PELAKSANA PPK ORMAWA BEM FK UNNES</span>
+                    <span>•</span>
+                    <span>Periode Evaluasi Mei - September 2026</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight mb-2">
+                    E-RAPOR TIM PELAKSANA PPK ORMAWA BEM FK UNNES
+                </h2>
+                <p class="text-brand-700 font-semibold text-sm sm:text-base mb-3">
+                    Judul Program: "Glycos: Optimalisasi Pangan Fungsional Rendah Indeks Glikemik dan Pojok Skrining Diabetes untuk Mewujudkan Kelurahan Sumurrejo Sehat Berkelanjutan"
+                </p>
+                <p class="text-gray-600 text-sm leading-relaxed mb-6">
+                    Sistem E-Rapor ini menyajikan rekapitulasi Penilaian Kemampuan Pemberdayaan Masyarakat 15 mahasiswa tim pelaksana PPK Ormawa BEM FK UNNES secara longitudinal (Bulan 0 hingga Bulan 3) berdasarkan instrumen evaluasi Dosen Pendamping.
+                </p>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+                    <div class="bg-warmbg p-4 rounded-xl border border-gray-200/80">
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Skor Ke-0 (Mei)</p>
+                        <p class="text-2xl font-black text-gray-700 mt-1">1,38 <span class="text-xs font-normal text-gray-500">(Range 1)</span></p>
+                        <p class="text-[11px] text-gray-500 mt-0.5">Sangat Kurang (Baseline)</p>
+                    </div>
+                    <div class="bg-warmbg p-4 rounded-xl border border-gray-200/80">
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Skor Ke-3 (Sep)</p>
+                        <p class="text-2xl font-black text-brand-600 mt-1">4,25 <span class="text-xs font-normal text-brand-700">(Range 4)</span></p>
+                        <p class="text-[11px] text-brand-700 font-medium mt-0.5">Sangat Baik (Mandiri)</p>
+                    </div>
+                    <div class="bg-warmbg p-4 rounded-xl border border-gray-200/80">
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Pertumbuhan Total</p>
+                        <p class="text-2xl font-black text-accent-600 mt-1">+2,87</p>
+                        <p class="text-[11px] text-accent-700 font-medium mt-0.5">Kenaikan 208% (Δ B0-B3)</p>
+                    </div>
+                    <div class="bg-warmbg p-4 rounded-xl border border-gray-200/80">
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Tim BEM FK UNNES</p>
+                        <p class="text-2xl font-black text-gray-800 mt-1">15 <span class="text-xs font-normal text-gray-500">Mahasiswa</span></p>
+                        <p class="text-[11px] text-gray-500 mt-0.5">100% Memenuhi Target</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="ringkasan" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 space-y-6">
+            <div>
+                <h3 class="text-xl font-bold text-gray-900">1. Ringkasan Progresivitas & Kurva Pembelajaran (Bulan 0 - 3)</h3>
+                <p class="text-sm text-gray-600 mt-1">
+                    Halaman E-Rapor ini memperlihatkan perkembangan kompetensi Tim Pelaksana PPK Ormawa BEM FK UNNES secara berkesinambungan dari kondisi awal hingga pembentukan kemandirian masyarakat.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                <div class="bg-warmbg p-4 rounded-xl border border-gray-200 flex flex-col justify-center">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-2 text-center">Tren Perkembangan Rata-Rata Kumulatif Tim (Bulan 0 - 3)</h4>
+                    <div class="chart-container">
+                        <canvas id="longitudinalLineChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="p-4 bg-brand-50/60 rounded-xl border border-brand-100">
+                        <h5 class="text-sm font-bold text-brand-900 flex items-center space-x-2">
+                            <span>&#10004;</span>
+                            <span>Capaian Target Milestone Nasional</span>
+                        </h5>
+                        <p class="text-xs text-brand-800 mt-1 leading-relaxed">
+                            Progresivitas tim berkembang linier sesuai rencana target: Bulan 0 berada pada Range 1 (1,38), Bulan 1 pada Range 2 (2,45), Bulan 2 pada Range 3 (3,44), dan ditutup pada Bulan 3 dengan skor <strong>4,25</strong> (memenuhi target batas Range 4: 4,10 – 4,40).
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <span class="font-bold text-gray-800 block mb-1">Pertumbuhan Tertinggi</span>
+                            <span class="text-gray-600">Domain B: Partisipasi Masyarakat (<strong>+2,91</strong>) & Domain F: Kolaborasi (<strong>+2,88</strong>)</span>
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <span class="font-bold text-gray-800 block mb-1">Pilar Transformasi Utama</span>
+                            <span class="text-gray-600">Pojok Skrining Diabetes, Aplikasi MEDIKU, & Pangan Fungsional Glycos</span>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-gray-500 leading-relaxed italic">
+                        "E-Rapor ini membuktikan bahwa strategi fasilitasi tim BEM FK UNNES tidak bersifat top-down, melainkan mendorong keberlanjutan institusional berbasis kader kesehatan dan kelompok PKK Kelurahan Sumurrejo."
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section id="indikator-penilaian" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <div class="inline-flex items-center space-x-1 text-xs font-bold text-brand-700 bg-brand-100 px-2.5 py-0.5 rounded mb-1">
+                        <span>&#128221; Instrumen Penilaian Dosen Pendamping</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900">2. Rubrik Indikator Penilaian Pemberdayaan Masyarakat (Domain A - G)</h3>
+                    <p class="text-sm text-gray-600 mt-1">
+                        Instrumen evaluasi terdiri dari 7 Domain Utama dengan total 22 Indikator Spesifik yang diukur menggunakan Skala Likert 1 hingga 5.
+                    </p>
+                </div>
+                <div class="bg-warmbg p-3 rounded-xl border border-gray-200 text-xs shrink-0 space-y-1">
+                    <span class="font-bold text-gray-800 block border-b border-gray-200 pb-1">Skala Likert Penilaian (1-5):</span>
+                    <div class="grid grid-cols-5 gap-1.5 text-center text-[11px] pt-1">
+                        <span class="bg-red-50 text-red-700 px-1.5 py-0.5 rounded font-semibold border border-red-200">1: Sangat Kurang</span>
+                        <span class="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded font-semibold border border-amber-200">2: Kurang</span>
+                        <span class="bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded font-semibold border border-yellow-200">3: Cukup</span>
+                        <span class="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-semibold border border-blue-200">4: Baik</span>
+                        <span class="bg-emerald-50 text-emerald-800 px-1.5 py-0.5 rounded font-extrabold border border-emerald-200">5: Sangat Baik</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 pt-2 border-b border-gray-200 pb-3">
+                <button onclick="filterDomain('ALL')" id="domtab-ALL" class="dom-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-brand-600 text-white">Semua Domain (A-G)</button>
+                <button onclick="filterDomain('A')" id="domtab-A" class="dom-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-gray-100 text-gray-600 hover:bg-gray-200">Domain A</button>
+                <button onclick="filterDomain('B')" id="domtab-B" class="dom-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-gray-100 text-gray-600 hover:bg-gray-200">Domain B</button>
+                <button onclick="filterDomain('C')" id="domtab-C" class="dom-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-gray-100 text-gray-600 hover:bg-gray-200">Domain C</button>
+                <button onclick="filterDomain('D')" id="domtab-D" class="dom-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-gray-100 text-gray-600 hover:bg-gray-200">Domain D</button>
+                <button onclick="filterDomain('E')" id="domtab-E" class="dom-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-gray-100 text-gray-600 hover:bg-gray-200">Domain E</button>
+                <button onclick="filterDomain('F')" id="domtab-F" class="dom-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-gray-100 text-gray-600 hover:bg-gray-200">Domain F</button>
+                <button onclick="filterDomain('G')" id="domtab-G" class="dom-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-gray-100 text-gray-600 hover:bg-gray-200">Domain G</button>
+            </div>
+
+            <div id="domainGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            </div>
+
+            <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 text-xs leading-relaxed space-y-2">
+                <span class="font-bold text-gray-800 block text-sm">Target Capaian Rentang Nilai (Range) Per Evaluasi Bulanan:</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-1">
+                    <div class="p-2.5 bg-white rounded border border-gray-200">
+                        <span class="font-bold text-gray-700 block">Bulan Ke-0 (Mei)</span>
+                        <span class="text-gray-500 font-medium">Range 1 (1.00 - 1.80)</span>
+                        <p class="text-[10px] text-gray-400 mt-1">Tahap persiapan konseptual & baseline masyarakat.</p>
+                    </div>
+                    <div class="p-2.5 bg-white rounded border border-gray-200">
+                        <span class="font-bold text-gray-700 block">Bulan Ke-1 (Jun-Jul)</span>
+                        <span class="text-gray-500 font-medium">Range 2 (2.00 - 2.90)</span>
+                        <p class="text-[10px] text-gray-400 mt-1">Tahap inisiasi program & sosialisasi partisipatif.</p>
+                    </div>
+                    <div class="p-2.5 bg-white rounded border border-gray-200">
+                        <span class="font-bold text-gray-700 block">Bulan Ke-2 (Jul-Agt)</span>
+                        <span class="text-gray-500 font-medium">Range 3 (3.00 - 3.90)</span>
+                        <p class="text-[10px] text-gray-400 mt-1">Tahap akselerasi, pelatihan praktis & produksi.</p>
+                    </div>
+                    <div class="p-2.5 bg-brand-50 rounded border border-brand-200">
+                        <span class="font-bold text-brand-900 block">Bulan Ke-3 (Agt-Sep)</span>
+                        <span class="text-brand-700 font-extrabold">Range 4 (4.10 - 4.40)</span>
+                        <p class="text-[10px] text-brand-800 mt-1">Tahap kemandirian total & kelembagaan mandiri.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="evaluasi-bulanan" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 space-y-6">
+            <div>
+                <h3 class="text-xl font-bold text-gray-900">3. Evaluasi Kinerja Bulanan Terperinci</h3>
+                <p class="text-sm text-gray-600 mt-1">
+                    Gunakan tab di bawah ini untuk melihat hasil E-Rapor pada 7 domain utama (Spider Chart) dan 22 indikator spesifik (Diagram Batang) pada setiap bulan evaluasi.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap gap-2 border-b border-gray-200 pb-3">
+                <button onclick="switchMonth(0)" id="tab-m0" class="month-tab px-4 py-2 rounded-lg text-sm font-semibold transition bg-brand-600 text-white shadow-sm">
+                    Bulan Ke-0 (Mei 2026)
+                </button>
+                <button onclick="switchMonth(1)" id="tab-m1" class="month-tab px-4 py-2 rounded-lg text-sm font-semibold transition bg-gray-100 text-gray-600 hover:bg-gray-200">
+                    Bulan Ke-1 (Jun-Jul)
+                </button>
+                <button onclick="switchMonth(2)" id="tab-m2" class="month-tab px-4 py-2 rounded-lg text-sm font-semibold transition bg-gray-100 text-gray-600 hover:bg-gray-200">
+                    Bulan Ke-2 (Jul-Agt)
+                </button>
+                <button onclick="switchMonth(3)" id="tab-m3" class="month-tab px-4 py-2 rounded-lg text-sm font-semibold transition bg-gray-100 text-gray-600 hover:bg-gray-200">
+                    Bulan Ke-3 (Agt-Sep)
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <div class="bg-warmbg p-4 rounded-xl border border-gray-200 flex flex-col justify-center">
+                    <h4 id="spider-title" class="text-sm font-semibold text-gray-800 mb-1 text-center">Distribusi Skor 7 Domain (Spider Chart)</h4>
+                    <p id="spider-subtitle" class="text-xs text-gray-500 text-center mb-3">Evaluasi Bulan Ke-0 (Mei 2026)</p>
+                    <div class="chart-container">
+                        <canvas id="monthlySpiderChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-warmbg p-4 rounded-xl border border-gray-200 flex flex-col justify-center">
+                    <h4 id="bar-title" class="text-sm font-semibold text-gray-800 mb-1 text-center">Skor 22 Indikator Penilaian (Diagram Batang)</h4>
+                    <p id="bar-subtitle" class="text-xs text-gray-500 text-center mb-3">Rata-Rata Indikator Evaluasi Bulan Ke-0</p>
+                    <div class="chart-container">
+                        <canvas id="monthlyBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="monthly-narrative" class="p-5 bg-gray-50 rounded-xl border border-gray-200 text-sm space-y-2">
+            </div>
+        </section>
+
+        <section id="performa-mahasiswa" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 space-y-6">
+            <div>
+                <h3 class="text-xl font-bold text-gray-900">4. Analisis Performa Individual 15 Mahasiswa Tim Pelaksana</h3>
+                <p class="text-sm text-gray-600 mt-1">
+                    Pilih nama mahasiswa tim pelaksana BEM FK UNNES untuk membuka kartu E-Rapor individu beserta rekam jejak pertumbuhan skor dari Bulan Ke-0 hingga Bulan Ke-3.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                <div class="space-y-4">
+                    <label for="studentSelect" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Pilih Mahasiswa:
+                    </label>
+                    <select id="studentSelect" onchange="updateStudentView()" class="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </select>
+
+                    <div id="student-bio-card" class="bg-warmbg p-4 rounded-xl border border-gray-200 space-y-3">
+                    </div>
+                </div>
+
+                <div class="md:col-span-2 bg-warmbg p-4 rounded-xl border border-gray-200 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h4 id="student-chart-title" class="text-sm font-bold text-gray-800">Perbandingan Domain B0 vs B3</h4>
+                        <span id="student-growth-badge" class="px-2.5 py-1 bg-brand-100 text-brand-800 rounded-full text-xs font-extrabold">
+                            Δ +0.00
+                        </span>
+                    </div>
+
+                    <div class="chart-container">
+                        <canvas id="studentRadarChart"></canvas>
+                    </div>
+
+                    <div id="student-detail-summary" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="matriks-rekap" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900">5. Matriks E-Rapor & Rekapitulasi Longitudinal Tim</h3>
+                    <p class="text-sm text-gray-600 mt-1">
+                        Tabel interaktif hasil penilaian lengkap 15 mahasiswa tim pelaksana PPK Ormawa BEM FK UNNES.
+                    </p>
+                </div>
+                <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Cari nama mahasiswa atau peran..." class="px-3 py-2 border border-gray-300 rounded-lg text-xs w-full sm:w-64 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            </div>
+
+            <div class="overflow-x-auto border border-gray-200 rounded-xl">
+                <table id="performanceTable" class="w-full text-left text-xs text-gray-700">
+                    <thead class="bg-gray-100 text-gray-800 uppercase text-[10px] tracking-wider border-b border-gray-200">
+                        <tr>
+                            <th class="py-3 px-3">No</th>
+                            <th class="py-3 px-3 font-bold">Nama Mahasiswa</th>
+                            <th class="py-3 px-3">Peran Spesialisasi</th>
+                            <th class="py-3 px-3 text-center">Bulan 0</th>
+                            <th class="py-3 px-3 text-center">Bulan 1</th>
+                            <th class="py-3 px-3 text-center">Bulan 2</th>
+                            <th class="py-3 px-3 text-center">Bulan 3</th>
+                            <th class="py-3 px-3 text-center font-bold text-brand-700">Pertumbuhan (Δ)</th>
+                            <th class="py-3 px-3 text-center">Klasifikasi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-gray-200">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="rtl" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 space-y-6">
+            <div>
+                <h3 class="text-xl font-bold text-gray-900">6. Simpulan Evaluasi & Rencana Tindak Lanjut (RTL)</h3>
+                <p class="text-sm text-gray-600 mt-1">
+                    Rencana keberlanjutan pasca-penerjunan program di Kelurahan Sumurrejo serta agenda persiapan BEM FK UNNES menghadapi Anugerah Abdidaya Ormawa.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="p-4 bg-warmbg rounded-xl border border-gray-200 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[11px] font-extrabold text-brand-700 bg-brand-100 px-2 py-0.5 rounded">Tahap 1 • Okt 2026</span>
+                        <span class="text-xs text-gray-400">Regulasi</span>
+                    </div>
+                    <h4 class="text-sm font-bold text-gray-900">Institusionalisasi Pojok Skrining</h4>
+                    <p class="text-xs text-gray-600 leading-relaxed">
+                        Penetapan Surat Keputusan (SK) Lurah Sumurrejo untuk penguatan operasionalisasi rutin Pojok Skrining Diabetes di seluruh Posbindu.
+                    </p>
+                </div>
+
+                <div class="p-4 bg-warmbg rounded-xl border border-gray-200 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[11px] font-extrabold text-brand-700 bg-brand-100 px-2 py-0.5 rounded">Tahap 2 • Okt - Nov 2026</span>
+                        <span class="text-xs text-gray-400">Digitalisasi</span>
+                    </div>
+                    <h4 class="text-sm font-bold text-gray-900">Integrasi Database MEDIKU</h4>
+                    <p class="text-xs text-gray-600 leading-relaxed">
+                        Penyambungan data faktor risiko PTM aplikasi MEDIKU dengan sistem pelaporan rujukan berkala Puskesmas Gunungpati.
+                    </p>
+                </div>
+
+                <div class="p-4 bg-warmbg rounded-xl border border-gray-200 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[11px] font-extrabold text-brand-700 bg-brand-100 px-2 py-0.5 rounded">Tahap 3 • Nov 2026</span>
+                        <span class="text-xs text-gray-400">Ekonomi</span>
+                    </div>
+                    <h4 class="text-sm font-bold text-gray-900">Hilirisasi & Pemasaran Glycos</h4>
+                    <p class="text-xs text-gray-600 leading-relaxed">
+                        Pendampingan perizinan P-IRT, sertifikasi halal, dan komersialisasi produk pangan fungsional rendah indeks glikemik.
+                    </p>
+                </div>
+
+                <div class="p-4 bg-warmbg rounded-xl border border-gray-200 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[11px] font-extrabold text-brand-700 bg-brand-100 px-2 py-0.5 rounded">Tahap 4 • Nov 2026</span>
+                        <span class="text-xs text-gray-400">Replikasi</span>
+                    </div>
+                    <h4 class="text-sm font-bold text-gray-900">Replikasi & Skema ToT Kader</h4>
+                    <p class="text-xs text-gray-600 leading-relaxed">
+                        Pelatihan kader tingkat kecamatan oleh kader trainer Sumurrejo yang telah dibina oleh mahasiswa BEM FK UNNES.
+                    </p>
+                </div>
+
+                <div class="p-4 bg-warmbg rounded-xl border border-gray-200 space-y-2 md:col-span-2 lg:col-span-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[11px] font-extrabold text-accent-700 bg-accent-50 px-2 py-0.5 rounded">Tahap 5 • Okt - Des 2026</span>
+                        <span class="text-xs text-gray-400">Kompetisi Nasional</span>
+                    </div>
+                    <h4 class="text-sm font-bold text-gray-900">Persiapan Anugerah Abdidaya Ormawa</h4>
+                    <p class="text-xs text-gray-600 leading-relaxed">
+                        Penyusunan laporan akhir, poster, video dokumenter, serta penataan materi stand pameran Anugerah Abdidaya Ormawa oleh 15 mahasiswa tim pelaksana BEM FK UNNES bersama Dosen Pendamping.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white border-t border-gray-200 py-6 mt-10 text-center text-xs text-gray-500">
+        <div class="max-w-7xl mx-auto px-4">
+            <p class="font-bold text-gray-700">E-RAPOR TIM PELAKSANA PPK ORMAWA BEM FK UNNES</p>
+            <p class="mt-1">Program Pemberdayaan Masyarakat Kelurahan Sumurrejo • Dosen Pendamping & Tim Observer</p>
+        </div>
+    </footer>
+
+    <script>
+        const domainDefinitions = [
+            {
+                code: 'A',
+                title: 'Analisis Situasi Masyarakat',
+                desc: 'Kemampuan mahasiswa dalam memetakan profil demografi, beban penyakit diabetes, serta potensi sosial masyarakat secara komprehensif.',
+                indicators: [
+                    { id: 1, text: 'Mampu mengidentifikasi masalah utama kesehatan masyarakat berdasarkan data lapangan' },
+                    { id: 2, text: 'Mampu mengidentifikasi potensi lokal yang dapat diberdayakan' },
+                    { id: 3, text: 'Mampu menentukan prioritas masalah bersama masyarakat' }
+                ]
+            },
+            {
+                code: 'B',
+                title: 'Partisipasi Masyarakat',
+                desc: 'Kemampuan menggerakkan partisipasi aktif warga, perwakilan kelompok sasaran, dan elemen masyarakat dari awal hingga keputusan akhir.',
+                indicators: [
+                    { id: 4, text: 'Melibatkan masyarakat sejak tahap perencanaan' },
+                    { id: 5, text: 'Mendorong masyarakat aktif menyampaikan ide' },
+                    { id: 6, text: 'Keputusan program dibuat bersama masyarakat' }
+                ]
+            },
+            {
+                code: 'C',
+                title: 'Pengembangan Kapasitas Masyarakat',
+                desc: 'Transfer pengetahuan dan keterampilan klinis dasar, pencatatan PTM, serta digitalisasi pemantauan kesehatan kader.',
+                indicators: [
+                    { id: 7, text: 'Melatih kader melakukan skrining diabetes secara mandiri' },
+                    { id: 8, text: 'Melatih kader menggunakan aplikasi MEDIKU' },
+                    { id: 9, text: 'Melatih kader melakukan pencatatan faktor risiko PTM' }
+                ]
+            },
+            {
+                code: 'D',
+                title: 'Pemberdayaan Berbasis Potensi Lokal',
+                desc: 'Pemanfaatan kekayaan hayati lokal (TOGA/tanaman herbal) dan inovasi produk pangan fungsional serbasari rendah indeks glikemik.',
+                indicators: [
+                    { id: 10, text: 'Mengoptimalkan pemanfaatan TOGA lokal' },
+                    { id: 11, text: 'Mengembangkan produk serbasari bersama masyarakat' },
+                    { id: 12, text: 'Melibatkan masyarakat dalam inovasi produk pangan fungsional' }
+                ]
+            },
+            {
+                code: 'E',
+                title: 'Keberlanjutan Program',
+                desc: 'Kemandirian kelompok masyarakat dalam mengoperasikan Pojok Skrining, pemutakhiran MEDIKU, dan reproduksi pangan fungsional.',
+                indicators: [
+                    { id: 13, text: 'Masyarakat mampu menjalankan pojok skrining tanpa pendampingan mahasiswa' },
+                    { id: 14, text: 'Kader mampu menginput data MEDIKU secara mandiri' },
+                    { id: 15, text: 'Kelompok masyarakat mampu memproduksi produk Glycos secara mandiri' },
+                    { id: 16, text: 'Terbentuk kader yang menjadi pelatih kader lain' }
+                ]
+            },
+            {
+                code: 'F',
+                title: 'Kolaborasi',
+                desc: 'Strategi membangun jejaring lintas sektor meliputi Kelurahan, Puskesmas Gunungpati, PKK, Posbindu, dan tokoh masyarakat.',
+                indicators: [
+                    { id: 17, text: 'Membangun kerja sama dengan puskesmas' },
+                    { id: 18, text: 'Membangun kerja sama dengan kelurahan' },
+                    { id: 19, text: 'Melibatkan PKK, Posbindu, dan tokoh masyarakat' }
+                ]
+            },
+            {
+                code: 'G',
+                title: 'Kepemimpinan Mahasiswa',
+                desc: 'Kompetensi manajerial mahasiswa dalam memfasilitasi dialog, pemecahan masalah/konflik, dan menjaga motivasi kader.',
+                indicators: [
+                    { id: 20, text: 'Mampu memfasilitasi diskusi masyarakat' },
+                    { id: 21, text: 'Mampu menyelesaikan konflik kelompok' },
+                    { id: 22, text: 'Mampu memotivasi kader agar aktif' }
+                ]
+            }
+        ];
+
+        const domains = [
+            "Analisis Situasi (A)",
+            "Partisipasi Masyarakat (B)",
+            "Pengembangan Kapasitas (C)",
+            "Pemberdayaan Potensi (D)",
+            "Keberlanjutan Program (E)",
+            "Kolaborasi (F)",
+            "Kepemimpinan Mahasiswa (G)"
+        ];
+
+        const indicatorsList = [
+            "Indikator 1: Identifikasi Masalah Kesehatan",
+            "Indikator 2: Identifikasi Potensi Lokal",
+            "Indikator 3: Penetapan Prioritas Masalah",
+            "Indikator 4: Pelibatan Perencanaan",
+            "Indikator 5: Mendorong Penyampaian Ide",
+            "Indikator 6: Keputusan Bersama",
+            "Indikator 7: Pelatihan Skrining Diabetes",
+            "Indikator 8: Pelatihan Aplikasi MEDIKU",
+            "Indikator 9: Pencatatan Faktor Risiko",
+            "Indikator 10: Pemanfaatan TOGA Lokal",
+            "Indikator 11: Pengembangan Produk Serbasari",
+            "Indikator 12: Inovasi Pangan Fungsional",
+            "Indikator 13: Kemandirian Pojok Skrining",
+            "Indikator 14: Input Data MEDIKU Mandiri",
+            "Indikator 15: Produksi Mandiri Glycos",
+            "Indikator 16: Pembentukan Kader Trainer",
+            "Indikator 17: Kerjasama Puskesmas",
+            "Indikator 18: Kerjasama Kelurahan",
+            "Indikator 19: Pelibatan PKK & Posbindu",
+            "Indikator 20: Fasilitasi Diskusi",
+            "Indikator 21: Penyelesaian Konflik",
+            "Indikator 22: Motivasi Keaktifan Kader"
+        ];
+
+        const monthlyData = {
+            0: {
+                label: "Bulan Ke-0 (Mei 2026)",
+                targetRange: "Range 1 (1.00 - 1.80)",
+                domainScores: [1.38, 1.37, 1.38, 1.40, 1.38, 1.37, 1.39],
+                cumulativeAvg: 1.38,
+                indicatorScores: [1.39, 1.37, 1.38, 1.36, 1.37, 1.38, 1.39, 1.38, 1.37, 1.41, 1.40, 1.39, 1.38, 1.37, 1.39, 1.38, 1.37, 1.38, 1.36, 1.40, 1.39, 1.38],
+                narrative: "<strong>Evaluasi Baseline (Mei 2026):</strong> Berada pada Range 1 dengan rata-rata kumulatif 1,38. Mahasiswa tim BEM FK UNNES masih berada pada tahap persiapan konseptual sebelum penerjunan lapangan. Pemahaman potensi TOGA lokal (Domain D: 1,40) sedikit memimpin, sedangkan kolaborasi dan partisipasi berada di titik awal karena belum dimulainya interaksi terstruktur dengan pemangku kepentingan desa."
+            },
+            1: {
+                label: "Bulan Ke-1 (Juni - Juli 2026)",
+                targetRange: "Range 2 (2.00 - 2.90)",
+                domainScores: [2.47, 2.45, 2.46, 2.44, 2.43, 2.46, 2.47],
+                cumulativeAvg: 2.45,
+                indicatorScores: [2.48, 2.47, 2.46, 2.46, 2.44, 2.45, 2.47, 2.46, 2.45, 2.45, 2.44, 2.43, 2.44, 2.42, 2.43, 2.43, 2.47, 2.46, 2.45, 2.48, 2.46, 2.47],
+                narrative: "<strong>Evaluasi Inisiasi (Juni - Juli 2026):</strong> Berada pada Range 2 dengan rata-rata 2,45. Menggambarkan keberhasilan sosialisasi awal, pembentukan struktur Pojok Skrining, serta pengenalan modul aplikasi MEDIKU. Kepemimpinan mahasiswa dan analisis situasi (2,47) memimpin berkat komunikasi aktif tim dengan pihak Kelurahan Sumurrejo dan Puskesmas Gunungpati."
+            },
+            2: {
+                label: "Bulan Ke-2 (Juli - Agustus 2026)",
+                targetRange: "Range 3 (3.00 - 3.90)",
+                domainScores: [3.45, 3.44, 3.46, 3.43, 3.44, 3.44, 3.44],
+                cumulativeAvg: 3.44,
+                indicatorScores: [3.46, 3.45, 3.44, 3.45, 3.44, 3.43, 3.47, 3.46, 3.45, 3.44, 3.43, 3.42, 3.45, 3.43, 3.44, 3.44, 3.45, 3.44, 3.43, 3.45, 3.43, 3.44],
+                narrative: "<strong>Evaluasi Akselerasi (Juli - Agustus 2026):</strong> Berada pada Range 3 dengan rata-rata 3,44. Pelatihan praktik skrining glukosa darah mandiri dan simulasi input MEDIKU secara real-time mendorong lonjakan signifikan pada Pengembangan Kapasitas (Domain C: 3,46). Kader PKK juga mulai aktif memformulasi olahan pangan fungsional serbasari."
+            },
+            3: {
+                label: "Bulan Ke-3 (Agustus - September 2026)",
+                targetRange: "Range 4 (4.10 - 4.40)",
+                domainScores: [4.26, 4.28, 4.25, 4.25, 4.25, 4.25, 4.23],
+                cumulativeAvg: 4.25,
+                indicatorScores: [4.27, 4.26, 4.25, 4.29, 4.28, 4.27, 4.26, 4.25, 4.24, 4.26, 4.25, 4.24, 4.26, 4.25, 4.25, 4.24, 4.26, 4.25, 4.24, 4.24, 4.22, 4.23],
+                narrative: "<strong>Evaluasi Kemandirian (Agustus - September 2026):</strong> Mencapai skor puncak <strong>4,25</strong> (Sesuai target Range 4). Kader Posbindu dan PKK telah mampu mengelola Pojok Skrining mandiri, menginput data MEDIKU, serta mereplikasi pengetahuan melalui skema Training of Trainers (ToT). Mahasiswa sukses bertransformasi menjadi pendamping pasif."
+            }
+        };
+
+        const studentsData = [
+            { name: "Oktavia Kurniawati", role: "Ketua Tim Pelaksana", scores: [1.42, 2.50, 3.53, 4.31], class: "Sangat Unggul", domainB3: [4.32, 4.34, 4.31, 4.31, 4.31, 4.31, 4.29] },
+            { name: "N. Rania Danisya Adriani", role: "Administrasi & Sekretariat", scores: [1.41, 2.44, 3.47, 4.28], class: "Sangat Unggul", domainB3: [4.29, 4.31, 4.28, 4.28, 4.28, 4.28, 4.26] },
+            { name: "Nayara Raya Kanahaya", role: "Keuangan & Anggaran", scores: [1.37, 2.45, 3.46, 4.27], class: "Sangat Unggul", domainB3: [4.28, 4.30, 4.27, 4.27, 4.27, 4.27, 4.25] },
+            { name: "Rintis Aulia Maharani", role: "Teknis Skrining Kesehatan", scores: [1.42, 2.49, 3.49, 4.27], class: "Sangat Unggul", domainB3: [4.28, 4.30, 4.27, 4.27, 4.27, 4.27, 4.25] },
+            { name: "Aida Maghfiroh", role: "Formulasi Olah Pangan", scores: [1.39, 2.47, 3.44, 4.27], class: "Sangat Unggul", domainB3: [4.28, 4.30, 4.27, 4.27, 4.27, 4.27, 4.25] },
+            { name: "Edward Joshua Sibarani", role: "Humas & Kemitraan Eksternal", scores: [1.38, 2.49, 3.43, 4.22], class: "Unggul", domainB3: [4.23, 4.25, 4.22, 4.22, 4.22, 4.22, 4.20] },
+            { name: "Diva Ayu Hafsari Dewi", role: "Pengembang Sistem MEDIKU", scores: [1.40, 2.48, 3.47, 4.27], class: "Sangat Unggul", domainB3: [4.28, 4.30, 4.27, 4.27, 4.27, 4.27, 4.25] },
+            { name: "Aulia Zaziroturrohmah", role: "Edukasi & Literasi Kesehatan", scores: [1.40, 2.43, 3.44, 4.24], class: "Unggul", domainB3: [4.25, 4.27, 4.24, 4.24, 4.24, 4.24, 4.22] },
+            { name: "Fany Fitria Salsabilla", role: "Pemasaran & Bisnis Glycos", scores: [1.37, 2.48, 3.42, 4.27], class: "Sangat Unggul", domainB3: [4.28, 4.30, 4.27, 4.27, 4.27, 4.27, 4.25] },
+            { name: "Damar Syahid Nugraha", role: "Logistik & Aset Lapangan", scores: [1.38, 2.43, 3.40, 4.24], class: "Unggul", domainB3: [4.25, 4.27, 4.24, 4.24, 4.24, 4.24, 4.22] },
+            { name: "Ivani Ramadhani Putri Permana", role: "Konservasi TOGA Lokal", scores: [1.39, 2.49, 3.45, 4.26], class: "Sangat Unggul", domainB3: [4.27, 4.29, 4.26, 4.26, 4.26, 4.26, 4.24] },
+            { name: "Amalina Nayla Putri", role: "Pendampingan Lapangan", scores: [1.36, 2.36, 3.42, 4.22], class: "Unggul", domainB3: [4.23, 4.25, 4.22, 4.22, 4.22, 4.22, 4.20] },
+            { name: "Fathurrahman Muhammad", role: "Media & Publikasi Dokumenter", scores: [1.34, 2.41, 3.41, 4.19], class: "Unggul", domainB3: [4.20, 4.22, 4.19, 4.19, 4.19, 4.19, 4.17] },
+            { name: "Muhammad Fiqi Firmansyah", role: "Operasional Lapangan", scores: [1.34, 2.44, 3.41, 4.24], class: "Unggul", domainB3: [4.25, 4.27, 4.24, 4.24, 4.24, 4.24, 4.22] },
+            { name: "Zoar Lewi Panjaitan", role: "Evaluasi & Pengolahan Data", scores: [1.35, 2.43, 3.43, 4.26], class: "Sangat Unggul", domainB3: [4.27, 4.29, 4.26, 4.26, 4.26, 4.26, 4.24] }
+        ];
+
+        let longitudinalChartObj = null;
+        let spiderChartObj = null;
+        let barChartObj = null;
+        let studentRadarChartObj = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderDomainCards('ALL');
+            initLongitudinalChart();
+            renderMonthlyCharts(0);
+            populateStudentSelector();
+            updateStudentView();
+            renderTable();
+        });
+
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function filterDomain(code) {
+            document.querySelectorAll('.dom-tab-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-600', 'text-white');
+                btn.classList.add('bg-gray-100', 'text-gray-600');
+            });
+            document.getElementById(`domtab-${code}`).classList.remove('bg-gray-100', 'text-gray-600');
+            document.getElementById(`domtab-${code}`).classList.add('bg-brand-600', 'text-white');
+
+            renderDomainCards(code);
+        }
+
+        function renderDomainCards(codeFilter) {
+            const container = document.getElementById('domainGridContainer');
+            const listToRender = codeFilter === 'ALL'
+                ? domainDefinitions
+                : domainDefinitions.filter(d => d.code === codeFilter);
+
+            container.innerHTML = listToRender.map(d => `
+                <div class="p-4 bg-warmbg rounded-xl border border-gray-200 flex flex-col justify-between space-y-3 shadow-xs">
+                    <div>
+                        <div class="flex items-center justify-between border-b border-gray-200 pb-2 mb-2">
+                            <span class="text-xs font-black text-brand-700 bg-brand-100 px-2.5 py-0.5 rounded-md">
+                                Domain ${d.code}
+                            </span>
+                            <span class="text-[10px] font-bold text-gray-500 uppercase">
+                                ${d.indicators.length} Indikator
+                            </span>
+                        </div>
+                        <h4 class="text-sm font-bold text-gray-900 mb-1">${d.title}</h4>
+                        <p class="text-xs text-gray-600 leading-relaxed mb-3">${d.desc}</p>
+
+                        <div class="space-y-1.5 border-t border-gray-200 pt-2">
+                            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Rincian Indikator Penilaian:</span>
+                            ${d.indicators.map(i => `
+                                <div class="flex items-start space-x-2 text-xs text-gray-700 bg-white p-2 rounded border border-gray-100">
+                                    <span class="font-bold text-brand-700 shrink-0">#${i.id}</span>
+                                    <span class="leading-tight">${i.text}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function initLongitudinalChart() {
+            const ctx = document.getElementById('longitudinalLineChart').getContext('2d');
+            longitudinalChartObj = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Bulan 0 (Mei)', 'Bulan 1 (Jun-Jul)', 'Bulan 2 (Jul-Agt)', 'Bulan 3 (Agt-Sep)'],
+                    datasets: [
+                        {
+                            label: 'Rata-Rata Kumulatif Tim',
+                            data: [1.38, 2.45, 3.44, 4.25],
+                            borderColor: '#059669',
+                            backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 6,
+                            pointBackgroundColor: '#059669'
+                        },
+                        {
+                            label: 'Batas Bawah Target Range',
+                            data: [1.00, 2.00, 3.00, 4.10],
+                            borderColor: '#d97706',
+                            borderDash: [5, 5],
+                            borderWidth: 2,
+                            fill: false,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 11 } } }
+                    },
+                    scales: {
+                        y: {
+                            min: 1,
+                            max: 5,
+                            ticks: { stepSize: 1 },
+                            title: { display: true, text: 'Skala Likert (1 - 5)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function switchMonth(mIndex) {
+            document.querySelectorAll('.month-tab').forEach((tab, idx) => {
+                if (idx === mIndex) {
+                    tab.classList.remove('bg-gray-100', 'text-gray-600');
+                    tab.classList.add('bg-brand-600', 'text-white', 'shadow-sm');
+                } else {
+                    tab.classList.remove('bg-brand-600', 'text-white', 'shadow-sm');
+                    tab.classList.add('bg-gray-100', 'text-gray-600');
+                }
+            });
+            renderMonthlyCharts(mIndex);
+        }
+
+        function renderMonthlyCharts(mIndex) {
+            const data = monthlyData[mIndex];
+
+            document.getElementById('spider-subtitle').innerText = `Evaluasi ${data.label} • Target: ${data.targetRange}`;
+            document.getElementById('bar-subtitle').innerText = `Skor 22 Indikator • ${data.label}`;
+            document.getElementById('monthly-narrative').innerHTML = data.narrative;
+
+            const ctxSpider = document.getElementById('monthlySpiderChart').getContext('2d');
+            if (spiderChartObj) spiderChartObj.destroy();
+            spiderChartObj = new Chart(ctxSpider, {
+                type: 'radar',
+                data: {
+                    labels: ['Domain A', 'Domain B', 'Domain C', 'Domain D', 'Domain E', 'Domain F', 'Domain G'],
+                    datasets: [{
+                        label: `Skor Domain (${data.label})`,
+                        data: data.domainScores,
+                        backgroundColor: 'rgba(5, 150, 105, 0.2)',
+                        borderColor: '#059669',
+                        pointBackgroundColor: '#059669',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            min: 1,
+                            max: 5,
+                            ticks: { stepSize: 1, display: false },
+                            pointLabels: { font: { size: 10 } }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            const ctxBar = document.getElementById('monthlyBarChart').getContext('2d');
+            if (barChartObj) barChartObj.destroy();
+            barChartObj = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: 22}, (_, i) => `Ind ${i+1}`),
+                    datasets: [{
+                        label: 'Skor Indikator',
+                        data: data.indicatorScores,
+                        backgroundColor: '#d97706',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (items) => {
+                                    const idx = items[0].dataIndex;
+                                    return indicatorsList[idx];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { min: 1, max: 5, ticks: { stepSize: 1 } },
+                        x: { ticks: { font: { size: 9 } } }
+                    }
+                }
+            });
+        }
+
+        function populateStudentSelector() {
+            const select = document.getElementById('studentSelect');
+            select.innerHTML = studentsData.map((s, idx) => `<option value="${idx}">${idx + 1}. ${s.name}</option>`).join('');
+        }
+
+        function updateStudentView() {
+            const idx = document.getElementById('studentSelect').value;
+            const s = studentsData[idx];
+
+            const bioCard = document.getElementById('student-bio-card');
+            bioCard.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-brand-600 text-white font-extrabold flex items-center justify-center text-sm">
+                        ${s.name.charAt(0)}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-sm">${s.name}</h4>
+                        <p class="text-xs text-brand-700 font-medium">${s.role}</p>
+                    </div>
+                </div>
+                <div class="pt-2 border-t border-gray-200 text-xs space-y-1 text-gray-600">
+                    <div class="flex justify-between"><span>Status Klasifikasi:</span> <span class="font-bold text-gray-800">${s.class}</span></div>
+                    <div class="flex justify-between"><span>Skor Awal (Mei):</span> <span class="font-semibold text-gray-700">${s.scores[0]}</span></div>
+                    <div class="flex justify-between"><span>Skor Akhir (Sep):</span> <span class="font-bold text-brand-700">${s.scores[3]}</span></div>
+                </div>
+            `;
+
+            const delta = (s.scores[3] - s.scores[0]).toFixed(2);
+            document.getElementById('student-growth-badge').innerText = `Δ +${delta} Poin Growth`;
+
+            const summaryBox = document.getElementById('student-detail-summary');
+            summaryBox.innerHTML = `
+                <div class="p-2 bg-white rounded border border-gray-200"><span class="block text-gray-400 text-[10px]">Bulan 0</span><span class="font-bold">${s.scores[0]}</span></div>
+                <div class="p-2 bg-white rounded border border-gray-200"><span class="block text-gray-400 text-[10px]">Bulan 1</span><span class="font-bold">${s.scores[1]}</span></div>
+                <div class="p-2 bg-white rounded border border-gray-200"><span class="block text-gray-400 text-[10px]">Bulan 2</span><span class="font-bold">${s.scores[2]}</span></div>
+                <div class="p-2 bg-brand-50 rounded border border-brand-200"><span class="block text-brand-700 text-[10px]">Bulan 3</span><span class="font-bold text-brand-800">${s.scores[3]}</span></div>
+            `;
+
+            const ctx = document.getElementById('studentRadarChart').getContext('2d');
+            if (studentRadarChartObj) studentRadarChartObj.destroy();
+            studentRadarChartObj = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Domain A', 'Domain B', 'Domain C', 'Domain D', 'Domain E', 'Domain F', 'Domain G'],
+                    datasets: [
+                        {
+                            label: 'Bulan Ke-0 (Baseline)',
+                            data: Array(7).fill(s.scores[0]),
+                            borderColor: '#9ca3af',
+                            backgroundColor: 'rgba(156, 163, 175, 0.1)',
+                            borderWidth: 1.5
+                        },
+                        {
+                            label: 'Bulan Ke-3 (Kemandirian)',
+                            data: s.domainB3,
+                            borderColor: '#059669',
+                            backgroundColor: 'rgba(5, 150, 105, 0.25)',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            min: 1,
+                            max: 5,
+                            ticks: { stepSize: 1, display: false },
+                            pointLabels: { font: { size: 10 } }
+                        }
+                    },
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }
+                }
+            });
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = studentsData.map((s, idx) => {
+                const growth = (s.scores[3] - s.scores[0]).toFixed(2);
+                return `
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="py-2.5 px-3 text-center">${idx + 1}</td>
+                        <td class="py-2.5 px-3 font-semibold text-gray-900">${s.name}</td>
+                        <td class="py-2.5 px-3 text-gray-500">${s.role}</td>
+                        <td class="py-2.5 px-3 text-center">${s.scores[0]}</td>
+                        <td class="py-2.5 px-3 text-center">${s.scores[1]}</td>
+                        <td class="py-2.5 px-3 text-center">${s.scores[2]}</td>
+                        <td class="py-2.5 px-3 text-center font-bold text-gray-900">${s.scores[3]}</td>
+                        <td class="py-2.5 px-3 text-center font-black text-brand-700 bg-brand-50/50">+${growth}</td>
+                        <td class="py-2.5 px-3 text-center">
+                            <span class="inline-block px-2 py-0.5 text-[10px] font-bold rounded ${s.class === 'Sangat Unggul' ? 'bg-brand-100 text-brand-800' : 'bg-amber-100 text-amber-800'}">
+                                ${s.class}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterTable() {
+            const query = document.getElementById('tableSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#tableBody tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>
