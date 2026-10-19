@@ -1,5 +1,6 @@
 import React from 'react';
-import {Easing, Img, interpolate, spring, useCurrentFrame, useVideoConfig} from 'remotion';
+import {Easing, Img, interpolate, spring} from 'remotion';
+import {useFrame, useClock} from '../time';
 import {C, SCREEN_H, SCREEN_W, shot} from '../theme';
 
 const ease = Easing.bezier(0.33, 0, 0.2, 1);
@@ -50,8 +51,8 @@ export const devicePoint = (
 
 // A chunky toy-like phone in a colored case, floating on the stage.
 export const Device: React.FC<DeviceProps> = ({cx, cy, rotate, caseColor, buttonColor, shadow, enterAt, shakeAt, children}) => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
+  const f = useFrame();
+  const {fps} = useClock();
   const enter = enterAt === undefined ? 1 : spring({frame: f - enterAt, fps, config: {damping: 13, mass: 0.9}});
   const b = bob(f);
   const w = SCREEN_W * PHONE_SCALE;
@@ -109,7 +110,7 @@ const TRANS = 13;
 
 // Plays real screenshots with the same kinds of transitions the app uses.
 export const Screens: React.FC<{steps: ScreenStep[]}> = ({steps}) => {
-  const f = useCurrentFrame();
+  const f = useFrame();
   let i = 0;
   steps.forEach((s, k) => {
     if (s.at <= f) i = k;
@@ -174,7 +175,7 @@ export const Reveal: React.FC<{at: number; dur: number; src: string; rect: Field
   rect,
   until,
 }) => {
-  const f = useCurrentFrame();
+  const f = useFrame();
   if (f < at || (until !== undefined && f >= until)) return null;
   const [x, y, w, h] = rect;
   const p = interpolate(f, [at, at + dur], [0, 1], {extrapolateRight: 'clamp'});
@@ -191,7 +192,7 @@ export const Reveal: React.FC<{at: number; dur: number; src: string; rect: Field
 
 // Region of another real screenshot, faded in (e.g. to clear a baked-in snackbar).
 export const Patch: React.FC<{from: number; src: string; rect: [number, number, number, number]}> = ({from, src, rect}) => {
-  const f = useCurrentFrame();
+  const f = useFrame();
   if (f < from) return null;
   const [x, y, w, h] = rect;
   return (
@@ -205,7 +206,7 @@ export type Tap = {f: number; x: number; y: number};
 
 // A chunky fingertip that glides in, squishes on contact and leaves a splash.
 export const Touch: React.FC<{taps: Tap[]}> = ({taps}) => {
-  const f = useCurrentFrame();
+  const f = useFrame();
   const LEAD = 16;
   const active = taps.find((t) => f >= t.f - LEAD && f <= t.f + 14);
   if (!active) return null;

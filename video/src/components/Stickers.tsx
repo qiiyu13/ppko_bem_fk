@@ -1,5 +1,6 @@
 import React from 'react';
-import {AbsoluteFill, Easing, Img, interpolate, random, spring, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
+import {AbsoluteFill, Easing, Img, interpolate, random, spring, staticFile} from 'remotion';
+import {useFrame, useClock} from '../time';
 import {C, DISPLAY_VARS, F, SCREEN_H, SCREEN_W, StageTheme, shot} from '../theme';
 
 const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
@@ -21,8 +22,8 @@ export const stickerFilter = (border = 7, shadow = 'rgba(0,0,0,0.22)', sx = 9, s
     .join(' ');
 
 export const usePop = (at: number, exitAt?: number) => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
+  const f = useFrame();
+  const {fps} = useClock();
   const s = spring({frame: f - at, fps, config: {damping: 9, stiffness: 170, mass: 0.7}});
   const out = exitAt === undefined ? 0 : interpolate(f, [exitAt, exitAt + 10], [0, 1], {...clamp, easing: Easing.in(Easing.back(2))});
   return {s, out, f};
@@ -221,7 +222,7 @@ export const PaperPlane: React.FC<{at: number; dur: number; path: [P, P, P, P]; 
   color = C.cream,
   trail,
 }) => {
-  const f = useCurrentFrame() - at;
+  const f = useFrame() - at;
   if (f < 0 || f > dur + 2) return null;
   const pt = (t: number) => {
     const [a, b, c, d] = path;
@@ -304,7 +305,7 @@ const Shape: React.FC<{kind: number; size: number; color: string}> = ({kind, siz
 
 // Confetti of crosses, hearts, leaves and dots.
 export const Confetti: React.FC<{at: number; x: number; y: number; spread?: number}> = ({at, x, y, spread = 1}) => {
-  const f = useCurrentFrame() - at;
+  const f = useFrame() - at;
   if (f < 0 || f > 70) return null;
   const colors = [C.yellow, C.coral, C.sky, C.statusGreen, C.kunyit, C.cream];
   return (
@@ -337,8 +338,8 @@ export const Confetti: React.FC<{at: number; x: number; y: number; spread?: numb
 
 // Heads-up push notification, as FCM shows it on the phone.
 export const PushBanner: React.FC<{from: number; to: number; title: string; body: string}> = ({from, to, title, body}) => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
+  const f = useFrame();
+  const {fps} = useClock();
   if (f < from || f > to + 12) return null;
   const sIn = spring({frame: f - from, fps, config: {damping: 11, stiffness: 140}});
   const out = interpolate(f, [to, to + 12], [0, 1], {...clamp, easing: Easing.in(Easing.cubic)});
@@ -375,7 +376,7 @@ export const PulseRing: React.FC<{from: number; rect: [number, number, number, n
   delay = 0,
   color = C.coral,
 }) => {
-  const f = useCurrentFrame() - from - delay;
+  const f = useFrame() - from - delay;
   if (f < 0 || f > 60) return null;
   const [x, y, w, h] = rect;
   const p = interpolate(f, [0, 30], [0, 1], clamp);
@@ -406,7 +407,7 @@ export const Stage: React.FC<{theme: StageTheme; numeral?: string; numeralX?: nu
   numeralX = 1000,
   children,
 }) => {
-  const f = useCurrentFrame();
+  const f = useFrame();
   return (
     <AbsoluteFill style={{background: theme.bg, overflow: 'hidden'}}>
       {numeral ? (
@@ -434,7 +435,7 @@ export const Stage: React.FC<{theme: StageTheme; numeral?: string; numeralX?: nu
 
 // Animated paper grain over the whole frame.
 export const Grain: React.FC<{amount: number}> = ({amount}) => {
-  const f = useCurrentFrame();
+  const f = useFrame();
   const seed = Math.floor(f / 2) % 8;
   return (
     <AbsoluteFill style={{pointerEvents: 'none', mixBlendMode: 'multiply', opacity: amount}}>

@@ -1,5 +1,6 @@
 import React from 'react';
-import {AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame} from 'remotion';
+import {AbsoluteFill, Easing, Img, interpolate, staticFile} from 'remotion';
+import {useFrame} from '../time';
 import {InkLayer, Squiggle} from '../components/Ink';
 import {Stage, stickerFilter} from '../components/Stickers';
 import {C, DISPLAY_VARS, F, STAGE, art} from '../theme';
@@ -16,7 +17,7 @@ const DUR = 20;
 export const TITLE_SETTLED = START_IN + ORDER * STEP + DUR;
 
 const useAmt = (mode: Mode, i: number) => {
-  const f = useCurrentFrame();
+  const f = useFrame();
   if (mode === 'in') {
     return interpolate(f, [START_IN + i * STEP, START_IN + i * STEP + DUR], [0, 1], {
       extrapolateLeft: 'clamp',

@@ -1,5 +1,6 @@
 import React from 'react';
-import {interpolate, random, spring, useCurrentFrame, useVideoConfig} from 'remotion';
+import {interpolate, random, spring} from 'remotion';
+import {useFrame, useClock} from '../time';
 import {C, DISPLAY_VARS, F, StageTheme} from '../theme';
 
 const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
@@ -16,8 +17,8 @@ const Word: React.FC<{
   size: number;
   seed: string;
 }> = ({word, em, hl, delay, exitAt, theme, size, seed}) => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
+  const f = useFrame();
+  const {fps} = useClock();
   const s = spring({frame: f - delay, fps, config: {damping: 11, stiffness: 150, mass: 0.8}});
   const out = exitAt === undefined ? 0 : interpolate(f, [exitAt, exitAt + 14], [0, 1], clamp);
   const drop = out * out * 420;
@@ -122,8 +123,8 @@ export const Kicker: React.FC<{at: number; x: number; y: number; n: string; labe
   theme,
   exitAt,
 }) => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
+  const f = useFrame();
+  const {fps} = useClock();
   const s = spring({frame: f - at, fps, config: {damping: 9, stiffness: 160}});
   const t = spring({frame: f - at - 5, fps, config: {damping: 16}});
   const out = exitAt === undefined ? 0 : interpolate(f, [exitAt, exitAt + 10], [0, 1], clamp);
@@ -178,7 +179,7 @@ export const Note: React.FC<{
   exitAt?: number;
   width?: number;
 }> = ({at, x, y, text, color, size = 50, rotate = -4, exitAt, width}) => {
-  const f = useCurrentFrame();
+  const f = useFrame();
   const dur = Math.max(12, text.length * 0.9);
   const p = interpolate(f, [at, at + dur], [0, 1], clamp);
   const out = exitAt === undefined ? 0 : interpolate(f, [exitAt, exitAt + 10], [0, 1], clamp);

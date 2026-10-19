@@ -1,5 +1,6 @@
 import React from 'react';
-import {AbsoluteFill, Easing, Img, interpolate, spring, useCurrentFrame, useVideoConfig} from 'remotion';
+import {AbsoluteFill, Easing, Img, interpolate, spring} from 'remotion';
+import {useFrame, useClock} from '../time';
 import {Check, InkLayer, Squiggle} from '../components/Ink';
 import {Device, Field, PHONE_SCALE, Reveal, Screens, ScreenStep, Tap, Touch, devicePoint, typed} from '../components/Phone';
 import {Burst, CalendarSticker, Confetti, PaperPlane, ScreenSticker, Stage, Sticker, stickerFilter} from '../components/Stickers';
@@ -54,8 +55,8 @@ const CHECKLIST: {icon: string; label: string; value: string; done: number; h: n
 ];
 
 const ScannerOverlay: React.FC = () => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
+  const f = useFrame();
+  const {fps} = useClock();
   if (f < SCAN_PUSH || f > FORM + 14) return null;
   const [x, y, w, h] = SCAN_FRAME;
   const lock = spring({frame: f - LOCK, fps, config: {damping: 8, stiffness: 200}});
@@ -139,8 +140,8 @@ const ScannerOverlay: React.FC = () => {
 };
 
 const ChecklistRow: React.FC<{i: number; y: number; item: (typeof CHECKLIST)[number]}> = ({i, y, item}) => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
+  const f = useFrame();
+  const {fps} = useClock();
   const at = FORM + 16 + i * 5;
   const s = spring({frame: f - at, fps, config: {damping: 12, stiffness: 150}});
   const done = f >= item.done;
@@ -190,7 +191,7 @@ const ChecklistRow: React.FC<{i: number; y: number; item: (typeof CHECKLIST)[num
 };
 
 export const KaderScan: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = useFrame();
   const target = devicePoint(K_PHONE, SCAN_FRAME[0] + SCAN_FRAME[2] / 2, SCAN_FRAME[1] + SCAN_FRAME[3] / 2, f);
   const p = interpolate(f, [QR_IN, QR_LAND], [0, 1], {...clamp, easing: Easing.inOut(Easing.cubic)});
   const qx = -180 + (target.x + 180) * p;
@@ -294,7 +295,7 @@ const JADWAL_FIELDS: Field[] = [
 const J_TIMES = typed(J0, JADWAL_FIELDS, 10);
 
 export const KaderJadwal: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = useFrame();
   const add = devicePoint(K_PHONE, 206, 661, f);
   const start = devicePoint(K_PHONE, 30, 300, f);
   return (

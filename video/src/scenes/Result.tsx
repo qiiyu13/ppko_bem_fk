@@ -1,5 +1,6 @@
 import React from 'react';
-import {AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig} from 'remotion';
+import {AbsoluteFill, Easing, interpolate, spring} from 'remotion';
+import {useFrame, useClock} from '../time';
 import {Arrow, InkLayer, MarkerCircle} from '../components/Ink';
 import {PaperPlane, ScreenSticker, Stage, Sticker} from '../components/Stickers';
 import {Headline, Kicker, Note} from '../components/Type';
@@ -73,8 +74,8 @@ const Gauge: React.FC<{v: number}> = ({v}) => {
 };
 
 export const Result: React.FC = () => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
+  const f = useFrame();
+  const {fps} = useClock();
   const pop = spring({frame: f - 10, fps, config: {damping: 11, stiffness: 110}});
   const v = interpolate(f, [40, 95], [0, SCORE], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.out(Easing.back(1.4))});
   const w = CARD[2] * SCALE;

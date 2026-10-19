@@ -1,7 +1,8 @@
 import {Composition, staticFile} from 'remotion';
 import {loadFont} from '@remotion/fonts';
 import {DURATION, MedikuLoop} from './MedikuLoop';
-import {F, FPS, H, W} from './theme';
+import {F, H, W} from './theme';
+import {OUTPUT_FPS, out} from './time';
 
 // The app's own UI typeface (assets/fonts).
 for (const [file, weight] of [
@@ -18,5 +19,5 @@ loadFont({family: F.display, url: staticFile('fonts/Fraunces-Italic.ttf'), weigh
 loadFont({family: F.hand, url: staticFile('fonts/Caveat.ttf'), weight: '400 700'});
 
 export const Root: React.FC = () => (
-  <Composition id="MedikuLoop" component={MedikuLoop} durationInFrames={DURATION} fps={FPS} width={W} height={H} />
+  <Composition id="MedikuLoop" component={MedikuLoop} durationInFrames={out(DURATION)} fps={OUTPUT_FPS} width={W} height={H} />
 );

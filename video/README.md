@@ -1,6 +1,6 @@
 # Mediku promo loop (Remotion)
 
-A ~67s 1920×1080 loop of the kader ↔ warga flow. The phones play real
+A ~67s 1920×1080, 60 fps loop of the kader ↔ warga flow. The phones play real
 screenshots of the app (`public/screens/`); taps, typing, transitions, stickers,
 ink annotations and the data hand-off are animated on top.
 
@@ -41,7 +41,9 @@ stickers of the app's own illustrations (`public/art/`, rendered from
 | 07 Warga | `WargaFinal` | Notification opened, new appointment circled |
 | Title (in) | `scenes/Title.tsx` | Title card rebuilds; last frame equals the first |
 
-Each scene uses its own local frames; tap and field coordinates are in the
+Animations are authored on a 30 fps "story" clock (`src/time.ts`) and rendered
+at 60 fps, so every timing number in the scenes is in 30 fps frames and the
+extra frames are real in-between motion. Each scene uses its own local frames; tap and field coordinates are in the
 app's logical pixels (412×915).
 
 ## Re-capturing screenshots

@@ -1,5 +1,6 @@
 import React from 'react';
-import {AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig} from 'remotion';
+import {AbsoluteFill, Easing, interpolate, spring} from 'remotion';
+import {useFrame, useClock} from '../time';
 import {Arrow, Buzz, InkLayer, MarkerCircle} from '../components/Ink';
 import {Device, PHONE_SCALE, Screens, ScreenStep, Tap, Touch, devicePoint} from '../components/Phone';
 import {PaperPlane, PulseRing, PushBanner, ScreenSticker, Stage, Sticker} from '../components/Stickers';
@@ -29,8 +30,8 @@ const Phone: React.FC<{steps: ScreenStep[]; taps: Tap[]; shakeAt?: number[]; ent
 export const QR_RECT: [number, number, number, number] = [108, 328, 204, 204];
 
 export const WargaQR: React.FC = () => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
+  const f = useFrame();
+  const {fps} = useClock();
   const qrAt = devicePoint(W_PHONE, QR_RECT[0] + QR_RECT[2] / 2, QR_RECT[1] + QR_RECT[3] / 2, f);
 
   // The QR peels off the screen, grows into a sticker, then flies right.
@@ -88,7 +89,7 @@ const METRIC_CARDS: [number, number, number, number][] = [
 ];
 
 export const WargaReceive: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = useFrame();
   const top = devicePoint(W_PHONE, 300, 70, f);
   const card = (i: number) => devicePoint(W_PHONE, METRIC_CARDS[i][0] + 91, METRIC_CARDS[i][1] + 90, f);
   return (
@@ -150,7 +151,7 @@ export const WargaReceive: React.FC = () => {
 };
 
 export const WargaFinal: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = useFrame();
   const top = devicePoint(W_PHONE, 300, 70, f);
   const notif = devicePoint(W_PHONE, 206, 98, f);
   const appt = devicePoint(W_PHONE, 206, 572, f);

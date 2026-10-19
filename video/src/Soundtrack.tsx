@@ -1,5 +1,6 @@
 import React from 'react';
 import {Html5Audio, Sequence, interpolate, staticFile} from 'remotion';
+import {TIME_SCALE, out} from './time';
 import {DURATION, START, SceneKey} from './timing';
 
 // Music and sound effects (ElevenLabs, see AUDIO.md). Files in public/audio
@@ -136,16 +137,16 @@ const sfx = (name: string) => staticFile(`audio/sfx_${name}.wav`);
 
 export const Soundtrack: React.FC = () => (
   <>
-    <Html5Audio src={staticFile('audio/music.mp3')} volume={musicVolume} />
+    <Html5Audio src={staticFile('audio/music.mp3')} volume={(f) => musicVolume(f / TIME_SCALE)} />
     {CUES.map(([scene, at, name, vol, dur], i) => {
       const from = START[scene] + at;
       const length = Math.min(dur ?? 150, DURATION - from);
       return (
-        <Sequence key={i} from={from} durationInFrames={length} layout="none">
+        <Sequence key={i} from={out(from)} durationInFrames={out(length)} layout="none">
           <Html5Audio
             src={sfx(name)}
             // short fade on clipped cues (typing, writing) so they don't click off
-            volume={(f) => (dur ? vol * interpolate(f, [dur - 5, dur], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}) : vol)}
+            volume={(f) => (dur ? vol * interpolate(f / TIME_SCALE, [dur - 5, dur], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}) : vol)}
           />
         </Sequence>
       );

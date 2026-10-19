@@ -53,7 +53,6 @@ export const F = {
 // Fraunces at its softest, wonkiest optical size.
 export const DISPLAY_VARS = "'SOFT' 100, 'WONK' 1, 'opsz' 144";
 
-export const FPS = 30;
 export const W = 1920;
 export const H = 1080;
 

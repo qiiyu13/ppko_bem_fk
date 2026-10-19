@@ -1,6 +1,6 @@
 # Audio guide (ElevenLabs)
 
-Music and sound effects for `out/mediku-loop.mp4` (67.3 s, 30 fps, loops).
+Music and sound effects for `out/mediku-loop.mp4` (67.3 s, 60 fps, loops).
 Timings below come straight from the scene timeline, so the cues land on the
 real on-screen moments.
 

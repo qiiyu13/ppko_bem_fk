@@ -1,5 +1,6 @@
 import React from 'react';
-import {Easing, interpolate, random, spring, useCurrentFrame, useVideoConfig} from 'remotion';
+import {Easing, interpolate, random, spring} from 'remotion';
+import {useFrame, useClock} from '../time';
 
 // Hand-drawn marks: every path is slightly wobbly (seeded, so it is stable
 // frame to frame) and draws itself on like a marker stroke.
@@ -68,7 +69,7 @@ export const checkPath = (x: number, y: number, s: number) =>
   ]);
 
 const useDraw = (at: number, dur: number) => {
-  const f = useCurrentFrame();
+  const f = useFrame();
   return interpolate(f, [at, at + dur], [0, 1], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
@@ -144,7 +145,7 @@ export const Check: React.FC<{x: number; y: number; s: number; at: number; color
 
 // Little "brrr" strokes around a buzzing phone.
 export const Buzz: React.FC<{cx: number; cy: number; w: number; h: number; at: number; color: string}> = ({cx, cy, w, h, at, color}) => {
-  const f = useCurrentFrame() - at;
+  const f = useFrame() - at;
   if (f < 0 || f > 22) return null;
   const o = interpolate(f, [0, 4, 16, 22], [0, 1, 1, 0]);
   const off = interpolate(f, [0, 22], [0, 18]);
@@ -211,8 +212,8 @@ export const MarkerCircle: React.FC<{
   width?: number;
   tint?: string;
 }> = ({cx, cy, w, h, at, color, seed, rotate = 0, pad = 24, width = 7, tint}) => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
+  const f = useFrame();
+  const {fps} = useClock();
   if (f < at) return null;
   const rx = w / 2 + pad;
   const ry = h / 2 + pad * 0.8;
