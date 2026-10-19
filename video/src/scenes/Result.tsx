@@ -1,6 +1,6 @@
 import React from 'react';
 import {AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig} from 'remotion';
-import {Arrow, Circle, InkLayer} from '../components/Ink';
+import {Arrow, InkLayer, MarkerCircle} from '../components/Ink';
 import {PaperPlane, ScreenSticker, Stage, Sticker} from '../components/Stickers';
 import {Headline, Kicker, Note} from '../components/Type';
 import {C, F, STAGE, art} from '../theme';
@@ -82,9 +82,15 @@ export const Result: React.FC = () => {
   const cx = 1360;
   const cy = 500;
   const rot = -3 + (1 - pop) * -14;
-  // number center in scene coords (card is small-angle rotated; close enough for ink)
-  const numX = cx - w / 2 + (343 - CARD[0]) * SCALE;
-  const numY = cy - h / 2 + (354 - CARD[1]) * SCALE;
+  // "0.92" on the card: logical bounds x 322..377, y 343..365. Map through the
+  // card's own scale and rotation so the ink sits on the number.
+  const r = (rot * Math.PI) / 180;
+  const ox = (349.5 - CARD[0]) * SCALE - w / 2;
+  const oy = (354 - CARD[1]) * SCALE - h / 2;
+  const numX = cx + (ox * Math.cos(r) - oy * Math.sin(r)) * pop;
+  const numY = cy + (ox * Math.sin(r) + oy * Math.cos(r)) * pop;
+  const NOTE_X = 1060;
+  const NOTE_Y = cy + h / 2 + 125;
   return (
     <AbsoluteFill>
       <Stage theme={T} numeral="04" numeralX={980} />
@@ -109,10 +115,11 @@ export const Result: React.FC = () => {
         <Gauge v={v} />
       </ScreenSticker>
       <InkLayer>
-        <Circle cx={numX} cy={numY} rx={92} ry={56} at={104} color={C.coral} seed="ird" width={8} />
-        <Arrow from={[cx + 40, cy + h / 2 + 150]} to={[numX - 20, numY + 70]} bend={-60} at={120} color={C.coral} seed="ird-a" />
+        <MarkerCircle cx={numX} cy={numY} w={55 * SCALE} h={22 * SCALE} rotate={rot} pad={30} at={104} color={C.coral} tint={C.yellow} seed="ird" width={8} />
+        {/* from the end of the note, around the outside of the card, up to the loop */}
+        <Arrow from={[NOTE_X + 665, NOTE_Y + 10]} to={[numX + 110, numY + 40]} bend={75} at={128} color={C.coral} seed="ird-a" />
       </InkLayer>
-      <Note at={112} x={cx - 330} y={cy + h / 2 + 110} text="Waspada, perlu dipantau ya!" color={C.coral} size={56} rotate={-4} />
+      <Note at={112} x={NOTE_X} y={NOTE_Y} text="Waspada, perlu dipantau ya!" color={C.coral} size={56} rotate={-4} />
       <PaperPlane
         at={205}
         dur={40}

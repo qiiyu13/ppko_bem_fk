@@ -1,5 +1,5 @@
 import React from 'react';
-import {Easing, interpolate, random, useCurrentFrame} from 'remotion';
+import {Easing, interpolate, random, spring, useCurrentFrame, useVideoConfig} from 'remotion';
 
 // Hand-drawn marks: every path is slightly wobbly (seeded, so it is stable
 // frame to frame) and draws itself on like a marker stroke.
@@ -19,19 +19,6 @@ const smooth = (pts: Pt[]) => {
     d += ` C ${c1[0].toFixed(1)} ${c1[1].toFixed(1)} ${c2[0].toFixed(1)} ${c2[1].toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
   }
   return d;
-};
-
-export const ellipsePath = (cx: number, cy: number, rx: number, ry: number, seed: string, turns = 1.18) => {
-  const n = 26;
-  const pts: Pt[] = [];
-  const start = -2.2 + random(seed) * 0.6;
-  for (let i = 0; i <= n; i++) {
-    const t = i / n;
-    const a = start + t * Math.PI * 2 * turns;
-    const k = 1 + (random(`${seed}-${i}`) - 0.5) * 0.08 + t * 0.06;
-    pts.push([cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k]);
-  }
-  return smooth(pts);
 };
 
 export const arrowPath = (from: Pt, to: Pt, bend: number, seed: string) => {
@@ -122,17 +109,6 @@ export const InkLayer: React.FC<{children: React.ReactNode}> = ({children}) => (
   </svg>
 );
 
-export const Circle: React.FC<{cx: number; cy: number; rx: number; ry: number; at: number; color: string; seed: string; width?: number}> = ({
-  cx,
-  cy,
-  rx,
-  ry,
-  at,
-  color,
-  seed,
-  width = 7,
-}) => <Stroke d={ellipsePath(cx, cy, rx, ry, seed)} at={at} dur={18} color={color} width={width} />;
-
 export const Arrow: React.FC<{from: Pt; to: Pt; bend?: number; at: number; color: string; seed: string; width?: number}> = ({
   from,
   to,
@@ -200,6 +176,77 @@ export const Buzz: React.FC<{cx: number; cy: number; w: number; h: number; at: n
           />
         );
       })}
+    </g>
+  );
+};
+
+// A loop like a marker pen makes: starts at the upper left, sweeps a bit more
+// than once around and finishes just outside where it began.
+const loopPath = (rx: number, ry: number, seed: string, turns: number, drift: number) => {
+  const n = 40;
+  const pts: Pt[] = [];
+  const start = -2.45 + (random(seed) - 0.5) * 0.25;
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const a = start + t * Math.PI * 2 * turns;
+    const k = 1 + Math.sin(t * 7 + random(`${seed}-k`) * 6) * 0.025 + (t - 0.5) * drift;
+    pts.push([Math.cos(a) * rx * k, Math.sin(a) * ry * k]);
+  }
+  return smooth(pts);
+};
+
+// Circles something (given by its center and size) with a hand-drawn loop:
+// a quick main stroke, a lighter second pass, a highlighter tint underneath,
+// a little bounce and three emphasis ticks when the pen lifts.
+export const MarkerCircle: React.FC<{
+  cx: number;
+  cy: number;
+  w: number;
+  h: number;
+  at: number;
+  color: string;
+  seed: string;
+  rotate?: number;
+  pad?: number;
+  width?: number;
+  tint?: string;
+}> = ({cx, cy, w, h, at, color, seed, rotate = 0, pad = 24, width = 7, tint}) => {
+  const f = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  if (f < at) return null;
+  const rx = w / 2 + pad;
+  const ry = h / 2 + pad * 0.8;
+  const DRAW = 17;
+  const pen = Easing.bezier(0.45, 0, 0.2, 1);
+  const p1 = interpolate(f, [at, at + DRAW], [0, 1], {extrapolateRight: 'clamp', easing: pen});
+  const p2 = interpolate(f, [at + 5, at + 5 + DRAW], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: pen});
+  const tintIn = spring({frame: f - at - 6, fps, config: {damping: 14}});
+  const end = at + DRAW;
+  const bounce = f < end ? 1 : 1 + 0.06 * Math.sin(Math.min(1, (f - end) / 9) * Math.PI);
+  const main = loopPath(rx, ry, seed, 1.1, 0.09);
+  const second = loopPath(rx * 1.04, ry * 1.06, `${seed}-b`, 1.02, 0.05);
+  // ticks radiate from the upper right of the loop
+  const ticks = [-0.95, -0.62, -0.3].map((a, i) => {
+    const r0 = 1.12;
+    const r1 = 1.38;
+    const x0 = Math.cos(a) * rx * r0;
+    const y0 = Math.sin(a) * ry * r0;
+    const x1 = Math.cos(a) * (rx * r0 + (r1 - r0) * 90);
+    const y1 = Math.sin(a) * (ry * r0 + (r1 - r0) * 90);
+    const tp = interpolate(f, [end + i * 2, end + i * 2 + 6], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+    return tp > 0 ? (
+      <line key={i} x1={x0} y1={y0} x2={x0 + (x1 - x0) * tp} y2={y0 + (y1 - y0) * tp} stroke={color} strokeWidth={width * 0.8} strokeLinecap="round" />
+    ) : null;
+  });
+  const dash = (p: number) => ({pathLength: 1, strokeDasharray: 1, strokeDashoffset: 1 - p});
+  return (
+    <g transform={`translate(${cx} ${cy}) rotate(${rotate}) scale(${bounce})`}>
+      {tint ? (
+        <ellipse rx={rx * 0.92 * tintIn} ry={ry * 0.82 * tintIn} fill={tint} opacity={0.22} style={{mixBlendMode: 'multiply'}} />
+      ) : null}
+      <path d={second} {...dash(p2)} fill="none" stroke={color} strokeWidth={width * 0.45} strokeLinecap="round" opacity={0.55} />
+      <path d={main} {...dash(p1)} fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round" />
+      {ticks}
     </g>
   );
 };

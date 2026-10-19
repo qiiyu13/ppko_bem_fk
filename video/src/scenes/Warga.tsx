@@ -1,6 +1,6 @@
 import React from 'react';
 import {AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig} from 'remotion';
-import {Arrow, Buzz, Circle, InkLayer} from '../components/Ink';
+import {Arrow, Buzz, InkLayer, MarkerCircle} from '../components/Ink';
 import {Device, PHONE_SCALE, Screens, ScreenStep, Tap, Touch, devicePoint} from '../components/Phone';
 import {PaperPlane, PulseRing, PushBanner, ScreenSticker, Stage, Sticker} from '../components/Stickers';
 import {Headline, Kicker, Note} from '../components/Type';
@@ -66,7 +66,7 @@ export const WargaQR: React.FC = () => {
       <Note at={52} x={70} y={640} text="Pak Budi" color={T.text} size={52} rotate={-9} />
       <Note at={150} x={TEXT_X} y={650} width={760} text="satu QR untuk tiap anggota keluarga" color={T.text} size={50} rotate={-3} />
       <InkLayer>
-        <Arrow from={[TEXT_X + 80, 740]} to={[qrAt.x + 150, qrAt.y + 40]} bend={-70} at={164} color={T.text} seed="w1" />
+        <Arrow from={[TEXT_X - 30, 700]} to={[qrAt.x + 150, qrAt.y + 40]} bend={-70} at={164} color={T.text} seed="w1" />
       </InkLayer>
       {f >= 220 && fly < 1 ? (
         <ScreenSticker
@@ -191,9 +191,12 @@ export const WargaFinal: React.FC = () => {
       </Phone>
       <InkLayer>
         <Buzz cx={W_PHONE.cx} cy={W_PHONE.cy} w={440} h={930} at={46} color={T.text} />
-        {f < 179 ? <Circle cx={notif.x} cy={notif.y} rx={225} ry={62} at={125} color={C.coral} seed="n1" /> : null}
-        <Circle cx={appt.x} cy={appt.y} rx={225} ry={72} at={212} color={C.coral} seed="n2" />
-        <Arrow from={[TEXT_X + 30, 720]} to={[appt.x + 250, appt.y - 10]} bend={-50} at={234} color={T.text} seed="w6" />
+        {/* first notification row in p11 (y 52..140) and the new card in p12 (17..395, 519..625) */}
+        {f < 179 ? (
+          <MarkerCircle cx={notif.x} cy={notif.y} w={380 * 0.98} h={86 * 0.98} rotate={W_PHONE.rotate} pad={18} at={125} color={C.coral} tint={C.yellow} seed="n1" />
+        ) : null}
+        <MarkerCircle cx={appt.x} cy={appt.y} w={378 * 0.98} h={106 * 0.98} rotate={W_PHONE.rotate} pad={18} at={212} color={C.coral} tint={C.yellow} seed="n2" />
+        <Arrow from={[TEXT_X - 30, 690]} to={[appt.x + 250, appt.y - 10]} bend={-50} at={234} color={T.text} seed="w6" />
       </InkLayer>
       <Note at={222} x={TEXT_X} y={640} width={800} text="cek ulang 26 Okt, udah tercatat!" color={T.text} size={52} rotate={-3} />
       <PaperPlane
