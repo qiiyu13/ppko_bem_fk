@@ -6,12 +6,19 @@ ink annotations and the data hand-off are animated on top.
 
 ```bash
 npm install
-npm run render   # -> out/mediku-loop.mp4
+npm run render   # -> out/mediku-loop.mp4 (picture + mastered audio, needs ffmpeg)
 npm run studio   # live preview
 ```
 
 `remotion.config.ts` points at the Playwright headless shell that cloud
 sessions ship with; change or remove `setBrowserExecutable` to run locally.
+
+## Sound
+
+Music and effects from ElevenLabs live in `public/audio/` (trimmed and
+loudness-matched). `src/Soundtrack.tsx` places every cue on its scene frame
+and ducks the music under the big moments; `scripts/render.sh` masters the
+mix to -14 LUFS. Prompts and the cue sheet are in `AUDIO.md`.
 
 ## Look
 

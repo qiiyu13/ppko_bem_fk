@@ -3,8 +3,9 @@
   "private": true,
   "scripts": {
     "studio": "remotion studio",
-    "render": "remotion render src/index.ts MedikuLoop out/mediku-loop.mp4",
-    "stills": "remotion still src/index.ts MedikuLoop"
+    "render": "bash scripts/render.sh",
+    "stills": "remotion still src/index.ts MedikuLoop",
+    "render:raw": "remotion render src/index.ts MedikuLoop out/mediku-loop.mp4"
   },
   "dependencies": {
     "@remotion/bundler": "^4.0.536",

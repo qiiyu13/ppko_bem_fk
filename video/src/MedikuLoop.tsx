@@ -7,17 +7,16 @@ import {KADER_SAVE_POINT, KaderJadwal, KaderScan} from './scenes/Kader';
 import {Result} from './scenes/Result';
 import {TitleCard} from './scenes/Title';
 import {W_PHONE, WargaFinal, WargaQR, WargaReceive} from './scenes/Warga';
+import {Soundtrack} from './Soundtrack';
+import {SCENES, TR} from './timing';
 import {burst} from './transitions/burst';
 
-const TR = 28;
+export {DURATION} from './timing';
+
 const pan = springTiming({config: {damping: 200}, durationInFrames: TR});
 
 // Spatially the warga lives on the left and the kader on the right, so the
 // camera pans right to visit the kader and left to come back.
-// Each scene leaves ~2-3s for its headline and notes to be read before the next beat.
-const SCENES = {intro: 75, warga: 300, kader: 510, result: 245, receive: 250, jadwal: 345, final: 320, outro: 170};
-
-export const DURATION = Object.values(SCENES).reduce((a, b) => a + b, 0) - 7 * TR;
 
 export const MedikuLoop: React.FC = () => (
   <AbsoluteFill style={{background: '#000'}}>
@@ -55,5 +54,6 @@ export const MedikuLoop: React.FC = () => (
       </TransitionSeries.Sequence>
     </TransitionSeries>
     <Grain amount={0.12} />
+    <Soundtrack />
   </AbsoluteFill>
 );
