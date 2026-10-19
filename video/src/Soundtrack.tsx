@@ -61,7 +61,8 @@ const CUES: Cue[] = [
   // 04 IRD result
   ['result', 10, 'sticker_slap', 0.6],
   ['result', 34, 'pop', 0.4],
-  ['result', 40, 'gauge', 0.65],
+  // ratchet slows with the needle; its last click (1.96s in) lands as it settles at 95
+  ['result', 37, 'gauge', 0.65],
   ['result', 44, 'pop_2', 0.4],
   ['result', 104, 'marker_circle', 0.7],
   ['result', 112, 'pen_write', 0.35, 30],

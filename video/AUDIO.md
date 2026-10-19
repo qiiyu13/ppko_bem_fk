@@ -67,7 +67,7 @@ Export as WAV or MP3 and keep the file names below.
 | `sfx_typing.wav` | 2.0 s | Soft smartphone keyboard typing, gentle quick taps, about ten keystrokes |
 | `sfx_check.wav` | 0.5 s | Bright single marimba ding, short and positive, like ticking a checklist |
 | `sfx_success.wav` | 1.5 s | Cheerful success chime followed by a small party popper confetti burst |
-| `sfx_gauge.wav` | 2.0 s | Playful rising tick-up meter sound, fast ticks climbing, ends with a soft ding |
+| `sfx_gauge.wav` | 2.2 s | Playful cartoon dial meter climbing up: quick light wooden clicks rising in pitch, fast at first and slowing down (used take: slowing ratchet, no ding) |
 | `sfx_marker_circle.wav` | 0.7 s | Felt-tip marker quickly circling on paper, one fast scribble loop |
 | `sfx_pen_write.wav` | 1.2 s | Short handwriting with a marker on paper, light scribbling |
 | `sfx_paper_plane.wav` | 1.4 s | Paper airplane gliding past, soft fluttering whoosh, playful |
