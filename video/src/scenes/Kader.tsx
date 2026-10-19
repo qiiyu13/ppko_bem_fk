@@ -179,7 +179,7 @@ const ChecklistRow: React.FC<{i: number; y: number; item: (typeof CHECKLIST)[num
           fontWeight: 700,
           fontSize: 58,
           color: C.yellow,
-          clipPath: `inset(-20% ${100 - value * 100}% -20% -5%)`,
+          clipPath: `inset(-60% ${(1 - value) * 130 - 30}% -60% -10%)`,
           transform: 'rotate(-3deg)',
         }}
       >

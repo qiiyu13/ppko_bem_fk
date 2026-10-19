@@ -197,7 +197,7 @@ export const Note: React.FC<{
         whiteSpace: 'pre-line',
         color,
         transform: `rotate(${rotate}deg)`,
-        clipPath: `inset(-20% ${(1 - p) * 110 - 10}% -20% -5%)`,
+        clipPath: `inset(-60% ${(1 - p) * 130 - 30}% -60% -10%)`,
         opacity: 1 - out,
       }}
     >
