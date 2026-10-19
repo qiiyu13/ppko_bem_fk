@@ -75,8 +75,8 @@ const Gauge: React.FC<{v: number}> = ({v}) => {
 export const Result: React.FC = () => {
   const f = useCurrentFrame();
   const {fps} = useVideoConfig();
-  const pop = spring({frame: f - 8, fps, config: {damping: 11, stiffness: 110}});
-  const v = interpolate(f, [30, 62], [0, SCORE], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.out(Easing.back(1.4))});
+  const pop = spring({frame: f - 10, fps, config: {damping: 11, stiffness: 110}});
+  const v = interpolate(f, [40, 95], [0, SCORE], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.out(Easing.back(1.4))});
   const w = CARD[2] * SCALE;
   const h = CARD[3] * SCALE;
   const cx = 1360;
@@ -98,8 +98,8 @@ export const Result: React.FC = () => {
         size={110}
         lines={[['Risiko'], ['diabetes'], [{t: 'langsung', em: true}], [{t: 'dihitung.', hl: true}]]}
       />
-      <Sticker src={art('blood_sugar')} at={34} x={cx - w / 2 + 20} y={cy + h / 2 + 70} h={96} rotate={-10} />
-      <Sticker src={art('blood_pressure')} at={26} x={cx - w / 2 - 10} y={cy - h / 2 - 40} h={180} rotate={-14} />
+      <Sticker src={art('blood_sugar')} at={44} x={cx - w / 2 + 20} y={cy + h / 2 + 70} h={96} rotate={-10} />
+      <Sticker src={art('blood_pressure')} at={34} x={cx - w / 2 - 10} y={cy - h / 2 - 40} h={180} rotate={-14} />
       <ScreenSticker
         src="k15_detail"
         rect={CARD}
@@ -109,13 +109,13 @@ export const Result: React.FC = () => {
         <Gauge v={v} />
       </ScreenSticker>
       <InkLayer>
-        <Circle cx={numX} cy={numY} rx={92} ry={56} at={66} color={C.coral} seed="ird" width={8} />
-        <Arrow from={[cx + 40, cy + h / 2 + 150]} to={[numX - 20, numY + 70]} bend={-60} at={80} color={C.coral} seed="ird-a" />
+        <Circle cx={numX} cy={numY} rx={92} ry={56} at={104} color={C.coral} seed="ird" width={8} />
+        <Arrow from={[cx + 40, cy + h / 2 + 150]} to={[numX - 20, numY + 70]} bend={-60} at={120} color={C.coral} seed="ird-a" />
       </InkLayer>
-      <Note at={72} x={cx - 330} y={cy + h / 2 + 110} text="Waspada, perlu dipantau ya!" color={C.coral} size={56} rotate={-4} />
+      <Note at={112} x={cx - 330} y={cy + h / 2 + 110} text="Waspada, perlu dipantau ya!" color={C.coral} size={56} rotate={-4} />
       <PaperPlane
-        at={92}
-        dur={32}
+        at={205}
+        dur={40}
         path={[
           {x: cx - w / 2 + 60, y: cy + h / 2 - 10},
           {x: 1000, y: 1000},

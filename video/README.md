@@ -1,6 +1,6 @@
 # Mediku promo loop (Remotion)
 
-A ~41s 1920×1080 loop of the kader ↔ warga flow. The phones play real
+A ~67s 1920×1080 loop of the kader ↔ warga flow. The phones play real
 screenshots of the app (`public/screens/`); taps, typing, transitions, stickers,
 ink annotations and the data hand-off are animated on top.
 

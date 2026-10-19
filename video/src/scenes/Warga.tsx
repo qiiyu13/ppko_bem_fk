@@ -34,8 +34,8 @@ export const WargaQR: React.FC = () => {
   const qrAt = devicePoint(W_PHONE, QR_RECT[0] + QR_RECT[2] / 2, QR_RECT[1] + QR_RECT[3] / 2, f);
 
   // The QR peels off the screen, grows into a sticker, then flies right.
-  const peel = spring({frame: f - 138, fps, config: {damping: 10, stiffness: 120}});
-  const fly = interpolate(f, [160, 190], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.in(Easing.cubic)});
+  const peel = spring({frame: f - 220, fps, config: {damping: 10, stiffness: 120}});
+  const fly = interpolate(f, [245, 278], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.in(Easing.cubic)});
   const qrScale = PHONE_SCALE + (1.35 - PHONE_SCALE) * peel;
   const qx = qrAt.x + peel * 120 + fly * 1700;
   const qy = qrAt.y - peel * 170 - fly * 640;
@@ -58,17 +58,17 @@ export const WargaQR: React.FC = () => {
         enterAt={2}
         steps={[
           {at: 0, src: 'p02_home'},
-          {at: 76, src: 'p03_qr', t: 'pop'},
+          {at: 116, src: 'p03_qr', t: 'pop'},
         ]}
-        taps={[{f: 70, x: 368, y: 800}]}
+        taps={[{f: 110, x: 368, y: 800}]}
       />
       <Sticker src={art('guy_only')} at={36} x={215} y={870} h={330} rotate={-6} from={{x: 215, y: 1300}} />
       <Note at={52} x={70} y={640} text="Pak Budi" color={T.text} size={52} rotate={-9} />
-      <Note at={98} x={TEXT_X} y={650} width={760} text="satu QR untuk tiap anggota keluarga" color={T.text} size={50} rotate={-3} />
+      <Note at={150} x={TEXT_X} y={650} width={760} text="satu QR untuk tiap anggota keluarga" color={T.text} size={50} rotate={-3} />
       <InkLayer>
-        <Arrow from={[TEXT_X + 80, 740]} to={[qrAt.x + 150, qrAt.y + 40]} bend={-70} at={112} color={T.text} seed="w1" />
+        <Arrow from={[TEXT_X + 80, 740]} to={[qrAt.x + 150, qrAt.y + 40]} bend={-70} at={164} color={T.text} seed="w1" />
       </InkLayer>
-      {f >= 138 && fly < 1 ? (
+      {f >= 220 && fly < 1 ? (
         <ScreenSticker
           src="p03_qr"
           rect={QR_RECT}
@@ -107,35 +107,35 @@ export const WargaReceive: React.FC = () => {
       <Phone
         steps={[
           {at: 0, src: 'p02_home'},
-          {at: 66, src: 'p10_home_after', t: 'fade'},
+          {at: 100, src: 'p10_home_after', t: 'fade'},
         ]}
         taps={[]}
-        shakeAt={[36]}
+        shakeAt={[46]}
       >
         {METRIC_CARDS.map((r, i) => (
-          <PulseRing key={i} from={68} delay={i * 4} rect={r} />
+          <PulseRing key={i} from={102} delay={i * 5} rect={r} />
         ))}
         <PushBanner
-          from={38}
-          to={86}
+          from={48}
+          to={130}
           title="Hasil Skrining Tersedia"
           body="Skrining kesehatan Budi Santoso selesai. Kategori IRD: Perhatian."
         />
       </Phone>
       <InkLayer>
-        <Buzz cx={W_PHONE.cx} cy={W_PHONE.cy} w={440} h={930} at={36} color={T.text} />
+        <Buzz cx={W_PHONE.cx} cy={W_PHONE.cy} w={440} h={930} at={46} color={T.text} />
       </InkLayer>
-      <Sticker src={art('blood_pressure')} at={76} x={165} y={235} h={190} rotate={-12} from={card(0)} />
-      <Sticker src={art('blood_sugar')} at={82} x={170} y={480} h={84} rotate={-16} from={card(1)} />
-      <Sticker src={art('cholestrol')} at={88} x={175} y={660} h={80} rotate={10} from={card(2)} />
-      <Sticker src={art('uric_acid')} at={94} x={175} y={880} h={170} rotate={8} from={card(3)} />
-      <Note at={104} x={TEXT_X} y={650} width={780} text="angka terbaru langsung masuk!" color={T.text} size={52} rotate={-3} />
+      <Sticker src={art('blood_pressure')} at={110} x={165} y={235} h={190} rotate={-12} from={card(0)} />
+      <Sticker src={art('blood_sugar')} at={118} x={170} y={480} h={84} rotate={-16} from={card(1)} />
+      <Sticker src={art('cholestrol')} at={126} x={175} y={660} h={80} rotate={10} from={card(2)} />
+      <Sticker src={art('uric_acid')} at={134} x={175} y={880} h={170} rotate={8} from={card(3)} />
+      <Note at={160} x={TEXT_X} y={650} width={780} text="angka terbaru langsung masuk!" color={T.text} size={52} rotate={-3} />
       <InkLayer>
-        <Arrow from={[TEXT_X + 40, 735]} to={[card(3).x + 120, card(3).y + 20]} bend={60} at={116} color={T.text} seed="w4" />
+        <Arrow from={[TEXT_X - 30, 700]} to={[card(3).x + 120, card(3).y + 20]} bend={60} at={172} color={T.text} seed="w4" />
       </InkLayer>
       <PaperPlane
-        at={4}
-        dur={32}
+        at={6}
+        dur={40}
         path={[
           {x: 2050, y: 260},
           {x: 1650, y: 40},
@@ -170,35 +170,35 @@ export const WargaFinal: React.FC = () => {
       <Phone
         steps={[
           {at: 0, src: 'p10_home_after'},
-          {at: 67, src: 'p11_notif_after', t: 'push'},
-          {at: 109, src: 'p10_home_after', t: 'back'},
-          {at: 124, src: 'p12_jadwal_after', t: 'fade'},
+          {at: 109, src: 'p11_notif_after', t: 'push'},
+          {at: 180, src: 'p10_home_after', t: 'back'},
+          {at: 199, src: 'p12_jadwal_after', t: 'fade'},
         ]}
         taps={[
-          {f: 62, x: 200, y: 66},
-          {f: 104, x: 22, y: 22},
-          {f: 120, x: 154, y: 885},
+          {f: 104, x: 200, y: 66},
+          {f: 175, x: 22, y: 22},
+          {f: 195, x: 154, y: 885},
         ]}
-        shakeAt={[34]}
+        shakeAt={[46]}
       >
-        <PulseRing from={132} rect={[17, 519, 378, 106]} radius={16} color={C.coral} />
+        <PulseRing from={207} rect={[17, 519, 378, 106]} radius={16} color={C.coral} />
         <PushBanner
-          from={36}
-          to={64}
+          from={48}
+          to={110}
           title="Jadwal Skrining Baru"
           body="Cek Ulang Gula Darah RW 05 pada 26 Oktober 2026 di Balai Warga RW 05"
         />
       </Phone>
       <InkLayer>
-        <Buzz cx={W_PHONE.cx} cy={W_PHONE.cy} w={440} h={930} at={34} color={T.text} />
-        {f < 108 ? <Circle cx={notif.x} cy={notif.y} rx={225} ry={62} at={80} color={C.coral} seed="n1" /> : null}
-        <Circle cx={appt.x} cy={appt.y} rx={225} ry={72} at={136} color={C.coral} seed="n2" />
-        <Arrow from={[TEXT_X + 30, 720]} to={[appt.x + 250, appt.y - 10]} bend={-50} at={150} color={T.text} seed="w6" />
+        <Buzz cx={W_PHONE.cx} cy={W_PHONE.cy} w={440} h={930} at={46} color={T.text} />
+        {f < 179 ? <Circle cx={notif.x} cy={notif.y} rx={225} ry={62} at={125} color={C.coral} seed="n1" /> : null}
+        <Circle cx={appt.x} cy={appt.y} rx={225} ry={72} at={212} color={C.coral} seed="n2" />
+        <Arrow from={[TEXT_X + 30, 720]} to={[appt.x + 250, appt.y - 10]} bend={-50} at={234} color={T.text} seed="w6" />
       </InkLayer>
-      <Note at={140} x={TEXT_X} y={640} width={800} text="cek ulang 26 Okt, udah tercatat!" color={T.text} size={52} rotate={-3} />
+      <Note at={222} x={TEXT_X} y={640} width={800} text="cek ulang 26 Okt, udah tercatat!" color={T.text} size={52} rotate={-3} />
       <PaperPlane
-        at={4}
-        dur={30}
+        at={6}
+        dur={40}
         path={[
           {x: 2050, y: 280},
           {x: 1650, y: 40},

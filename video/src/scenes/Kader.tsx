@@ -25,25 +25,25 @@ const Phone: React.FC<{steps: ScreenStep[]; taps: Tap[]; children?: React.ReactN
 // ---- Scan + screening -------------------------------------------------------
 
 const SCAN_FRAME: [number, number, number, number] = [86, 362, 248, 246];
-const SCAN_PUSH = 40;
-const QR_IN = 54;
-const QR_LAND = 88;
-const LOCK = 90;
-const FORM = 118;
-const F0 = 150;
-const SAVE = 292;
+const SCAN_PUSH = 66;
+const QR_IN = 84;
+const QR_LAND = 118;
+const LOCK = 120;
+const FORM = 210;
+const F0 = 270;
+const SAVE = 480;
 
 // Screening form fields (k05_form -> k07_form_filled).
 const FORM_FIELDS: Field[] = [
-  {rect: [16, 274, 174, 50], dur: 14},
-  {rect: [227, 274, 170, 50], dur: 12},
-  {rect: [16, 390, 186, 50], dur: 12},
-  {rect: [213, 390, 184, 50], dur: 14},
-  {rect: [16, 505, 380, 50], dur: 14},
-  {rect: [16, 592, 380, 50], dur: 12},
-  {rect: [16, 678, 380, 50], dur: 14},
+  {rect: [16, 274, 174, 50], dur: 18},
+  {rect: [227, 274, 170, 50], dur: 16},
+  {rect: [16, 390, 186, 50], dur: 16},
+  {rect: [213, 390, 184, 50], dur: 18},
+  {rect: [16, 505, 380, 50], dur: 18},
+  {rect: [16, 592, 380, 50], dur: 16},
+  {rect: [16, 678, 380, 50], dur: 18},
 ];
-const FORM_TIMES = typed(F0, FORM_FIELDS);
+const FORM_TIMES = typed(F0, FORM_FIELDS, 10);
 
 const CHECKLIST: {icon: string; label: string; value: string; done: number; h: number}[] = [
   {icon: 'blood_pressure', label: 'Tensi', value: '142/90', done: FORM_TIMES[1].end, h: 70},
@@ -216,9 +216,9 @@ export const KaderScan: React.FC = () => {
         exitAt={FORM - 10}
         lines={[['Pindai,'], [{t: 'bip!', em: true}], [{t: 'data', hl: true}, 'terbuka.']]}
       />
-      <Note at={64} x={TEXT_X} y={630} text="tanpa cari nama satu-satu" color={C.yellow} size={52} rotate={-3} exitAt={FORM - 10} />
-      <Sticker src={art('kader')} at={30} x={760} y={885} h={400} rotate={6} from={{x: 760, y: 1400}} exitAt={FORM - 10} shadow="#08230F" />
-      <Note at={46} x={TEXT_X} y={800} text={'Bu Rina,\nkader RW 05'} color={C.cream} size={50} rotate={-5} exitAt={FORM - 10} />
+      <Note at={140} x={TEXT_X} y={630} text="tanpa cari nama satu-satu" color={C.yellow} size={52} rotate={-3} exitAt={FORM - 10} />
+      <Sticker src={art('kader')} at={40} x={760} y={885} h={400} rotate={6} from={{x: 760, y: 1400}} exitAt={FORM - 10} shadow="#08230F" />
+      <Note at={56} x={TEXT_X} y={800} text={'Bu Rina,\nkader RW 05'} color={C.cream} size={50} rotate={-5} exitAt={FORM - 10} />
 
       {/* Part 2: screening */}
       <Kicker at={FORM + 2} x={TEXT_X} y={170} n="03" label="SKRINING" theme={T} />
@@ -248,7 +248,7 @@ export const KaderScan: React.FC = () => {
           {at: SAVE - 2, src: 'k07_form_filled'},
         ]}
         taps={[
-          {f: 34, x: 333, y: 800},
+          {f: 60, x: 333, y: 800},
           {f: SAVE, x: 206, y: 884},
         ]}
       >
@@ -275,23 +275,23 @@ export const KaderScan: React.FC = () => {
 };
 
 export const KADER_SAVE_POINT = devicePoint(K_PHONE, 206, 884, 0);
-export const KADER_SCAN_DURATION = 330;
+export const KADER_SCAN_DURATION = 510;
 
 // ---- Jadwal -----------------------------------------------------------------
 
-const J_TAB = 30;
-const J_NEW = 54;
-const J0 = 78;
-const J_SAVE = 162;
+const J_TAB = 70;
+const J_NEW = 100;
+const J0 = 130;
+const J_SAVE = 270;
 
 // "Tambah Jadwal" form (k17 -> k20).
 const JADWAL_FIELDS: Field[] = [
-  {rect: [16, 101, 380, 50], dur: 20},
-  {rect: [16, 198, 380, 50], dur: 12},
-  {rect: [16, 294, 380, 50], dur: 12},
-  {rect: [16, 390, 380, 50], dur: 14},
+  {rect: [16, 101, 380, 50], dur: 28},
+  {rect: [16, 198, 380, 50], dur: 18},
+  {rect: [16, 294, 380, 50], dur: 18},
+  {rect: [16, 390, 380, 50], dur: 20},
 ];
-const J_TIMES = typed(J0, JADWAL_FIELDS);
+const J_TIMES = typed(J0, JADWAL_FIELDS, 10);
 
 export const KaderJadwal: React.FC = () => {
   const f = useCurrentFrame();
@@ -337,7 +337,7 @@ export const KaderJadwal: React.FC = () => {
       <Confetti at={J_SAVE + 2} x={add.x} y={add.y} />
       <PaperPlane
         at={J_SAVE + 12}
-        dur={34}
+        dur={40}
         path={[
           {x: start.x, y: start.y},
           {x: 1000, y: -40},

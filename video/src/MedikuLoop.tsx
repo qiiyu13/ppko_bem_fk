@@ -9,12 +9,13 @@ import {TitleCard} from './scenes/Title';
 import {W_PHONE, WargaFinal, WargaQR, WargaReceive} from './scenes/Warga';
 import {burst} from './transitions/burst';
 
-const TR = 24;
+const TR = 28;
 const pan = springTiming({config: {damping: 200}, durationInFrames: TR});
 
 // Spatially the warga lives on the left and the kader on the right, so the
 // camera pans right to visit the kader and left to come back.
-const SCENES = {intro: 75, warga: 200, kader: 330, result: 125, receive: 150, jadwal: 215, final: 200, outro: 110};
+// Each scene leaves ~2-3s for its headline and notes to be read before the next beat.
+const SCENES = {intro: 75, warga: 300, kader: 510, result: 245, receive: 250, jadwal: 345, final: 320, outro: 170};
 
 export const DURATION = Object.values(SCENES).reduce((a, b) => a + b, 0) - 7 * TR;
 
