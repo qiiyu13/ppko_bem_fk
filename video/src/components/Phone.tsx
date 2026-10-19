@@ -1,40 +1,113 @@
 import React from 'react';
-import {AbsoluteFill, Easing, Img, interpolate, spring, useCurrentFrame, useVideoConfig} from 'remotion';
+import {Easing, Img, interpolate, spring, useCurrentFrame, useVideoConfig} from 'remotion';
 import {C, SCREEN_H, SCREEN_W, shot} from '../theme';
-import {Focus} from '../timeline';
-
-export const BASE_SCALE = 0.93;
-const BEZEL = 13;
 
 const ease = Easing.bezier(0.33, 0, 0.2, 1);
+const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
 
-export const focusAt = (keys: Focus[], f: number) => {
-  const frames = keys.map((k) => k[0]);
-  const opts = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: ease} as const;
+export const PHONE_SCALE = 0.98;
+const CASE = 18;
+
+export type DeviceProps = {
+  cx: number;
+  cy: number;
+  rotate: number;
+  caseColor: string;
+  buttonColor: string;
+  shadow: string;
+  enterAt?: number;
+  shakeAt?: number[];
+  children: React.ReactNode;
+};
+
+const bob = (f: number) => ({y: Math.sin(f / 28) * 7, r: Math.sin(f / 37) * 0.7});
+
+const shake = (f: number, at: number[] = []) => {
+  for (const a of at) {
+    const t = f - a;
+    if (t >= 0 && t < 16) return Math.sin(t * 2.4) * 3.2 * (1 - t / 16);
+  }
+  return 0;
+};
+
+// Where a point on the app screen (logical px) lands in the scene, so effects
+// outside the phone can line up with UI inside it.
+export const devicePoint = (
+  d: {cx: number; cy: number; rotate: number},
+  lx: number,
+  ly: number,
+  f = 0,
+) => {
+  const b = bob(f);
+  const r = ((d.rotate + b.r) * Math.PI) / 180;
+  const x = (lx - SCREEN_W / 2) * PHONE_SCALE;
+  const y = (ly - SCREEN_H / 2) * PHONE_SCALE;
   return {
-    scale: interpolate(f, frames, keys.map((k) => k[1]), opts),
-    dim: interpolate(f, frames, keys.map((k) => k[2]), opts),
+    x: d.cx + x * Math.cos(r) - y * Math.sin(r),
+    y: d.cy + b.y + x * Math.sin(r) + y * Math.cos(r),
   };
 };
 
-// Global geometry of a phone's screen, shared by the phone itself and any
-// effect that has to fly between phones (QR card, data particles).
-export const screenGeom = (cx: number, cy: number, focusScale: number, enter: number) => {
-  const s = BASE_SCALE * focusScale;
-  const y = cy + (1 - enter) * 900;
-  return {s, x: cx - (SCREEN_W / 2) * s, y: y - (SCREEN_H / 2) * s};
+// A chunky toy-like phone in a colored case, floating on the stage.
+export const Device: React.FC<DeviceProps> = ({cx, cy, rotate, caseColor, buttonColor, shadow, enterAt, shakeAt, children}) => {
+  const f = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const enter = enterAt === undefined ? 1 : spring({frame: f - enterAt, fps, config: {damping: 13, mass: 0.9}});
+  const b = bob(f);
+  const w = SCREEN_W * PHONE_SCALE;
+  const h = SCREEN_H * PHONE_SCALE;
+  const r = rotate + b.r + shake(f, shakeAt) + (1 - enter) * -18;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: cx - w / 2 - CASE,
+        top: cy - h / 2 - CASE + b.y + (1 - enter) * 1100,
+        width: w + CASE * 2,
+        height: h + CASE * 2,
+        transform: `rotate(${r}deg)`,
+      }}
+    >
+      {/* hard offset shadow, printed-sticker style */}
+      <div style={{position: 'absolute', inset: 0, borderRadius: 72, background: shadow, transform: 'translate(22px, 26px)'}} />
+      {/* side buttons */}
+      <div style={{position: 'absolute', right: -7, top: 210, width: 12, height: 90, borderRadius: 6, background: buttonColor}} />
+      <div style={{position: 'absolute', right: -7, top: 320, width: 12, height: 56, borderRadius: 6, background: buttonColor}} />
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: 72,
+          background: caseColor,
+          boxShadow: `inset 0 0 0 4px ${C.ink}`,
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: CASE,
+          top: CASE,
+          width: w,
+          height: h,
+          borderRadius: 54,
+          overflow: 'hidden',
+          background: C.appBg,
+          boxShadow: `0 0 0 4px ${C.ink}`,
+        }}
+      >
+        <div style={{position: 'absolute', width: SCREEN_W, height: SCREEN_H, transform: `scale(${PHONE_SCALE})`, transformOrigin: '0 0'}}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
 };
-
-export const toGlobal = (g: {s: number; x: number; y: number}, lx: number, ly: number) => ({
-  x: g.x + lx * g.s,
-  y: g.y + ly * g.s,
-});
 
 export type ScreenStep = {at: number; src: string; t?: 'push' | 'back' | 'fade' | 'pop' | 'cut'};
 
-const TRANS = 14;
+const TRANS = 13;
 
-// Plays a list of real screenshots with the app's own kind of transitions.
+// Plays real screenshots with the same kinds of transitions the app uses.
 export const Screens: React.FC<{steps: ScreenStep[]}> = ({steps}) => {
   const f = useCurrentFrame();
   let i = 0;
@@ -81,136 +154,107 @@ export const Screens: React.FC<{steps: ScreenStep[]}> = ({steps}) => {
   );
 };
 
-// "Types" a field by wiping in the same region from the filled-in screenshot.
-export const Reveal: React.FC<{
-  at: number;
-  dur: number;
-  src: string;
-  rect: [x: number, y: number, w: number, h: number];
-  until?: number;
-}> = ({at, dur, src, rect, until}) => {
+export type Field = {rect: [x: number, y: number, w: number, h: number]; dur: number};
+
+// Lays out typed fields one after another from `start`.
+export const typed = (start: number, fields: Field[], gap = 6) => {
+  let at = start;
+  return fields.map((fl) => {
+    const r = {...fl, at, end: at + fl.dur};
+    at += fl.dur + gap;
+    return r;
+  });
+};
+
+// "Types" a field by wiping in the same region of the filled-in screenshot.
+export const Reveal: React.FC<{at: number; dur: number; src: string; rect: Field['rect']; until?: number}> = ({
+  at,
+  dur,
+  src,
+  rect,
+  until,
+}) => {
   const f = useCurrentFrame();
   if (f < at || (until !== undefined && f >= until)) return null;
   const [x, y, w, h] = rect;
   const p = interpolate(f, [at, at + dur], [0, 1], {extrapolateRight: 'clamp'});
-  // Step the wipe so it reads as keystrokes rather than a smooth slide.
+  // Stepped so it reads as keystrokes rather than a smooth slide.
   const stepped = Math.min(1, Math.ceil(p * 8) / 8);
   const caretOn = p < 1 && Math.floor(f / 4) % 2 === 0;
   return (
     <div style={{position: 'absolute', left: x, top: y, width: w * stepped, height: h, overflow: 'hidden'}}>
       <Img src={shot(src)} style={{position: 'absolute', left: -x, top: -y, width: SCREEN_W, height: SCREEN_H}} />
-      {caretOn ? (
-        <div style={{position: 'absolute', right: 0, top: h * 0.25, width: 2, height: h * 0.5, background: C.primary}} />
-      ) : null}
+      {caretOn ? <div style={{position: 'absolute', right: 0, top: h * 0.25, width: 2, height: h * 0.5, background: C.primary}} /> : null}
+    </div>
+  );
+};
+
+// Region of another real screenshot, faded in (e.g. to clear a baked-in snackbar).
+export const Patch: React.FC<{from: number; src: string; rect: [number, number, number, number]}> = ({from, src, rect}) => {
+  const f = useCurrentFrame();
+  if (f < from) return null;
+  const [x, y, w, h] = rect;
+  return (
+    <div style={{position: 'absolute', left: x, top: y, width: w, height: h, overflow: 'hidden', opacity: interpolate(f, [from, from + 8], [0, 1], clamp)}}>
+      <Img src={shot(src)} style={{position: 'absolute', left: -x, top: -y, width: SCREEN_W, height: SCREEN_H}} />
     </div>
   );
 };
 
 export type Tap = {f: number; x: number; y: number};
 
-// A soft fingertip that glides between taps and ripples on contact.
+// A chunky fingertip that glides in, squishes on contact and leaves a splash.
 export const Touch: React.FC<{taps: Tap[]}> = ({taps}) => {
   const f = useCurrentFrame();
   const LEAD = 16;
   const active = taps.find((t) => f >= t.f - LEAD && f <= t.f + 14);
   if (!active) return null;
   const idx = taps.indexOf(active);
-  const from = taps[idx - 1] && active.f - taps[idx - 1].f < 60 ? taps[idx - 1] : {x: active.x + 40, y: active.y + 70};
-  const mv = interpolate(f, [active.f - LEAD, active.f - 3], [0, 1], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-    easing: ease,
-  });
+  const prevTap = taps[idx - 1];
+  const from = prevTap && active.f - prevTap.f < 50 ? prevTap : {x: active.x + 60, y: active.y + 110};
+  const mv = interpolate(f, [active.f - LEAD, active.f - 3], [0, 1], {...clamp, easing: ease});
   const x = from.x + (active.x - from.x) * mv;
   const y = from.y + (active.y - from.y) * mv;
-  const press = interpolate(f, [active.f - 3, active.f, active.f + 4], [1, 0.75, 1], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-  const opacity = interpolate(f, [active.f - LEAD, active.f - LEAD + 5, active.f + 8, active.f + 14], [0, 1, 1, 0], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-  const ripple = interpolate(f, [active.f, active.f + 14], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+  const squish = interpolate(f, [active.f - 3, active.f, active.f + 5], [1, 0.7, 1], clamp);
+  const opacity = interpolate(f, [active.f - LEAD, active.f - LEAD + 5, active.f + 8, active.f + 14], [0, 1, 1, 0], clamp);
+  const splash = interpolate(f, [active.f, active.f + 12], [0, 1], clamp);
   return (
     <div style={{position: 'absolute', left: x, top: y, opacity, pointerEvents: 'none'}}>
-      {f >= active.f ? (
-        <div
-          style={{
-            position: 'absolute',
-            left: -40 * ripple,
-            top: -40 * ripple,
-            width: 80 * ripple,
-            height: 80 * ripple,
-            borderRadius: '50%',
-            border: `3px solid rgba(20,68,37,${0.6 * (1 - ripple)})`,
-          }}
-        />
-      ) : null}
+      {f >= active.f
+        ? new Array(6).fill(0).map((_, i) => {
+            const a = (i / 6) * Math.PI * 2 + 0.3;
+            const r0 = 22 + splash * 22;
+            return (
+              <div
+                key={i}
+                style={{
+                  position: 'absolute',
+                  left: Math.cos(a) * r0 - 3,
+                  top: Math.sin(a) * r0 - 9,
+                  width: 6,
+                  height: 18 * (1 - splash),
+                  borderRadius: 3,
+                  background: C.ink,
+                  transform: `rotate(${(a * 180) / Math.PI + 90}deg)`,
+                }}
+              />
+            );
+          })
+        : null}
       <div
         style={{
           position: 'absolute',
-          left: -17,
-          top: -17,
-          width: 34,
-          height: 34,
+          left: -20,
+          top: -20,
+          width: 40,
+          height: 40,
           borderRadius: '50%',
-          background: 'rgba(255,255,255,0.75)',
-          border: '2.5px solid rgba(20,68,37,0.55)',
-          boxShadow: '0 4px 14px rgba(0,0,0,0.25)',
-          transform: `scale(${press})`,
+          background: C.yellow,
+          border: `4px solid ${C.ink}`,
+          transform: `scale(${2 - squish}, ${squish})`,
+          boxShadow: `4px 5px 0 ${C.ink}`,
         }}
       />
-    </div>
-  );
-};
-
-export const Phone: React.FC<{
-  cx: number;
-  cy: number;
-  focus: Focus[];
-  enterAt: number;
-  children: React.ReactNode;
-}> = ({cx, cy, focus, enterAt, children}) => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
-  const enter = spring({frame: f - enterAt, fps, config: {damping: 16, mass: 0.9}});
-  const {scale, dim} = focusAt(focus, f);
-  const g = screenGeom(cx, cy, scale, enter);
-  const w = SCREEN_W * g.s;
-  const h = SCREEN_H * g.s;
-  const tilt = (1 - enter) * 8;
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        left: g.x - BEZEL,
-        top: g.y - BEZEL,
-        width: w + BEZEL * 2,
-        height: h + BEZEL * 2,
-        borderRadius: 58,
-        background: '#121a15',
-        boxShadow: `0 ${30 + 20 * (1 - dim)}px 80px rgba(13,31,20,${0.18 + 0.12 * (1 - dim)}), inset 0 0 0 2px #2c3a31`,
-        transform: `rotate(${tilt}deg)`,
-      }}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          left: BEZEL,
-          top: BEZEL,
-          width: w,
-          height: h,
-          borderRadius: 46,
-          overflow: 'hidden',
-          background: C.background,
-        }}
-      >
-        <div style={{position: 'absolute', width: SCREEN_W, height: SCREEN_H, transform: `scale(${g.s})`, transformOrigin: '0 0'}}>
-          {children}
-        </div>
-        <AbsoluteFill style={{background: C.background, opacity: dim * 0.55, pointerEvents: 'none'}} />
-      </div>
     </div>
   );
 };

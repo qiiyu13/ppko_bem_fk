@@ -1,8 +1,8 @@
 # Mediku promo loop (Remotion)
 
-A ~39s 1920×1080 loop of the kader ↔ warga flow, built from real screenshots
-of the app (`public/screens/`), with taps, typing, transitions and the data
-hand-off animated on top.
+A ~41s 1920×1080 loop of the kader ↔ warga flow. The phones play real
+screenshots of the app (`public/screens/`); taps, typing, transitions, stickers,
+ink annotations and the data hand-off are animated on top.
 
 ```bash
 npm install
@@ -13,17 +13,29 @@ npm run studio   # live preview
 `remotion.config.ts` points at the Playwright headless shell that cloud
 sessions ship with; change or remove `setBrowserExecutable` to run locally.
 
-## Story
+## Look
 
-1. Warga shows the family QR (`p03_qr`)
-2. Kader scans it (`k02_scanner`; the camera feed is drawn over the desktop build's "no camera" state)
-3. Kader fills the screening form (`k05_form` → `k07_form_filled`, revealed field by field)
-4. IRD result (`k15_detail` crop) and push to warga (`p10_home_after`)
-5. Kader schedules a re-check (`k17_jadwal_baru` → `k20_jadwal_filled` → `k21_jadwal_saved`)
-6. Warga sees the notification and the new schedule (`p11_notif_after`, `p12_jadwal_after`)
+Sticker-book style: flat colored stages (warga = heart-card pink, kader = app
+green, results = cream paper), paper grain, hard offset shadows, die-cut
+stickers of the app's own illustrations (`public/art/`, rendered from
+`assets/svg`), hand-drawn ink marks, Fraunces + Caveat + Plus Jakarta Sans
+(fonts in `public/fonts`, OFL licenses alongside).
 
-Timings live in `src/timeline.ts`; tap/field coordinates in `src/MedikuLoop.tsx`
-are in the app's logical pixels (412×915).
+## Story (`src/MedikuLoop.tsx`)
+
+| Scene | File | What happens |
+| --- | --- | --- |
+| Title (out) | `scenes/Title.tsx` | Static title card breaks apart |
+| 01 Warga | `scenes/Warga.tsx` `WargaQR` | Budi opens his family QR; it peels off as a sticker |
+| 02–03 Kader | `scenes/Kader.tsx` `KaderScan` | QR lands in the scanner, "Bip!", form is typed while a mascot checklist ticks off |
+| 04 Result | `scenes/Result.tsx` | Real IRD card, gauge sweeps to 0.92, paper plane leaves |
+| 05 Warga | `WargaReceive` | Phone buzzes, push arrives, metric mascots pop out of the cards |
+| 06 Kader | `KaderJadwal` | Re-check scheduled, calendar sticker drops |
+| 07 Warga | `WargaFinal` | Notification opened, new appointment circled |
+| Title (in) | `scenes/Title.tsx` | Title card rebuilds; last frame equals the first |
+
+Each scene uses its own local frames; tap and field coordinates are in the
+app's logical pixels (412×915).
 
 ## Re-capturing screenshots
 
